@@ -1,0 +1,5 @@
+error: exported function argument types must be owned; references are not supported
+ --> tests/ui/fail/borrowed.rs:2:19
+  |
+2 | fn invalid(value: &str) -> Result<String, String> {
+  |                   ^

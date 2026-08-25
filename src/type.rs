@@ -52,7 +52,10 @@ impl TryFrom<TypeCbor> for Type {
 
     fn try_from(value: TypeCbor) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
-            return Err(format!("Invalid typwire-type for Type: {}", value.typwire_type));
+            return Err(format!(
+                "Invalid typwire-type for Type: {}",
+                value.typwire_type
+            ));
         }
 
         Ok(Self::new(value.ty))

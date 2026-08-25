@@ -1,0 +1,5 @@
+error: the return type of an exported function must be `Result<T, E>`
+ --> tests/ui/fail/invalid_return.rs:2:30
+  |
+2 | fn invalid(value: String) -> String {
+  |                              ^^^^^^

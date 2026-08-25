@@ -124,9 +124,9 @@ pub struct Oklab {
     /// The lightness component of the color.
     pub lightness: Ratio,
     /// The 'a' component of the color.
-    pub a: Ratio,
+    pub a: f64,
     /// The 'b' component of the color.
-    pub b: Ratio,
+    pub b: f64,
     /// The alpha (transparency) component of the color.
     pub alpha: Ratio,
 }
@@ -141,13 +141,13 @@ impl Oklab {
     ///
     /// let o = Oklab::new(
     ///     Ratio::new(0.5),
-    ///     Ratio::new(0.0),
-    ///     Ratio::new(0.0),
+    ///     0.0,
+    ///     0.0,
     ///     Ratio::new(1.0),
     /// );
     /// assert_eq!(o.lightness, Ratio::new(0.5));
     /// ```
-    pub const fn new(lightness: Ratio, a: Ratio, b: Ratio, alpha: Ratio) -> Self {
+    pub const fn new(lightness: Ratio, a: f64, b: f64, alpha: Ratio) -> Self {
         Self {
             lightness,
             a,
@@ -163,7 +163,7 @@ pub struct Oklch {
     /// The lightness component of the color.
     pub lightness: Ratio,
     /// The chroma component of the color.
-    pub chroma: Ratio,
+    pub chroma: f64,
     /// The hue component of the color.
     pub hue: Angle,
     /// The alpha (transparency) component of the color.
@@ -180,13 +180,13 @@ impl Oklch {
     ///
     /// let o = Oklch::new(
     ///     Ratio::new(0.6),
-    ///     Ratio::new(0.2),
+    ///     0.2,
     ///     Angle::new(0.0),
     ///     Ratio::new(1.0),
     /// );
-    /// assert_eq!(o.chroma, Ratio::new(0.2));
+    /// assert_eq!(o.chroma, 0.2);
     /// ```
-    pub const fn new(lightness: Ratio, chroma: Ratio, hue: Angle, alpha: Ratio) -> Self {
+    pub const fn new(lightness: Ratio, chroma: f64, hue: Angle, alpha: Ratio) -> Self {
         Self {
             lightness,
             chroma,

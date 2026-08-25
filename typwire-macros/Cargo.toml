@@ -1,0 +1,18 @@
+[package]
+name = "typwire-macros"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Tim Voßhenrich"]
+description = "Procedural macros for typwire."
+repository = "https://github.com/T1mVo/typwire"
+license = "MIT OR Apache-2.0"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+proc-macro-crate = "3"
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full", "visit"] }

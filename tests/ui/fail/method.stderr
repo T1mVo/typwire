@@ -1,0 +1,5 @@
+error: `#[typwire::export]` can only be used on free functions; methods and receivers are not supported
+ --> tests/ui/fail/method.rs:5:16
+  |
+5 |     fn invalid(&self, value: String) -> Result<String, String> {
+  |                ^

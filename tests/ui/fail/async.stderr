@@ -1,0 +1,5 @@
+error: exported functions cannot be `async`
+ --> tests/ui/fail/async.rs:2:1
+  |
+2 | async fn invalid(value: String) -> Result<String, String> {
+  | ^^^^^

@@ -1,10 +1,15 @@
+[workspace]
+members = [".", "typwire-macros"]
+exclude = ["example", "test"]
+resolver = "2"
+
 [package]
 name = "typwire"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 rust-version = "1.85"
 authors = ["Tim Voßhenrich"]
-description = "Rust types for the Typst plugin system."
+description = "Typed data exchange for Typst plugins."
 readme = "README.md"
 repository = "https://github.com/T1mVo/typwire"
 license = "MIT OR Apache-2.0"
@@ -16,3 +21,9 @@ exclude = ["example", "test", "scripts", "src-typst"]
 ciborium = "0.2.2"
 serde = { version = "1.0.228", features = ["derive"] }
 thiserror = "2.0.17"
+typwire-macros = { path = "typwire-macros", version = "0.2.0" }
+wasm-minimal-protocol = "0.1.0"
+
+[dev-dependencies]
+serde = { version = "1.0.228", features = ["derive"] }
+trybuild = "1.0.114"
