@@ -1,23 +1,38 @@
-#![allow(unused)]
-
-use serde::Deserialize;
-use typwire::{Angle, Color, DateTime, FromBytes as _};
-use wasm_minimal_protocol::*;
+use serde::{Deserialize, Serialize};
+use typwire::{Any, Length, OneOf3, Typwire, initiate_protocol};
 
 initiate_protocol!();
 
-#[derive(Deserialize)]
-struct Custom {
-    angle: Angle,
-    color: Color,
-    datetime: DateTime,
+#[derive(Serialize, Deserialize, Typwire)]
+#[serde(rename_all = "kebab-case")]
+struct Options {
+    label: String,
+    scale: f64,
 }
 
-#[wasm_func]
-fn custom_fn(arg: &[u8]) -> Result<Vec<u8>, String> {
-    let custom = Custom::from_bytes(arg)?;
+#[derive(Serialize, Deserialize, Typwire)]
+struct Report {
+    text: String,
+    width: Length,
+    metadata: Any,
+}
 
-    // ...
+#[typwire::export]
+fn measure(
+    value: OneOf3<i64, f64, String>,
+    options: Options,
+    fallback: Option<Length>,
+    metadata: Any,
+) -> Result<Report, String> {
+    let text = match value {
+        OneOf3::First(value) => value.to_string(),
+        OneOf3::Second(value) => value.to_string(),
+        OneOf3::Third(value) => value,
+    };
 
-    Ok(vec![])
+    Ok(Report {
+        text: format!("{}{}", options.label, text),
+        width: fallback.unwrap_or_else(|| Length::new(12.0 * options.scale)),
+        metadata,
+    })
 }

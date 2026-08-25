@@ -1,16 +1,20 @@
-// #import "@preview/typwire:0.1.0"
+// #import "@preview/typwire:0.2.0"
 #import "../../src-typst/src/lib.typ" as typwire
 
-#let custom-plugin = plugin("custom_plugin.wasm")
+#let plugin = plugin("custom_plugin.wasm")
 
-#let custom = (
-    "angle": 90deg,
-    "color": red,
-    "datetime": datetime.today(),
+#let report = typwire.call(
+  plugin.measure,
+  42,
+  (
+    label: "Value: ",
+    scale: 1.5,
+  ),
+  12pt,
+  (
+    source: "example",
+    enabled: true,
+  ),
 )
 
-#let encoded = typwire.cbor.encode(custom)
-
-#let result = custom-plugin.custom_fn(encoded)
-
-#str(result)
+#report.text has width #report.width.
