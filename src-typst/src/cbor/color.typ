@@ -17,14 +17,14 @@
 /// Encode an OKLab color into a CBOR-compatible dictionary.
 ///
 /// - lightness (ratio): The lightness component of the color.
-/// - a (ratio): The 'a' component of the color.
-/// - b (ratio): The 'b' component of the color.
+/// - a (float): The 'a' component of the color.
+/// - b (float): The 'b' component of the color.
 /// - alpha (ratio): The alpha (transparency) component of the color.
 /// -> dictionary
 #let oklab(lightness, a, b, alpha) = {
   assert(type(lightness) == std.ratio, message: "color.oklab: lightness must be of type ratio")
-  assert(type(a) == std.ratio, message: "color.oklab: a must be of type ratio")
-  assert(type(b) == std.ratio, message: "color.oklab: b must be of type ratio")
+  assert(type(a) == std.float, message: "color.oklab: a must be of type float")
+  assert(type(b) == std.float, message: "color.oklab: b must be of type float")
   assert(type(alpha) == std.ratio, message: "color.oklab: alpha must be of type ratio")
   
   (
@@ -39,13 +39,13 @@
 /// Encode an OKLCH color into a CBOR-compatible dictionary.
 ///
 /// - lightness (ratio): The lightness component of the color.
-/// - chroma (ratio): The chroma component of the color.
+/// - chroma (float): The chroma component of the color.
 /// - hue (angle): The hue component of the color.
 /// - alpha (ratio): The alpha (transparency) component of the color.
 /// -> dictionary
 #let oklch(lightness, chroma, hue, alpha) = {
   assert(type(lightness) == std.ratio, message: "color.oklch: lightness must be of type ratio")
-  assert(type(chroma) == std.ratio, message: "color.oklch: chroma must be of type ratio")
+  assert(type(chroma) == std.float, message: "color.oklch: chroma must be of type float")
   assert(type(hue) == std.angle, message: "color.oklch: hue must be of type angle")
   assert(type(alpha) == std.ratio, message: "color.oklch: alpha must be of type ratio")
   

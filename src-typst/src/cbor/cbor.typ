@@ -7,6 +7,7 @@
 #import "ratio.typ"
 #import "type.typ"
 #import "version.typ"
+#import "decode.typ": decode
 
 #let is-cbor-compatible(content) = {
   (
@@ -15,7 +16,6 @@
       or std.type(content) == std.bytes
       or std.type(content) == std.str
       or std.type(content) == std.bool
-      or std.type(content) == std.content
       or content == none
   )
 }
@@ -50,8 +50,10 @@
     result = encode-inner(version.encode(content))
   } else if std.type(content) == std.type {
     result = encode-inner(type.encode(content))
+  } else if std.type(content) == std.content {
+    panic("typwire.encode: content values are not supported")
   } else {
-    panic("cbor.encode: Unsupported content type: " + str(std.type(content)))
+    panic("typwire.encode: unsupported value type " + str(std.type(content)))
   }
 
   result
