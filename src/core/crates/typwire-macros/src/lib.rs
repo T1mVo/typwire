@@ -153,10 +153,10 @@ fn validate_signature(signature: &Signature) -> syn::Result<Vec<ExportArgument>>
             syn::Error::new(token.span(), "exported functions cannot be `async`"),
         );
     }
-    if let Some(token) = &signature.unsafety {
+    if let syn::Safety::Unsafe(token) = &signature.safety {
         push_error(
             &mut errors,
-            syn::Error::new(token.span(), "exported functions cannot be `unsafe`"),
+            syn::Error::new(token.span, "exported functions cannot be `unsafe`"),
         );
     }
     if let Some(abi) = &signature.abi {
