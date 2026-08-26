@@ -1,0 +1,111 @@
+#import "../utils.typ": is-debug-assert
+#import "../color/color.typ"
+#import "../center.typ"
+#import "../stop.typ"
+
+#let type-name = "gradient-radial"
+
+/// Encode a radial gradient into a CBOR-compatible dictionary.
+///
+/// - stops (array): An array of encoded stops.
+/// - center (dictionary): An encoded center.
+/// - radius (ratio): The radius of the gradient.
+/// - focal-center (dictionary): An encoded focal center.
+/// - focal-radius (ratio): The focal radius of the gradient.
+/// - space (str): The name of the color space.
+/// -> dictionary
+#let encode(stops, center, radius, focal-center, focal-radius, space) = {
+  if is-debug-assert {
+    assert(
+      type(stops) == std.array,
+      message: "radial.encode: stops must be of type array",
+    )
+    assert(
+      type(center) == std.dictionary,
+      message: "radial.encode: center must be of type dictionary",
+    )
+    assert(
+      type(radius) == std.ratio,
+      message: "radial.encode: radius must be of type ratio",
+    )
+    assert(
+      type(focal-center) == std.dictionary,
+      message: "radial.encode: focal-center must be of type dictionary",
+    )
+    assert(
+      type(focal-radius) == std.ratio,
+      message: "radial.encode: focal-radius must be of type ratio",
+    )
+    assert(
+      type(space) == std.str,
+      message: "radial.encode: space must be of type str",
+    )
+  }
+
+  (
+    typwire-type: type-name,
+    stops: stops,
+    center: center,
+    radius: radius,
+    focal-center: focal-center,
+    focal-radius: focal-radius,
+    space: space,
+  )
+}
+
+/// Decode a CBOR-compatible dictionary into a radial gradient.
+///
+/// - value (dictionary): A dictionary produced by `encode`.
+/// -> gradient
+#let decode(value) = {
+  if is-debug-assert {
+    assert(
+      value.typwire-type == type-name, message: "radial.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
+    )
+    assert(
+      type(value.stops) == std.array,
+      message: "radial.decode: value.stops must be of type array, Found "
+        + str(type(value.stops)),
+    )
+    assert(
+      type(value.center) == std.dictionary,
+      message: "radial.decode: value.center must be of type dictionary, Found "
+        + str(type(value.center)),
+    )
+    assert(
+      type(value.radius) == std.ratio,
+      message: "radial.decode: value.radius must be of type ratio, Found "
+        + str(type(value.radius)),
+    )
+    assert(
+      type(value.focal-center) == std.dictionary,
+      message: "radial.decode: value.focal-center must be of type dictionary, Found "
+        + str(type(value.focal-center)),
+    )
+    assert(
+      type(value.focal-radius) == std.ratio,
+      message: "radial.decode: value.focal-radius must be of type ratio, Found "
+        + str(type(value.focal-radius)),
+    )
+    assert(
+      type(value.space) == std.str,
+      message: "radial.decode: value.space must be of type str, Found "
+        + str(type(value.space)),
+    )
+  }
+
+  let stops = value.stops.map(stop.decode)
+  let space = color.color-space(value.space)
+
+  gradient.radial(
+    ..stops,
+    center: center.decode(value.center),
+    radius: value.radius,
+    focal-center: center.decode(value.focal-center),
+    focal-radius: value.focal-radius,
+    space: space,
+  )
+}

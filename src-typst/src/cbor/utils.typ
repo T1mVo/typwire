@@ -13,3 +13,24 @@
 #let ratio-to-float(ratio) = {
   ratio / 100%
 }
+
+/// Convert a float to a ratio.
+///
+/// - float (float): A float value.
+/// -> ratio
+#let float-to-ratio(float) = {
+  float * 100%
+}
+
+/// Convert a float to a length.
+/// 
+/// - float (float): A float value.
+/// -> length
+#let float-to-length(float) = {
+  float * 1pt
+}
+
+/// Check if debug assertions are enabled.
+/// 
+/// -> bool
+#let is-debug-assert = sys.inputs.at("debug-assert", default: false) == "true"
