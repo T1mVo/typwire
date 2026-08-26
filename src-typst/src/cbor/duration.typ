@@ -16,3 +16,15 @@
 
   new(duration.seconds())
 }
+
+/// Decode a CBOR-compatible dictionary into a duration.
+///
+/// - value (dictionary): A dictionary representing the `encode`d duration.
+/// -> duration
+#let decode(value) = {
+  let seconds = int(value.seconds)
+  if seconds != value.seconds {
+    panic("typwire.decode: Typst cannot reconstruct a duration with fractional seconds")
+  }
+  duration(seconds: seconds)
+}
