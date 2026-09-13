@@ -1,6 +1,6 @@
 use std::collections::BTreeMap;
 
-use ciborium::Value;
+use cbor4ii::core::Value;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
@@ -73,7 +73,7 @@ fn from_value(value: Value) -> Result<Any, String> {
     match value {
         Value::Null => Ok(Any::None),
         Value::Bool(value) => Ok(Any::Bool(value)),
-        Value::Integer(value) => i64::try_from(i128::from(value))
+        Value::Integer(value) => i64::try_from(value)
             .map(Any::Integer)
             .map_err(|_| "integer is outside Typst's signed 64-bit range".to_owned()),
         Value::Float(value) => Ok(Any::Float(value)),

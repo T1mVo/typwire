@@ -10,7 +10,7 @@ resolver = "2"
 [workspace.dependencies]
 typwire-macros = { path = "crates/typwire-macros", version = "0.2.0" }
 
-ciborium = "0.2.2"
+cbor4ii = { version = "1.2.3", features = ["serde1", "use_std", "half-f16"] }
 proc-macro-crate = "3.5.0"
 proc-macro2 = "1.0.107"
 quote = "1.0.47"
