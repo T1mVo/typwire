@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, LinkedList, VecDeque};
 use std::hash::{BuildHasher, Hash};
 
-use ciborium::Value;
+use cbor4ii::core::Value;
 use serde::de::{DeserializeOwned, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
@@ -109,34 +109,35 @@ pub enum Error {
 
 /// Encode an explicitly supported value into validated CBOR bytes.
 pub fn encode<T: Typwire>(value: &T) -> Result<Vec<u8>, Error> {
-    let value =
-        Value::serialized(value).map_err(|error| Error::Serialization(error.to_string()))?;
+    let bytes = cbor4ii::serde::to_vec(Vec::new(), value)
+        .map_err(|error| Error::Serialization(error.to_string()))?;
+
+    let value: Value = cbor4ii::serde::from_slice(&bytes)
+        .map_err(|error| Error::MalformedCbor(error.to_string()))?;
     validate(&value)?;
 
-    let mut bytes = Vec::new();
-    ciborium::into_writer(&value, &mut bytes)
-        .map_err(|error| Error::Serialization(error.to_string()))?;
     Ok(bytes)
 }
 
 /// Decode validated CBOR bytes into an explicitly supported owned value.
 pub fn decode<T: Typwire>(bytes: &[u8]) -> Result<T, Error> {
-    let value: Value =
-        ciborium::from_reader(bytes).map_err(|error| Error::MalformedCbor(error.to_string()))?;
+    let value: Value = cbor4ii::serde::from_slice(bytes)
+        .map_err(|error| Error::MalformedCbor(error.to_string()))?;
     validate(&value)?;
-    value
-        .deserialized()
-        .map_err(|error| Error::Deserialization(error.to_string()))
+
+    // `T`'s derived `Deserialize` reads typed scalars (e.g. `deserialize_f64`),
+    // which cbor4ii resolves strictly: a `f64` field rejects wire bytes that
+    // used the narrower CBOR float widths Typst's encoder picks canonically.
+    // Re-encoding the already-parsed `Value` normalizes floats to full width
+    // before the typed decode, at the cost of a second pass.
+    value_to_owned(value).map_err(Error::Deserialization)
 }
 
 fn validate(value: &Value) -> Result<(), Error> {
     match value {
-        Value::Integer(integer) => {
-            let integer = i128::from(*integer);
-            i64::try_from(integer)
-                .map(|_| ())
-                .map_err(|_| Error::IntegerOutOfRange)
-        }
+        Value::Integer(integer) => i64::try_from(*integer)
+            .map(|_| ())
+            .map_err(|_| Error::IntegerOutOfRange),
         Value::Array(values) => values.iter().try_for_each(validate),
         Value::Map(entries) => entries.iter().try_for_each(|(key, value)| {
             if !matches!(key, Value::Text(_)) {
@@ -219,7 +220,8 @@ tuple_impls!(
 );
 
 pub(crate) fn value_to_owned<T: DeserializeOwned>(value: Value) -> Result<T, String> {
-    value.deserialized().map_err(|error| error.to_string())
+    let bytes = cbor4ii::serde::to_vec(Vec::new(), &value).map_err(|error| error.to_string())?;
+    cbor4ii::serde::from_slice(&bytes).map_err(|error| error.to_string())
 }
 
 pub(crate) fn invalid_value<E: serde::de::Error>(message: impl std::fmt::Display) -> E {
@@ -236,11 +238,11 @@ mod tests {
         let vector = encode(&vec![1_u8, 2]).unwrap();
 
         assert!(matches!(
-            ciborium::from_reader::<Value, _>(bytes.as_slice()).unwrap(),
+            cbor4ii::serde::from_slice::<Value>(&bytes).unwrap(),
             Value::Bytes(_)
         ));
         assert!(matches!(
-            ciborium::from_reader::<Value, _>(vector.as_slice()).unwrap(),
+            cbor4ii::serde::from_slice::<Value>(&vector).unwrap(),
             Value::Array(_)
         ));
     }
@@ -248,22 +250,43 @@ mod tests {
     #[test]
     fn rejects_non_string_map_keys() {
         let value = BTreeMap::from([(1_i64, "value")]);
-        let error = Value::serialized(&value).unwrap();
-        assert_eq!(validate(&error), Err(Error::IncompatibleMapKey));
+        let bytes = cbor4ii::serde::to_vec(Vec::new(), &value).unwrap();
+        let value: Value = cbor4ii::serde::from_slice(&bytes).unwrap();
+        assert_eq!(validate(&value), Err(Error::IncompatibleMapKey));
     }
 
     #[test]
     fn rejects_out_of_range_integer() {
-        assert_eq!(encode(&u128::MAX).unwrap_err(), Error::IntegerOutOfRange);
+        // Exceeds i64 but still fits the i128 that cbor4ii's `Value::Integer`
+        // holds, so it round-trips into a value `validate` can range-check.
+        assert_eq!(encode(&i128::MAX).unwrap_err(), Error::IntegerOutOfRange);
+    }
+
+    #[test]
+    fn rejects_integer_too_large_for_any_supported_representation() {
+        // Exceeds even i128 (cbor4ii encodes it as a CBOR bignum, tag 2, per
+        // RFC 8949), so it fails while parsing into `Value` rather than during
+        // `validate`. Still rejected, just via a different `Error` variant.
+        assert!(encode(&u128::MAX).is_err());
     }
 
     #[test]
     fn rejects_cbor_tags() {
-        let mut bytes = Vec::new();
-        ciborium::into_writer(&Value::Tag(1, Box::new(Value::Null)), &mut bytes).unwrap();
-        assert_eq!(
+        use cbor4ii::core::enc::Encode;
+        use cbor4ii::core::utils::BufWriter;
+
+        // Tag 1 (epoch datetime) is not one of the bignum tags cbor4ii's
+        // `Value` decoder special-cases, so it fails to parse into a `Value`
+        // at all rather than surfacing as a literal `Value::Tag`.
+        let mut writer = BufWriter::new(Vec::new());
+        Value::Tag(1, Box::new(Value::Null))
+            .encode(&mut writer)
+            .unwrap();
+        let bytes = writer.into_inner();
+
+        assert!(matches!(
             decode::<()>(&bytes).unwrap_err(),
-            Error::UnsupportedWireShape("CBOR tags")
-        );
+            Error::MalformedCbor(_)
+        ));
     }
 }

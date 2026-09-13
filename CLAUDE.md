@@ -116,12 +116,32 @@ commands still work.
 native wrappers). This deliberately prevents an unrelated Serde type from
 silently becoming part of a plugin ABI.
 
-`encode`/`decode` route everything through `ciborium::Value` and a `validate`
-pass that enforces Typst's reliable CBOR subset: integers must fit `i64`, map
-keys must be strings, and **all CBOR tags are rejected** (bignum tags 2/3 map to
-`IntegerOutOfRange`, everything else to `UnsupportedWireShape`). `Bytes`
-serializes as a CBOR byte string (→ Typst `bytes`) while `Vec<u8>` stays an
-array.
+`encode`/`decode` (`wire.rs`) route everything through `cbor4ii::core::Value`
+(the `serde1` feature) and a `validate` pass that enforces Typst's reliable
+CBOR subset: integers must fit `i64` and map keys must be strings. CBOR tags
+are never observed as a literal `Value::Tag` in practice: cbor4ii's `Value`
+decoder silently collapses the bignum tags (2/3) into `Value::Integer` when
+they fit `i128` (still caught by `validate`'s ordinary integer range check,
+surfacing as `IntegerOutOfRange`) and hard-errors before producing a `Value` at
+all for anything else — an out-of-`i128` bignum or any non-bignum tag — which
+`encode`/`decode` surface as `MalformedCbor` rather than
+`UnsupportedWireShape`. The `Value::Tag` match arms in `validate` are therefore
+dead code today, kept only because the enum is `#[non_exhaustive]` and as a
+safety net if that decoding behavior ever changes. `Bytes` serializes as a CBOR
+byte string (→ Typst `bytes`) while `Vec<u8>` stays an array.
+
+cbor4ii's *typed* decode (what a derived `Deserialize` uses for concrete
+fields, e.g. `deserialize_f64`) is strict about wire width — it rejects a CBOR
+float encoded with fewer than 8 bytes even when the target is `f64`, so
+Typst's canonical (narrowest-exact-width) float encoding fails a raw
+`from_slice::<T>`. `decode` works around this by decoding into `Value` first
+(whose deserialization is width-tolerant) and going through
+`value_to_owned`, which re-serializes that `Value` — cbor4ii always writes
+floats at full width — before the final typed decode. This costs a second
+parse pass but is necessary for correctness, not just validation; see
+`wire.rs`'s doc comment on `decode`. The crate needs the `half-f16` feature
+for the same reason: without it, cbor4ii's `Value` decoder cannot even parse
+an incoming half-precision float at all.
 
 ### Native Typst value representation
 
@@ -151,7 +171,7 @@ Adding or renaming a native type means editing both sides plus the tag lists in
 ### `Any` and `OneOfN`
 
 - `Any` (`any.rs`) is a hand-written Serde enum for dynamic values. Its
-  `Deserialize` goes through `ciborium::Value` and **tries the native tag
+  `Deserialize` goes through `cbor4ii::core::Value` and **tries the native tag
   before falling back to a plain dictionary**, so a `Length` inside an `Any`
   round-trips as `Any::Length`, not `Any::Dictionary`.
 - `OneOf2`..`OneOf8` (`one_of.rs`, macro-generated) are `#[serde(untagged)]`

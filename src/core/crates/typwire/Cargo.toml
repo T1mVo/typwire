@@ -15,7 +15,7 @@ exclude = ["example", "test", "scripts", "src-typst"]
 [dependencies]
 typwire-macros.workspace = true
 
-ciborium.workspace = true
+cbor4ii.workspace = true
 serde.workspace = true
 thiserror.workspace = true
 wasm-minimal-protocol.workspace = true
