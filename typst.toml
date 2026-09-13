@@ -9,3 +9,6 @@ repository = "https://github.com/T1mVo/typwire"
 keywords = ["typing", "wasm", "plugin"]
 categories = ["utility", "integration"]
 compiler = "0.15.0"
+
+[tool.tytanic]
+tests = "tests"

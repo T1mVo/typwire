@@ -22,20 +22,39 @@ pub fn derive_typwire(input: TokenStream) -> TokenStream {
     }
 }
 
+/// Turn a `fn(A, B, ..) -> Result<T, E>` into a Typst plugin function.
+///
+/// Options:
+/// - `rename = "wire-name"` — export under `wire-name` instead of the Rust
+///   function name. The name need not be a valid identifier; reach a
+///   non-identifier export from Typst via `dictionary(plugin).at("wire-name")`.
 #[proc_macro_attribute]
 pub fn export(arguments: TokenStream, input: TokenStream) -> TokenStream {
+    let mut rename = None;
     if !arguments.is_empty() {
-        return syn::Error::new(
-            Span::call_site(),
-            "`#[typwire::export]` does not accept arguments",
-        )
-        .into_compile_error()
-        .into();
+        let parser = syn::meta::parser(|meta| {
+            if meta.path.is_ident("rename") {
+                let value: syn::LitStr = meta.value()?.parse()?;
+                if value.value().is_empty() {
+                    return Err(meta.error("`rename` must not be empty"));
+                }
+                rename = Some(value);
+                Ok(())
+            } else {
+                Err(meta.error(
+                    "unknown option; `#[typwire::export]` only accepts `rename = \"...\"`",
+                ))
+            }
+        });
+
+        if let Err(error) = syn::parse::Parser::parse(parser, arguments) {
+            return error.into_compile_error().into();
+        }
     }
 
     let function = parse_macro_input!(input as ItemFn);
 
-    match expand_export(function) {
+    match expand_export(function, rename) {
         Ok(tokens) => tokens.into(),
         Err(error) => error.into_compile_error().into(),
     }
@@ -60,7 +79,10 @@ fn expand_derive(input: syn::DeriveInput) -> syn::Result<TokenStream2> {
     })
 }
 
-fn expand_export(mut implementation: ItemFn) -> syn::Result<TokenStream2> {
+fn expand_export(
+    mut implementation: ItemFn,
+    rename: Option<syn::LitStr>,
+) -> syn::Result<TokenStream2> {
     let typwire = typwire_path()?;
     let arguments = validate_signature(&implementation.sig)?;
 
@@ -85,50 +107,149 @@ fn expand_export(mut implementation: ItemFn) -> syn::Result<TokenStream2> {
     implementation.vis = syn::Visibility::Inherited;
     implementation.sig.ident = implementation_name.clone();
 
-    let wrapper_arguments = arguments.iter().map(|argument| {
-        let attributes = &argument.attributes;
-        let name = &argument.name;
-        quote! {
-            #(#attributes)* #name: &[u8]
+    let wrapper_arguments: Vec<_> = arguments
+        .iter()
+        .map(|argument| {
+            let attributes = &argument.attributes;
+            let name = &argument.name;
+            quote! {
+                #(#attributes)* #name: &[u8]
+            }
+        })
+        .collect();
+    let decoders: Vec<_> = arguments
+        .iter()
+        .map(|argument| {
+            let attributes = &argument.attributes;
+            let name = &argument.name;
+            let argument_type = &argument.argument_type;
+            let argument_name = syn::LitStr::new(&name.to_string(), name.span());
+            quote! {
+                #(#attributes)*
+                let #name: #argument_type = #typwire::__private::decode_argument::<#argument_type>(
+                    #name,
+                    #function_name_literal,
+                    #argument_name,
+                )?;
+            }
+        })
+        .collect();
+    let call_arguments: Vec<_> = arguments
+        .iter()
+        .map(|argument| {
+            let attributes = &argument.attributes;
+            let name = &argument.name;
+            quote! {
+                #(#attributes)* #name
+            }
+        })
+        .collect();
+
+    // Shared body: decode every argument, call the hidden implementation, encode
+    // the result. Returns `Result<Vec<u8>, String>` either way.
+    let body = quote! {
+        #(#decoders)*
+
+        let value = #implementation_name(#(#call_arguments),*)
+            .map_err(#typwire::__private::display_error)?;
+
+        #typwire::__private::encode_result(&value, #function_name_literal)
+    };
+
+    let wire = match &rename {
+        // Default: let `wasm-minimal-protocol` name and export the wrapper after
+        // the Rust function.
+        None => quote! {
+            #(#authored_attributes)*
+            #[#typwire::__private::wasm_func]
+            #visibility fn #function_name(
+                #(#wrapper_arguments),*
+            ) -> ::core::result::Result<::std::vec::Vec<u8>, ::std::string::String> {
+                #body
+            }
+        },
+        // `rename = "..."`: `#[wasm_func]` always exports under the wrapper's
+        // identifier, and the requested name need not be a valid identifier
+        // (kebab-case is the Typst norm), so emit the plugin-protocol glue
+        // directly with an explicit `export_name`. The only external contract
+        // used here is the Typst-defined `typst_env` import module, which
+        // `initiate_protocol!()` also relies on.
+        Some(export_name) => {
+            let wire_name = format_ident!("{implementation_name}_wire");
+            let length_parameters = arguments.iter().map(|argument| {
+                let attributes = &argument.attributes;
+                let length = format_ident!("__typwire_len_{}", argument.name);
+                quote! { #(#attributes)* #length: usize }
+            });
+            let length_terms = arguments.iter().map(|argument| {
+                let attributes = &argument.attributes;
+                let length = format_ident!("__typwire_len_{}", argument.name);
+                quote! { #(#attributes)* { __typwire_total += #length; } }
+            });
+            let split_bindings = arguments.iter().map(|argument| {
+                let attributes = &argument.attributes;
+                let name = &argument.name;
+                let length = format_ident!("__typwire_len_{}", argument.name);
+                quote! {
+                    #(#attributes)*
+                    let #name: &[u8] = {
+                        let __typwire_start = __typwire_offset;
+                        __typwire_offset += #length;
+                        &__typwire_buffer[__typwire_start..__typwire_offset]
+                    };
+                }
+            });
+
+            quote! {
+                #(#authored_attributes)*
+                #[unsafe(export_name = #export_name)]
+                #[allow(unused_mut, unused_variables, unused_assignments)]
+                extern "C" fn #wire_name(#(#length_parameters),*) -> i32 {
+                    #[link(wasm_import_module = "typst_env")]
+                    unsafe extern "C" {
+                        #[link_name = "wasm_minimal_protocol_write_args_to_buffer"]
+                        fn __typwire_write_args(pointer: *mut u8);
+                        #[link_name = "wasm_minimal_protocol_send_result_to_host"]
+                        fn __typwire_send_result(pointer: *const u8, length: usize);
+                    }
+
+                    fn __typwire_dispatch(
+                        #(#wrapper_arguments),*
+                    ) -> ::core::result::Result<::std::vec::Vec<u8>, ::std::string::String> {
+                        #body
+                    }
+
+                    let mut __typwire_total: usize = 0;
+                    #(#length_terms)*
+                    let mut __typwire_buffer = ::std::vec![0u8; __typwire_total];
+                    if __typwire_total != 0 {
+                        unsafe { __typwire_write_args(__typwire_buffer.as_mut_ptr()); }
+                    }
+
+                    let mut __typwire_offset: usize = 0;
+                    #(#split_bindings)*
+
+                    let (__typwire_message, __typwire_code): (::std::vec::Vec<u8>, i32) =
+                        match __typwire_dispatch(#(#call_arguments),*) {
+                            ::core::result::Result::Ok(bytes) => (bytes, 0),
+                            ::core::result::Result::Err(error) => (error.into_bytes(), 1),
+                        };
+                    unsafe {
+                        __typwire_send_result(
+                            __typwire_message.as_ptr(),
+                            __typwire_message.len(),
+                        );
+                    }
+                    __typwire_code
+                }
+            }
         }
-    });
-    let decoders = arguments.iter().map(|argument| {
-        let attributes = &argument.attributes;
-        let name = &argument.name;
-        let argument_type = &argument.argument_type;
-        let argument_name = syn::LitStr::new(&name.to_string(), name.span());
-        quote! {
-            #(#attributes)*
-            let #name: #argument_type = #typwire::__private::decode_argument::<#argument_type>(
-                #name,
-                #function_name_literal,
-                #argument_name,
-            )?;
-        }
-    });
-    let call_arguments = arguments.iter().map(|argument| {
-        let attributes = &argument.attributes;
-        let name = &argument.name;
-        quote! {
-            #(#attributes)* #name
-        }
-    });
+    };
 
     Ok(quote! {
         #implementation
 
-        #(#authored_attributes)*
-        #[#typwire::__private::wasm_func]
-        #visibility fn #function_name(
-            #(#wrapper_arguments),*
-        ) -> ::core::result::Result<::std::vec::Vec<u8>, ::std::string::String> {
-            #(#decoders)*
-
-            let value = #implementation_name(#(#call_arguments),*)
-                .map_err(#typwire::__private::display_error)?;
-
-            #typwire::__private::encode_result(&value, #function_name_literal)
-        }
+        #wire
     })
 }
 

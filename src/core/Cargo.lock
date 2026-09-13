@@ -231,6 +231,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "typwire-tests-plugin"
+version = "0.2.0"
+dependencies = [
+ "serde",
+ "typwire",
+]
+
+[[package]]
 name = "unicode-ident"
 version = "1.0.22"
 source = "registry+https://github.com/rust-lang/crates.io-index"

@@ -25,7 +25,7 @@
 /// - value (dictionary): A dictionary representing the `encode`d value.
 /// -> type
 #let decode(value) = {
-  if debug-assert {
+  if is-debug-assert {
     assert(
       value.typwire-type == type-name,
       message: "type.decode: value must be a tagged with type "

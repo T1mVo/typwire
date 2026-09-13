@@ -1,0 +1,16 @@
+[package]
+name = "typwire-tests-plugin"
+version = "0.2.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+# Wasm plugin that backs the Typst roundtrip suite in `<repo>/tests`. One
+# `#[typwire::export]` function per test, each defined in that test's own
+# `plugin.rs` and pulled into `src/lib.rs` with `include!`.
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+typwire = { path = "../typwire" }
+serde = { workspace = true }

@@ -1,5 +1,10 @@
 [workspace]
 members = ["crates/*"]
+# `typwire-tests-plugin` is a wasm-only cdylib; it cannot link for the host
+# target, so keep it out of the default set built by a bare `cargo build`/`cargo
+# test`. Build it explicitly with `-p typwire-tests-plugin --target
+# wasm32-unknown-unknown` (see `scripts/test.py`).
+default-members = ["crates/typwire", "crates/typwire-macros"]
 resolver = "2"
 
 [workspace.dependencies]
