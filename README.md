@@ -78,6 +78,11 @@ Call it from Typst with separately encoded positional arguments:
 implements `Display`. Decode errors identify the function and argument. Rust
 errors and result-encoding errors are surfaced by Typst as plugin panics.
 
+By default the wasm export takes the Rust function's name. Pass
+`#[typwire::export(rename = "other-name")]` to choose a different one; the name
+need not be a valid Rust identifier. A non-identifier export is reached from
+Typst through `dictionary(plugin).at("other-name")`.
+
 ## Wire contract
 
 Serde determines representation, but it does not automatically grant wire

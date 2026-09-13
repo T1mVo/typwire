@@ -1,8 +1,10 @@
+#let type-name = "duration"
+
 #let new(seconds) = {
   assert(type(seconds) == std.float, message: "duration.new: seconds must be of type float")
-  
+
   (
-    "typwire-type": "duration",
+    "typwire-type": type-name,
     "seconds": seconds,
   )
 }
