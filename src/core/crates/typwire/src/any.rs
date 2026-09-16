@@ -106,7 +106,7 @@ fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
             | "color-cmyk" | "color-hsl" | "color-hsv" => value_to_owned(value).map(Any::Color),
             "gradient-linear" | "gradient-radial" | "gradient-conic" => {
                 value_to_owned(value).map(Any::Gradient)
-            }
+            },
             "datetime" => value_to_owned(value).map(Any::DateTime),
             "duration" => value_to_owned(value).map(Any::Duration),
             "version" => value_to_owned(value).map(Any::Version),

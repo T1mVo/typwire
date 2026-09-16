@@ -92,8 +92,8 @@ silently becoming part of a plugin ABI.
 
 Supported Rust values include:
 
-- booleans, signed and range-checked unsigned integers, floats, `char`, `String`,
-  and unit
+- booleans, `i64`, `f64`, `char`, `String`, and unit — matching Typst's own
+  integer and float types; no other Rust integer or float width is `Typwire`
 - `Option`, owned sequences, arrays, tuples, boxes, sets, and string-keyed
   `HashMap`/`BTreeMap`
 - `Bytes` for a Typst byte string; `Vec<u8>` remains an ordinary array
