@@ -162,19 +162,11 @@ impl_typwire!(
     (),
     bool,
     char,
-    i8,
-    i16,
-    i32,
     i64,
-    i128,
-    isize,
+    // Not a Typst-native number type; kept only so `Vec<u8>` (via the blanket
+    // `Typwire for Vec<T>` impl below) can represent a plain byte array,
+    // distinct from `Bytes`.
     u8,
-    u16,
-    u32,
-    u64,
-    u128,
-    usize,
-    f32,
     f64,
     String,
     Bytes
@@ -257,9 +249,12 @@ mod tests {
 
     #[test]
     fn rejects_out_of_range_integer() {
-        // Exceeds i64 but still fits the i128 that cbor4ii's `Value::Integer`
-        // holds, so it round-trips into a value `validate` can range-check.
-        assert_eq!(encode(&i128::MAX).unwrap_err(), Error::IntegerOutOfRange);
+        // `u64` and `i128` aren't `Typwire` (Typst only has `i64`/`f64`), so
+        // this goes through cbor4ii's serializer directly rather than the
+        // public `encode`. Still a plain (non-bignum) CBOR unsigned integer,
+        // so it decodes into a `Value` that `validate` range-checks.
+        let bytes = cbor4ii::serde::to_vec(Vec::new(), &(i64::MAX as u64 + 1)).unwrap();
+        assert_eq!(decode::<i64>(&bytes).unwrap_err(), Error::IntegerOutOfRange);
     }
 
     #[test]
@@ -267,7 +262,8 @@ mod tests {
         // Exceeds even i128 (cbor4ii encodes it as a CBOR bignum, tag 2, per
         // RFC 8949), so it fails while parsing into `Value` rather than during
         // `validate`. Still rejected, just via a different `Error` variant.
-        assert!(encode(&u128::MAX).is_err());
+        let bytes = cbor4ii::serde::to_vec(Vec::new(), &u128::MAX).unwrap();
+        assert!(decode::<i64>(&bytes).is_err());
     }
 
     #[test]
