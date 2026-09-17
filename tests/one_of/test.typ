@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 // `OneOf3<i64, f64, String>` — variants tried in declaration order.
 #check(plugin.roundtrip_one_of, 42)

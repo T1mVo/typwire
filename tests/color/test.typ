@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 #check(plugin.roundtrip_color, luma(40%))
 #check(plugin.roundtrip_color, rgb("#1b1f8a"))

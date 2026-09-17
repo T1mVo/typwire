@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 #check(plugin.roundtrip_duration, duration(hours: 2))
 #check(plugin.roundtrip_duration, duration(days: 1, minutes: 30))

@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 #check(plugin.roundtrip_version, version(1, 2, 3))
 #check(plugin.roundtrip_version, version(0, 15, 0))

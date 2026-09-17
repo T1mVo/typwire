@@ -27,7 +27,7 @@ The real test suite is the **Typst roundtrip suite** under `tests/`, run with
 [Tytanic](https://typst-community.github.io/tytanic/) (`tt`). Each
 `tests/<type>/` directory is a `compile-only` test with two files:
 
-- `test.typ` — imports `/tests/roundtrip.typ` (shared `check` helper + the
+- `test.typ` — imports `../common.typ` (shared `check` helper + the
   `plugin(...)` handle) and asserts that Typst values survive a
   Typst→Rust→Typst round trip via `typwire.call`.
 - `plugin.rs` — usually one `#[typwire::export] fn roundtrip_<type>(v: T) ->
