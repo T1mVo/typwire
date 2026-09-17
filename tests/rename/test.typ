@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin, typwire
+#import "../common.typ": check, plugin, typwire
 
 // Functions renamed via `#[typwire::export(rename = "...")]`. Non-identifier
 // export names are reachable from Typst through `dictionary(plugin)`.

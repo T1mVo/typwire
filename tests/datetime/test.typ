@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 #check(plugin.roundtrip_datetime, datetime(year: 2026, month: 8, day: 25))
 #check(plugin.roundtrip_datetime, datetime(hour: 13, minute: 5, second: 0))

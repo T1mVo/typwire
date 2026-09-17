@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 // Primitives.
 #check(plugin.roundtrip_any, none)

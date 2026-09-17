@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 #check(plugin.roundtrip_ratio, 25%)
 #check(plugin.roundtrip_ratio, 140%)

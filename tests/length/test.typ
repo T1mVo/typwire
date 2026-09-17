@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 #check(plugin.roundtrip_length, 12pt)
 #check(plugin.roundtrip_length, 2.5cm)

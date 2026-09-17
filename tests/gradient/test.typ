@@ -1,4 +1,4 @@
-#import "/tests/roundtrip.typ": check, plugin
+#import "../common.typ": check, plugin
 
 #check(plugin.roundtrip_gradient, gradient.linear(red, blue))
 #check(plugin.roundtrip_gradient, gradient.linear(red, green, blue, angle: 45deg))
