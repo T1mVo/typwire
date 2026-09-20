@@ -1,6 +1,6 @@
-#import "../common.typ": check, plugin
+#import "../common.typ": roundtrip, plugin
 
-#check(plugin.roundtrip_angle, 90deg)
-#check(plugin.roundtrip_angle, -45deg)
-#check(plugin.roundtrip_angle, 0deg)
-#check(plugin.roundtrip_angle, 3.5rad)
+#roundtrip(plugin.roundtrip_angle, 90deg)
+#roundtrip(plugin.roundtrip_angle, -45deg)
+#roundtrip(plugin.roundtrip_angle, 0deg)
+#roundtrip(plugin.roundtrip_angle, 3.5rad)

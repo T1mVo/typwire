@@ -41,7 +41,8 @@
 #let decode(value) = {
   if is-debug-assert {
     assert(
-      value.typwire-type == type-name, message: "linear.decode: value must be a tagged with type "
+      value.typwire-type == type-name,
+      message: "linear.decode: value must be a tagged with type "
         + type-name
         + ". Found "
         + value.typwire-type,

@@ -212,9 +212,96 @@ impl<'de, D: Deserializer<'de>> Deserializer<'de> for LenientDeserializer<D> {
         self.0.deserialize_enum(name, variants, Wrap(visitor))
     }
 
-    serde::forward_to_deserialize_any! {
-        bool i8 i16 i32 i64 i128 u8 u16 u32 u64 u128 char str string bytes
-        byte_buf unit unit_struct identifier ignored_any
+    // Trivial forwards to cbor4ii's own type-hinted decode for everything
+    // that isn't a float. Deliberately *not* `forward_to_deserialize_any!`:
+    // that macro routes every one of these through `deserialize_any`, which
+    // is wrong for `unit`/`unit_struct` specifically -- cbor4ii's
+    // `deserialize_any` treats a CBOR null as an Option-shaped value (calls
+    // `visit_none`), while the real `deserialize_unit` expects an empty-array
+    // marker and calls `visit_unit`; these are different wire shapes that
+    // happen to share a byte for other formats but not here.
+    fn deserialize_bool<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_bool(visitor)
+    }
+
+    fn deserialize_i8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_i8(visitor)
+    }
+
+    fn deserialize_i16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_i16(visitor)
+    }
+
+    fn deserialize_i32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_i32(visitor)
+    }
+
+    fn deserialize_i64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_i64(visitor)
+    }
+
+    fn deserialize_i128<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_i128(visitor)
+    }
+
+    fn deserialize_u8<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_u8(visitor)
+    }
+
+    fn deserialize_u16<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_u16(visitor)
+    }
+
+    fn deserialize_u32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_u32(visitor)
+    }
+
+    fn deserialize_u64<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_u64(visitor)
+    }
+
+    fn deserialize_u128<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_u128(visitor)
+    }
+
+    fn deserialize_char<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_char(visitor)
+    }
+
+    fn deserialize_str<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_str(visitor)
+    }
+
+    fn deserialize_string<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_string(visitor)
+    }
+
+    fn deserialize_bytes<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_bytes(visitor)
+    }
+
+    fn deserialize_byte_buf<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_byte_buf(visitor)
+    }
+
+    fn deserialize_unit<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_unit(visitor)
+    }
+
+    fn deserialize_unit_struct<V: Visitor<'de>>(
+        self,
+        name: &'static str,
+        visitor: V,
+    ) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_unit_struct(name, visitor)
+    }
+
+    fn deserialize_identifier<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_identifier(visitor)
+    }
+
+    fn deserialize_ignored_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
+        self.0.deserialize_ignored_any(visitor)
     }
 }
 
@@ -540,5 +627,28 @@ mod tests {
         ));
         let bytes = encode(&black).unwrap();
         assert_eq!(decode::<crate::Color>(&bytes).unwrap(), black);
+    }
+
+    #[test]
+    fn unit_round_trips() {
+        // Regression test for a real bug caught while adding coverage: an
+        // earlier version of `LenientDeserializer` routed `unit`/
+        // `unit_struct` through `deserialize_any` (via
+        // `forward_to_deserialize_any!`), but cbor4ii's `deserialize_any`
+        // treats a CBOR null as Option-shaped (calls `visit_none`), while
+        // `()`'s real wire shape is a zero-length array and needs the
+        // strict `deserialize_unit` (calls `visit_unit`). Routing through
+        // `deserialize_any` made every `()` decode fail with "invalid type:
+        // Option value, expected unit".
+        let bytes = encode(&()).unwrap();
+        assert_eq!(decode::<()>(&bytes).unwrap(), ());
+    }
+
+    #[test]
+    fn unit_is_not_the_same_wire_shape_as_a_cbor_null() {
+        // `()` is a zero-length array, not `none`'s CBOR null -- pinning
+        // down the distinction the previous test's regression was about.
+        let bytes = cbor4ii::serde::to_vec(Vec::new(), &Option::<i64>::None).unwrap();
+        assert!(decode::<()>(&bytes).is_err());
     }
 }

@@ -13,7 +13,7 @@
 /// Accepts either native equality or matching `repr`, because some Typst values
 /// (gradients, some colors) do not compare structurally, and dictionaries
 /// re-serialized from Rust come back with sorted keys.
-#let check(func, value) = {
+#let roundtrip(func, value) = {
   let got = typwire.call(func, value)
   assert(
     got == value or repr(got) == repr(value),
