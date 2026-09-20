@@ -1,1 +1,2 @@
-#import "cbor.typ": encode, decode
+#import "decode.typ": decode
+#import "encode.typ": encode
