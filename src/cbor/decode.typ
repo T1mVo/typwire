@@ -1,12 +1,12 @@
-#import "angle.typ"
-#import "color/color.typ"
-#import "datetime.typ"
-#import "duration.typ"
-#import "gradient/gradient.typ"
-#import "length.typ"
-#import "ratio.typ"
-#import "type.typ"
-#import "version.typ"
+#import "types/angle.typ"
+#import "types/color/color.typ"
+#import "types/datetime.typ"
+#import "types/duration.typ"
+#import "types/gradient/gradient.typ"
+#import "types/length.typ"
+#import "types/ratio.typ"
+#import "types/type.typ"
+#import "types/version.typ"
 
 #let decode-tagged(tag, value) = {
   if tag == angle.type-name {

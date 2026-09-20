@@ -167,8 +167,10 @@ This tag scheme is implemented **twice and must agree**:
 - Rust: each `src/core/crates/typwire/src/<type>.rs` defines a private
   `…Cbor` shadow struct with `#[serde(try_from = "…Cbor", into = "…Cbor")]` on
   the public type. `const TYPE_NAME` is the tag; `TryFrom` verifies it.
-- Typst: each `src/cbor/<type>.typ` exposes `type-name`, `encode`, `decode`.
-  `src/cbor/cbor.typ::encode-inner` dispatches on `std.type(...)` when
+- Typst: each `src/cbor/types/<type>.typ` exposes `type-name`, `encode`,
+  `decode` (`Center` and `Stop` live under `src/cbor/types/gradient/`, since
+  they're only ever nested inside a gradient, never a standalone Typst value).
+  `src/cbor/encode.typ::encode-inner` dispatches on `std.type(...)` when
   serializing; `src/cbor/decode.typ::decode-tagged` dispatches on the
   `typwire-type` string when deserializing. Color/gradient use a
   `common-type-name` prefix match. Note `decode-tagged` evaluates

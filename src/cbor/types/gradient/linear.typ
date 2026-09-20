@@ -1,6 +1,6 @@
-#import "../utils.typ": is-debug-assert
+#import "../../utils.typ": is-debug-assert
 #import "../color/color.typ"
-#import "../stop.typ"
+#import "stop.typ"
 
 #let type-name = "gradient-linear"
 

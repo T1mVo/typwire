@@ -1,4 +1,4 @@
-#import "utils.typ": float-to-length, is-debug-assert
+#import "../utils.typ": float-to-length, is-debug-assert
 
 #let type-name = "length"
 

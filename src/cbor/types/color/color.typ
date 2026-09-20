@@ -6,7 +6,7 @@
 #import "cmyk.typ"
 #import "hsl.typ"
 #import "hsv.typ"
-#import "../utils.typ": is-debug-assert
+#import "../../utils.typ": is-debug-assert
 
 #let common-type-name = "color-"
 
