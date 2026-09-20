@@ -1,12 +1,12 @@
-#import "../common.typ": check, plugin, typwire
+#import "../common.typ": roundtrip, plugin, typwire
 
 // Functions renamed via `#[typwire::export(rename = "...")]`. Non-identifier
 // export names are reachable from Typst through `dictionary(plugin)`.
 #let exports = dictionary(plugin)
 
 // 1 argument.
-#check(exports.at("round-trip"), 12pt)
-#check(exports.at("round-trip"), -3in)
+#roundtrip(exports.at("round-trip"), 12pt)
+#roundtrip(exports.at("round-trip"), -3in)
 
 // 0 arguments.
 #assert.eq(typwire.call(exports.at("rename-nullary")), 7)

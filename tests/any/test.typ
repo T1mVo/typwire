@@ -1,15 +1,15 @@
-#import "../common.typ": check, plugin
+#import "../common.typ": roundtrip, plugin
 
 // Primitives.
-#check(plugin.roundtrip_any, none)
-#check(plugin.roundtrip_any, true)
-#check(plugin.roundtrip_any, 42)
-#check(plugin.roundtrip_any, 3.5)
-#check(plugin.roundtrip_any, "text")
-#check(plugin.roundtrip_any, bytes((1, 2, 3)))
+#roundtrip(plugin.roundtrip_any, none)
+#roundtrip(plugin.roundtrip_any, true)
+#roundtrip(plugin.roundtrip_any, 42)
+#roundtrip(plugin.roundtrip_any, 3.5)
+#roundtrip(plugin.roundtrip_any, "text")
+#roundtrip(plugin.roundtrip_any, bytes((1, 2, 3)))
 
 // Nested containers mixing native Typst values.
-#check(
+#roundtrip(
   plugin.roundtrip_any,
   (
     source: "any",
@@ -19,4 +19,4 @@
     size: 12pt,
   ),
 )
-#check(plugin.roundtrip_any, (1, "two", 3.0, (nested: true)))
+#roundtrip(plugin.roundtrip_any, (1, "two", 3.0, (nested: true)))

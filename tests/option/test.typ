@@ -1,4 +1,4 @@
-#import "../common.typ": check, plugin
+#import "../common.typ": roundtrip, plugin
 
-#check(plugin.roundtrip_option, none)
-#check(plugin.roundtrip_option, 12pt)
+#roundtrip(plugin.roundtrip_option, none)
+#roundtrip(plugin.roundtrip_option, 12pt)

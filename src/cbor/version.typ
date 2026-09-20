@@ -11,7 +11,7 @@
 #let encode(version) = {
   if is-debug-assert {
     assert(
-      std.type(version) == std.version,
+      type(version) == version,
       message: "version.encode: version must be of type version",
     )
   }
@@ -34,10 +34,7 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "version.decode: value must be a tagged with type "
-        + type-name
-        + ". Found "
-        + value.typwire-type,
+      message: "version.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
     )
 
     for (index, field) in (
@@ -49,10 +46,7 @@
     ).enumerate() {
       assert(
         type(value.at(field)) == int,
-        message: "version.decode: value."
-          + field
-          + " must be of type int, Found "
-          + str(type(value.at(field))),
+        message: "version.decode: value." + field + " must be of type int, Found " + str(type(value.at(field))),
       )
     }
   }

@@ -1,5 +1,5 @@
-#import "../common.typ": check, plugin
+#import "../common.typ": roundtrip, plugin
 
-#check(plugin.roundtrip_ratio, 25%)
-#check(plugin.roundtrip_ratio, 140%)
-#check(plugin.roundtrip_ratio, 0%)
+#roundtrip(plugin.roundtrip_ratio, 25%)
+#roundtrip(plugin.roundtrip_ratio, 140%)
+#roundtrip(plugin.roundtrip_ratio, 0%)

@@ -23,7 +23,7 @@
 }
 
 /// Convert a float to a length.
-/// 
+///
 /// - float (float): A float value.
 /// -> length
 #let float-to-length(float) = {
@@ -31,6 +31,6 @@
 }
 
 /// Check if debug assertions are enabled.
-/// 
+///
 /// -> bool
 #let is-debug-assert = sys.inputs.at("debug-assert", default: false) == "true"
