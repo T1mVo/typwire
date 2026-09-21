@@ -2,6 +2,7 @@
 
 // Primitives.
 #roundtrip(plugin.roundtrip_any, none)
+#roundtrip(plugin.roundtrip_any, auto)
 #roundtrip(plugin.roundtrip_any, true)
 #roundtrip(plugin.roundtrip_any, 42)
 #roundtrip(plugin.roundtrip_any, 3.5)

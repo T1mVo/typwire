@@ -94,8 +94,8 @@ Supported Rust values include:
 
 - booleans, `i64`, `f64`, `char`, `String`, and unit — matching Typst's own
   integer and float types; no other Rust integer or float width is `Typwire`
-- `Option`, owned sequences, arrays, tuples, boxes, sets, and string-keyed
-  `HashMap`/`BTreeMap`
+- `Option` for Typst's `none`, `Auto` for Typst's `auto`; owned sequences,
+  arrays, tuples, boxes, sets, and string-keyed `HashMap`/`BTreeMap`
 - `Bytes` for a Typst byte string; `Vec<u8>` remains an ordinary array
 - `Any` for dynamic values and `OneOf2` through `OneOf8` for ordered alternatives
 - Typst angles, lengths, ratios, colors, gradients, datetimes, durations,

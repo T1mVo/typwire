@@ -1,5 +1,6 @@
 pub use angle::Angle;
 pub use any::Any;
+pub use auto::Auto;
 pub use center::Center;
 pub use color::{Cmyk, Color, ColorGradient, Hsl, Hsv, LinearRgb, Luma, Oklab, Oklch, Rgb};
 pub use datetime::{DateTime, DateTimeBuilder};
@@ -7,7 +8,7 @@ pub use duration::{Duration, DurationBuilder};
 pub use gradient::{
     ColorSpace, ConicGradientBuilder, Gradient, LinearGradientBuilder, RadialGradientBuilder,
 };
-pub use length::{Length, LengthRadius};
+pub use length::Length;
 pub use one_of::{OneOf2, OneOf3, OneOf4, OneOf5, OneOf6, OneOf7, OneOf8};
 pub use radius::Radius;
 pub use ratio::Ratio;
@@ -20,6 +21,7 @@ pub use wire::{Bytes, Error, Typwire, decode, encode};
 
 mod angle;
 mod any;
+mod auto;
 mod center;
 pub mod color;
 mod datetime;
@@ -42,6 +44,7 @@ macro_rules! impl_typwire {
 
 impl_typwire!(
     Angle,
+    Auto,
     Center,
     Luma,
     Oklab,
@@ -58,7 +61,6 @@ impl_typwire!(
     Gradient,
     ColorSpace,
     Length,
-    LengthRadius,
     Radius,
     Ratio,
     Stop,

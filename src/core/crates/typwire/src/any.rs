@@ -4,7 +4,7 @@ use cbor4ii::core::Value;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-    Angle, Bytes, Color, DateTime, Duration, Gradient, Length, Ratio, Type, Typwire, Version,
+    Angle, Auto, Bytes, Color, DateTime, Duration, Gradient, Length, Ratio, Type, Typwire, Version,
     wire::{invalid_value, value_to_owned},
 };
 
@@ -12,6 +12,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub enum Any {
     None,
+    Auto,
     Bool(bool),
     Integer(i64),
     Float(f64),
@@ -37,6 +38,7 @@ impl Serialize for Any {
     {
         match self {
             Self::None => serializer.serialize_none(),
+            Self::Auto => Auto.serialize(serializer),
             Self::Bool(value) => value.serialize(serializer),
             Self::Integer(value) => value.serialize(serializer),
             Self::Float(value) => value.serialize(serializer),
@@ -106,7 +108,8 @@ fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
             | "color-cmyk" | "color-hsl" | "color-hsv" => value_to_owned(value).map(Any::Color),
             "gradient-linear" | "gradient-radial" | "gradient-conic" => {
                 value_to_owned(value).map(Any::Gradient)
-            },
+            }
+            "auto" => value_to_owned::<Auto>(value).map(|_| Any::Auto),
             "datetime" => value_to_owned(value).map(Any::DateTime),
             "duration" => value_to_owned(value).map(Any::Duration),
             "version" => value_to_owned(value).map(Any::Version),
@@ -172,6 +175,12 @@ impl From<Vec<Any>> for Any {
 impl From<BTreeMap<String, Any>> for Any {
     fn from(value: BTreeMap<String, Any>) -> Self {
         Self::Dictionary(value)
+    }
+}
+
+impl From<Auto> for Any {
+    fn from(_: Auto) -> Self {
+        Self::Auto
     }
 }
 
