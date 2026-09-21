@@ -85,6 +85,30 @@ alongside `decimal`/`regex` unconditionally — one wasm binary covers every
 format; the feature only makes the code paths exist, each export still
 compiles to its own dedicated wasm function regardless of format.
 
+`tests/stress/{bytes,multi-arg,many-objects}/` are the one group that
+deliberately breaks the "a couple of small values" shape every other test
+uses — each verifies the wire protocol still round-trips correctly under a
+meaningfully large workload, not just a representative one: `bytes` a single
+large `Bytes` payload (kept separate from `multi-arg` since JSON/YAML/TOML's
+tagged-array `Bytes` rewrite — see *Wire formats* — makes a large payload's
+wire *size*, not just its shape, format-sensitive in a way nothing else
+here is), `multi-arg` several independently-heavy arguments in one call (a
+long string, a many-stop gradient, a large array), and `many-objects` a
+large array of small structs (stressing the recursive tree-walk side of
+encode/decode — many calls — rather than the raw byte-count side). Payload
+sizes (tens of thousands of bytes/array elements) were picked empirically by
+timing (`tt run stress/<name>/<format>` against `time`, not guessed), and
+deliberately push the full suite's run time up rather than staying
+negligible — the point of this group is to actually be heavy. `serde-saphyr`/
+`toml` are both meaningfully slower than `cbor4ii`/`serde_json` per element
+at this payload shape (YAML came out ~15–20x slower than CBOR for the same
+element count here), and **debug vs. release wasm is the bigger swing**:
+the full 220-test suite (these 12 plus the other 208, which stay
+millisecond-fast throughout) runs in ~27s under a plain `cargo build`
+(`scripts/test.py`'s default) but ~6s with `scripts/test.py --release` —
+these tests are the reason that gap exists at all, so reach for `--release`
+when iterating near them specifically.
+
 ## Repository layout note (mid-refactor)
 
 Commit `ff6be1127` ("refactor: change repo layout") moved `src-typst/src/` →

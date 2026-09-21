@@ -158,3 +158,13 @@ case!("visualize/color-space");
 case!("visualize/paint");
 case!("visualize/center");
 case!("visualize/stop");
+
+// Stress tests: no matching reference category either (like the mechanism
+// tests above), exercising the wire protocol under a heavy workload rather
+// than a single value shape. `bytes` is its own case, separate from
+// `multi-arg`, because JSON/YAML/TOML's tagged-array `Bytes` rewrite (see
+// *Wire formats* in CLAUDE.md) makes a large byte payload's wire *size*,
+// not just its shape, format-sensitive in a way nothing else here is.
+case!("stress/bytes");
+case!("stress/multi-arg");
+case!("stress/many-objects");
