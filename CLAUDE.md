@@ -158,9 +158,9 @@ reason: without it, cbor4ii can't even parse an incoming half-precision float.
 
 Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Color` and its
 8 spaces, `Gradient` variants, `DateTime`, `Duration`, `Version`, `Type`,
-`Center`, `Radius`, `Stop`) are represented as **tagged dictionaries**: an
-ordinary map carrying a `typwire-type` string field (kebab-case, e.g.
-`"length"`, `"color-oklch"`, `"gradient-linear"`).
+`Center`, `Radius`, `Stop`, `Auto`) are represented as **tagged dictionaries**:
+an ordinary map carrying a `typwire-type` string field (kebab-case, e.g.
+`"length"`, `"color-oklch"`, `"gradient-linear"`, `"auto"`).
 
 This tag scheme is implemented **twice and must agree**:
 
@@ -171,12 +171,20 @@ This tag scheme is implemented **twice and must agree**:
   `decode` (`Center` and `Stop` live under `src/cbor/types/gradient/`, since
   they're only ever nested inside a gradient, never a standalone Typst value).
   `src/cbor/encode.typ::encode-inner` dispatches on `std.type(...)` when
-  serializing; `src/cbor/decode.typ::decode-tagged` dispatches on the
+  serializing — except `Auto`, which has no `std.type` of its own and is
+  matched by direct value equality (`content == auto`) instead, same as how
+  `none` is detected; `src/cbor/decode.typ::decode-tagged` dispatches on the
   `typwire-type` string when deserializing. Color/gradient use a
   `common-type-name` prefix match. Note `decode-tagged` evaluates
   `<module>.type-name` for the modules *before* the matching one, so every
   module in that chain must actually define `type-name` (a missing binding is a
   hard error for unrelated types, not just its own).
+
+`auto` and `none` are both Typst keyword literals, not ordinary identifiers —
+a bare `auto`/`none` always evaluates to that literal, so `types/auto.typ`
+can't be `#import`ed under its own name (that binding would be unreachable,
+shadowed by the keyword in every expression position). It's imported as
+`auto-value` in both `encode.typ` and `decode.typ`.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.

@@ -1,4 +1,8 @@
 #import "types/angle.typ"
+// `auto` is a Typst keyword/literal, not an ordinary identifier -- a bare
+// `auto` always evaluates to that literal, so the module must be imported
+// under a different name to be reachable at all.
+#import "types/auto.typ" as auto-value
 #import "types/color/color.typ"
 #import "types/datetime.typ"
 #import "types/duration.typ"
@@ -11,6 +15,8 @@
 #let decode-tagged(tag, value) = {
   if tag == angle.type-name {
     angle.decode(value)
+  } else if tag == auto-value.type-name {
+    auto-value.decode(value)
   } else if tag == length.type-name {
     length.decode(value)
   } else if tag == ratio.type-name {

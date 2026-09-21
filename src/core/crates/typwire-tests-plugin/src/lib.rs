@@ -10,7 +10,7 @@
 //! ```
 //!
 //! per file, though a case is free to define several when they're closely
-//! related (see `tests/rename/plugin.rs` or `tests/collections/plugin.rs`).
+//! related (see `tests/rename/plugin.rs`).
 //! Every case is pulled in here with `case!`. `#[typwire::export]` expands to
 //! a `#[wasm_func]` wrapper that needs the `initiate_protocol!()` items in
 //! scope, which only holds at the crate root, so the case files are
@@ -43,36 +43,66 @@ macro_rules! case {
     };
 }
 
+// No matching page under https://typst.app/docs/reference/: `Any` and
+// `OneOfN` are typwire-specific dynamic-dispatch mechanisms with no single
+// corresponding Typst type; `rename` exercises the `#[typwire::export]`
+// macro option, not a value type; `Box<T>` is wire-transparent (same shape
+// as `T`); `unit`/`char` have no Typst type of their own either.
+case!("any");
+case!("one-of");
+case!("rename");
+case!("box");
 case!("unit");
 case!("char");
-case!("u8");
-case!("collections");
-case!("angle");
-case!("length");
-case!("length_radius");
-case!("ratio");
-case!("color");
-case!("color_space");
-case!("color_gradient");
-case!("gradient");
-case!("center");
-case!("radius");
-case!("stop");
-case!("struct");
-case!("option");
-case!("any");
-case!("one_of");
-case!("rename");
 
-// `tests/foundations/` mirrors Typst's own `foundations` module category
-// (https://typst.app/docs/reference/foundations/) -- one dir per type name
-// from that list that typwire actually supports.
+// The rest mirror https://typst.app/docs/reference/ category by category:
+// one dir per Typst type name, not per Rust type -- e.g. this is `int`, not
+// `i64`. When more than one Rust type can receive the same Typst type, that
+// dir holds subtests (one per Rust type) instead of a `plugin.rs`/`test.typ`
+// pair directly, as `int`, `array`, and `dictionary` do below.
+
+// https://typst.app/docs/reference/foundations/
+case!("foundations/auto");
 case!("foundations/bool");
 case!("foundations/bytes");
 case!("foundations/datetime");
 case!("foundations/duration");
 case!("foundations/float");
-case!("foundations/int");
+case!("foundations/none");
 case!("foundations/str");
 case!("foundations/type");
 case!("foundations/version");
+
+case!("foundations/int/i64");
+case!("foundations/int/u8");
+
+case!("foundations/array/vec");
+case!("foundations/array/vec-deque");
+case!("foundations/array/linked-list");
+case!("foundations/array/btree-set");
+case!("foundations/array/hash-set");
+case!("foundations/array/fixed-size");
+case!("foundations/array/tuple");
+
+case!("foundations/dictionary/btree-map");
+case!("foundations/dictionary/hash-map");
+case!("foundations/dictionary/struct");
+
+// https://typst.app/docs/reference/layout/
+case!("layout/angle");
+case!("layout/length");
+case!("layout/ratio");
+case!("layout/radius");
+
+// https://typst.app/docs/reference/visualize/
+case!("visualize/color");
+case!("visualize/gradient");
+
+// No dedicated reference page of their own, but grouped here since they only
+// exist in service of the types above: `color-space` is the gradient/color
+// `space` argument, `paint` is the color-or-gradient union used for fills
+// and strokes, `center`/`stop` are gradient-only helper shapes.
+case!("visualize/color-space");
+case!("visualize/paint");
+case!("visualize/center");
+case!("visualize/stop");

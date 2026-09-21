@@ -5,3 +5,5 @@
 #roundtrip(plugin.roundtrip_type, bool)
 #roundtrip(plugin.roundtrip_type, length)
 #roundtrip(plugin.roundtrip_type, dictionary)
+#roundtrip(plugin.roundtrip_type, type(none))
+#roundtrip(plugin.roundtrip_type, type(auto))

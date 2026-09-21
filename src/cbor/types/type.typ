@@ -53,6 +53,8 @@
     bool
   } else if ty == "none" {
     type(none)
+  } else if ty == "auto" {
+    type(auto)
   } else if ty == "array" {
     (1, 2, 3)
   } else if ty == "dictionary" {

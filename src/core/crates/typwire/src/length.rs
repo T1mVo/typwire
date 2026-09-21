@@ -1,7 +1,5 @@
 use serde::{Deserialize, Serialize};
 
-use crate::Radius;
-
 const TYPE_NAME: &str = "length";
 
 /// A structure representing a length in points.
@@ -128,20 +126,4 @@ impl TryFrom<LengthCbor> for Length {
 
         Ok(Length::new(value.points))
     }
-}
-
-#[derive(Serialize, Deserialize, Debug)]
-#[serde(untagged)]
-/// An enum representing either a `Length` or a `Radius`.
-///
-/// # Examples
-///
-/// ```
-/// use typwire::{Length, LengthRadius};
-///
-/// let lr = LengthRadius::Length(Length::new(72.0));
-/// ```
-pub enum LengthRadius {
-    Length(Length),
-    Radius(Radius),
 }
