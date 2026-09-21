@@ -4,15 +4,16 @@ pub use foundations::Decimal;
 #[cfg(feature = "regex")]
 pub use foundations::Regex;
 pub use foundations::{
-    Arguments, Auto, DateTime, DateTimeBuilder, Duration, DurationBuilder, Path, Symbol,
+    Arguments, Auto, DateTime, DateTimeBuilder, Duration, DurationBuilder, Label, Path, Symbol,
     SymbolVariant, Type, Version,
 };
-pub use layout::{Angle, Length, Radius, Ratio};
+pub use layout::{Alignment, Angle, HAlignment, Length, Radius, Ratio, VAlignment};
 pub use one_of::{OneOf2, OneOf3, OneOf4, OneOf5, OneOf6, OneOf7, OneOf8};
 pub use typwire_macros::{Typwire, export};
 pub use visualize::{
-    Center, Cmyk, Color, ColorGradient, ColorSpace, ConicGradientBuilder, Gradient, Hsl, Hsv,
-    LinearGradientBuilder, LinearRgb, Luma, Oklab, Oklch, RadialGradientBuilder, Rgb, Stop, color,
+    Center, Cmyk, Color, ColorGradient, ColorSpace, ConicGradientBuilder, DashLength, DashPattern,
+    Gradient, Hsl, Hsv, LineCap, LineJoin, LinearGradientBuilder, LinearRgb, Luma, Oklab, Oklch,
+    Paint, RadialGradientBuilder, Rgb, Stop, Stroke, color,
 };
 pub use wasm_minimal_protocol::initiate_protocol;
 pub use wire::{Bytes, Error, Typwire, decode, encode};
@@ -31,6 +32,7 @@ macro_rules! impl_typwire {
 }
 
 impl_typwire!(
+    Alignment,
     Angle,
     Arguments,
     Auto,
@@ -45,17 +47,25 @@ impl_typwire!(
     Hsv,
     Color,
     ColorGradient,
+    DashLength,
+    DashPattern,
     DateTime,
     Duration,
     Gradient,
     ColorSpace,
+    HAlignment,
+    Label,
     Length,
+    LineCap,
+    LineJoin,
     Path,
     Radius,
     Ratio,
     Stop,
+    Stroke,
     Symbol,
     Type,
+    VAlignment,
     Version,
 );
 

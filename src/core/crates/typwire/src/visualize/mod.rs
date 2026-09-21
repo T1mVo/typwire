@@ -10,6 +10,7 @@ mod center;
 pub mod color;
 mod gradient;
 mod stop;
+mod stroke;
 
 pub use center::Center;
 pub use color::{Cmyk, Color, ColorGradient, Hsl, Hsv, LinearRgb, Luma, Oklab, Oklch, Rgb};
@@ -17,3 +18,4 @@ pub use gradient::{
     ColorSpace, ConicGradientBuilder, Gradient, LinearGradientBuilder, RadialGradientBuilder,
 };
 pub use stop::Stop;
+pub use stroke::{DashLength, DashPattern, LineCap, LineJoin, Paint, Stroke};

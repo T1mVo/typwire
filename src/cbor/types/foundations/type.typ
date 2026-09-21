@@ -59,6 +59,8 @@
     (1, 2, 3)
   } else if ty == "dictionary" {
     dictionary
+  } else if ty == "alignment" {
+    alignment
   } else if ty == "angle" {
     angle
   } else if ty == "length" {
@@ -69,12 +71,16 @@
     color
   } else if ty == "gradient" {
     gradient
+  } else if ty == "stroke" {
+    stroke
   } else if ty == "datetime" {
     datetime
   } else if ty == "decimal" {
     decimal
   } else if ty == "duration" {
     duration
+  } else if ty == "label" {
+    label
   } else if ty == "version" {
     version
   } else if ty == "type" {
