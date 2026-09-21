@@ -99,7 +99,7 @@ Supported Rust values include:
 - `Bytes` for a Typst byte string; `Vec<u8>` remains an ordinary array
 - `Any` for dynamic values and `OneOf2` through `OneOf8` for ordered alternatives
 - Typst angles, lengths, ratios, colors, gradients, datetimes, durations,
-  versions, type objects, and their helper types
+  versions, type objects, paths, symbols, and their helper types
 
 Typst integers are signed 64-bit values and dictionaries require string keys.
 CBOR tags and values outside Typst's reliable CBOR subset are rejected.

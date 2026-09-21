@@ -4,7 +4,8 @@ use cbor4ii::core::Value;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 use crate::{
-    Angle, Auto, Bytes, Color, DateTime, Duration, Gradient, Length, Ratio, Type, Typwire, Version,
+    Angle, Auto, Bytes, Color, DateTime, Duration, Gradient, Length, Path, Ratio, Symbol, Type,
+    Typwire, Version,
     wire::{invalid_value, value_to_owned},
 };
 
@@ -29,6 +30,8 @@ pub enum Any {
     Duration(Duration),
     Version(Version),
     Type(Type),
+    Path(Path),
+    Symbol(Symbol),
 }
 
 impl Serialize for Any {
@@ -55,6 +58,8 @@ impl Serialize for Any {
             Self::Duration(value) => value.serialize(serializer),
             Self::Version(value) => value.serialize(serializer),
             Self::Type(value) => value.serialize(serializer),
+            Self::Path(value) => value.serialize(serializer),
+            Self::Symbol(value) => value.serialize(serializer),
         }
     }
 }
@@ -114,6 +119,8 @@ fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
             "duration" => value_to_owned(value).map(Any::Duration),
             "version" => value_to_owned(value).map(Any::Version),
             "type" => value_to_owned(value).map(Any::Type),
+            "path" => value_to_owned(value).map(Any::Path),
+            "symbol" => value_to_owned(value).map(Any::Symbol),
             other => Err(format!("unknown typwire-type tag `{other}`")),
         };
     }
@@ -206,6 +213,8 @@ native_conversions!(
     (Duration, Duration),
     (Version, Version),
     (Type, Type),
+    (Path, Path),
+    (Symbol, Symbol),
 );
 
 #[cfg(test)]

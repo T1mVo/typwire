@@ -77,6 +77,10 @@
     version
   } else if ty == "type" {
     type
+  } else if ty == "path" {
+    path
+  } else if ty == "symbol" {
+    symbol
   } else if ty == "content" {
     content
   } else if ty == "function" {

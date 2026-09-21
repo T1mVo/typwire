@@ -8,6 +8,10 @@
 #roundtrip(plugin.roundtrip_any, 3.5)
 #roundtrip(plugin.roundtrip_any, "text")
 #roundtrip(plugin.roundtrip_any, bytes((1, 2, 3)))
+#roundtrip(plugin.roundtrip_any, path("test.typ"))
+// Variant-free, so it survives the round trip exactly; see
+// `tests/foundations/symbol/test.typ` for the lossy variant case.
+#roundtrip(plugin.roundtrip_any, symbol("★"))
 
 // Nested containers mixing native Typst values.
 #roundtrip(

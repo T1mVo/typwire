@@ -158,9 +158,10 @@ reason: without it, cbor4ii can't even parse an incoming half-precision float.
 
 Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Color` and its
 8 spaces, `Gradient` variants, `DateTime`, `Duration`, `Version`, `Type`,
-`Center`, `Radius`, `Stop`, `Auto`) are represented as **tagged dictionaries**:
-an ordinary map carrying a `typwire-type` string field (kebab-case, e.g.
-`"length"`, `"color-oklch"`, `"gradient-linear"`, `"auto"`).
+`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`) are represented as
+**tagged dictionaries**: an ordinary map carrying a `typwire-type` string
+field (kebab-case, e.g. `"length"`, `"color-oklch"`, `"gradient-linear"`,
+`"auto"`, `"path"`, `"symbol"`).
 
 Both sides are organized the same way, by Typst's own reference categories
 (<https://typst.app/docs/reference/>) — `foundations/`, `layout/`,
@@ -199,7 +200,37 @@ a bare `auto`/`none` always evaluates to that literal, so
 `types/foundations/auto.typ` can't be `#import`ed under its own name (that
 binding would be unreachable, shadowed by the keyword in every expression
 position). It's imported as `auto-value` in both `encode.typ` and
-`decode.typ`.
+`decode.typ`. `path` (the type/constructor) is an ordinary stdlib binding
+like `int`/`color`, not a keyword, so `types/foundations/path.typ` imports
+under its own name fine — code that needs the *builtin* despite that local
+shadow (the `std.type(content) == std.path` check in `encode.typ`) uses the
+`std.path` qualified form instead, the same trick already used for `type`
+(`std.type(content) == std.type`, next to the shadowing `type.encode(...)`).
+
+`path` has no built-in conversion to a plain string (`str(path(...))` is a
+type error, and it exposes no accessor) — the only textual form available at
+all is `repr()`, which always renders as the Typst source expression
+`path("...")`. `path.typ::encode` strips that wrapper
+(`repr(value).slice(5, -1)`) and reverses `repr`'s string escaping by hand
+via `unescape-repr-string` (backslash/quote/`\n`/`\t`/`\r`/`\u{...}`,
+confirmed against Typst's actual escape set empirically since it isn't fully
+spelled out in the docs) — deliberately *not* `eval`, since that would
+execute the string as Typst code; this is pure string manipulation instead.
+
+`Symbol` is lossy by necessity, not just by choice: a Typst `symbol` can
+carry a whole table of named modifier variants (e.g. `sym.arrow.r` also
+covers `.double`, `.long`, `.squiggly`, ...), but nothing in that variant
+table is reachable from script — `Symbol`'s `#[scope]` in Typst's own source
+only exposes the constructor, and `str`/`repr`/Typst's own `Serialize` for
+`Symbol` all only ever expose the *currently selected* glyph (confirmed by
+reading `typst-library/src/foundations/symbol.rs` upstream: `variants()`/
+`modifiers()` are plain `impl Symbol` methods, never `#[scope]`d). So
+`symbol.typ::encode` can only ever put that one glyph on the wire; decoding
+reconstructs a variant-less symbol from it, which is `==` to the original
+only when the original had no variants of its own (most of `sym.*` does, so
+most realistic values will *not* round-trip `==`-equal — see
+`tests/foundations/symbol/test.typ` for the asymmetric-assertion test this
+requires, same pattern as `tests/layout/radius/test.typ`'s shorthand cases).
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.
