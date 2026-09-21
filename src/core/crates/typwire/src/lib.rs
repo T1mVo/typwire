@@ -1,4 +1,6 @@
 pub use any::Any;
+#[cfg(feature = "decimal")]
+pub use foundations::Decimal;
 #[cfg(feature = "regex")]
 pub use foundations::Regex;
 pub use foundations::{
@@ -55,6 +57,9 @@ impl_typwire!(
     Type,
     Version,
 );
+
+#[cfg(feature = "decimal")]
+impl Typwire for Decimal {}
 
 #[cfg(feature = "regex")]
 impl Typwire for Regex {}

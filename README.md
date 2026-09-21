@@ -101,10 +101,16 @@ Supported Rust values include:
 - Typst angles, lengths, ratios, colors, gradients, datetimes, durations,
   versions, type objects, paths, symbols, and their helper types
 - `Regex` for a Typst regular expression, backed by a compiled
-  [`regex-lite`](https://docs.rs/regex-lite) pattern behind this crate's
-  optional `regex` feature — without that feature, decoding a `regex` value
-  fails with a clear error instead of silently accepting an unvalidated
-  pattern string
+  [`regex-lite`](https://docs.rs/regex-lite) pattern, behind this crate's
+  optional `regex` feature
+- `Decimal` for a Typst fixed-point decimal number, backed by
+  [`rust_decimal`](https://docs.rs/rust_decimal) — the same crate Typst's
+  own `decimal` type wraps internally — behind this crate's optional
+  `decimal` feature
+
+Both `Regex` and `Decimal` only exist when their feature is enabled: without
+it, referencing the type is a compile error, not a value that builds fine
+and only fails when decoded.
 
 Typst integers are signed 64-bit values and dictionaries require string keys.
 CBOR tags and values outside Typst's reliable CBOR subset are rejected.

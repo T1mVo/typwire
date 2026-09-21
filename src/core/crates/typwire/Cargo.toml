@@ -13,6 +13,11 @@ categories = ["data-structures", "encoding", "wasm"]
 exclude = ["example", "test", "scripts", "src-typst"]
 
 [features]
+# Backs the Typst `decimal` type with a `rust_decimal::Decimal` -- the same
+# crate Typst's own `decimal` type wraps internally. Without it, `Decimal`
+# (and `Any::Decimal`) don't exist at all -- see
+# `src/foundations/decimal.rs`.
+decimal = ["dep:rust_decimal"]
 # Backs the Typst `regex` type with a compiled `regex_lite::Regex`. Without
 # it, `Regex` (and `Any::Regex`) don't exist at all -- see
 # `src/foundations/regex.rs`.
@@ -23,6 +28,7 @@ typwire-macros.workspace = true
 
 cbor4ii.workspace = true
 regex-lite = { workspace = true, optional = true }
+rust_decimal = { workspace = true, optional = true }
 serde.workspace = true
 thiserror.workspace = true
 wasm-minimal-protocol.workspace = true

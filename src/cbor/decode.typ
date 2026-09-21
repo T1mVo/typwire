@@ -7,6 +7,7 @@
 // under a different name to be reachable at all.
 #import "types/foundations/auto.typ" as auto-value
 #import "types/foundations/datetime.typ"
+#import "types/foundations/decimal.typ"
 #import "types/foundations/duration.typ"
 #import "types/foundations/path.typ"
 #import "types/foundations/regex.typ"
@@ -32,6 +33,8 @@
     gradient.decode(tag, value)
   } else if tag == datetime.type-name {
     datetime.decode(value)
+  } else if tag == decimal.type-name {
+    decimal.decode(value)
   } else if tag == duration.type-name {
     duration.decode(value)
   } else if tag == version.type-name {

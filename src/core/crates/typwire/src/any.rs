@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use cbor4ii::core::Value;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+#[cfg(feature = "decimal")]
+use crate::Decimal;
 #[cfg(feature = "regex")]
 use crate::Regex;
 use crate::{
@@ -36,6 +38,8 @@ pub enum Any {
     Symbol(Symbol),
     #[cfg(feature = "regex")]
     Regex(Regex),
+    #[cfg(feature = "decimal")]
+    Decimal(Decimal),
 }
 
 impl Serialize for Any {
@@ -66,6 +70,8 @@ impl Serialize for Any {
             Self::Symbol(value) => value.serialize(serializer),
             #[cfg(feature = "regex")]
             Self::Regex(value) => value.serialize(serializer),
+            #[cfg(feature = "decimal")]
+            Self::Decimal(value) => value.serialize(serializer),
         }
     }
 }
@@ -129,6 +135,8 @@ fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
             "symbol" => value_to_owned(value).map(Any::Symbol),
             #[cfg(feature = "regex")]
             "regex" => value_to_owned(value).map(Any::Regex),
+            #[cfg(feature = "decimal")]
+            "decimal" => value_to_owned(value).map(Any::Decimal),
             other => Err(format!("unknown typwire-type tag `{other}`")),
         };
     }
@@ -229,6 +237,13 @@ native_conversions!(
 impl From<Regex> for Any {
     fn from(value: Regex) -> Self {
         Self::Regex(value)
+    }
+}
+
+#[cfg(feature = "decimal")]
+impl From<Decimal> for Any {
+    fn from(value: Decimal) -> Self {
+        Self::Decimal(value)
     }
 }
 
