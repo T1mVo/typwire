@@ -70,6 +70,7 @@ case!("foundations/duration");
 case!("foundations/float");
 case!("foundations/none");
 case!("foundations/path");
+case!("foundations/regex");
 case!("foundations/str");
 case!("foundations/symbol");
 case!("foundations/type");

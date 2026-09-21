@@ -91,6 +91,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "regex-lite"
+version = "0.1.9"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "cab834c73d247e67f4fae452806d17d3c7501756d98c8808d7c9c7aa7d18f973"
+
+[[package]]
 name = "serde"
 version = "1.0.229"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -197,6 +203,7 @@ name = "typwire"
 version = "0.2.0"
 dependencies = [
  "cbor4ii",
+ "regex-lite",
  "serde",
  "thiserror",
  "typwire-macros",

@@ -87,6 +87,7 @@ cargo test -p typwire            # single crate
 cargo test --doc -p typwire      # doctests only (type modules carry runnable examples)
 cargo test bytes_use_a_byte_string   # single test by name
 cargo build --target wasm32-unknown-unknown   # plugin-target build
+cargo test -p typwire --features regex   # also exercise the regex-lite-backed `Regex` path
 ```
 
 Note: `src/core/Cargo.toml` declares `[workspace.dev-dependencies]` (trybuild),
@@ -158,10 +159,10 @@ reason: without it, cbor4ii can't even parse an incoming half-precision float.
 
 Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Color` and its
 8 spaces, `Gradient` variants, `DateTime`, `Duration`, `Version`, `Type`,
-`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`) are represented as
-**tagged dictionaries**: an ordinary map carrying a `typwire-type` string
+`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`, `Regex`) are represented
+as **tagged dictionaries**: an ordinary map carrying a `typwire-type` string
 field (kebab-case, e.g. `"length"`, `"color-oklch"`, `"gradient-linear"`,
-`"auto"`, `"path"`, `"symbol"`).
+`"auto"`, `"path"`, `"symbol"`, `"regex"`).
 
 Both sides are organized the same way, by Typst's own reference categories
 (<https://typst.app/docs/reference/>) — `foundations/`, `layout/`,
@@ -212,13 +213,26 @@ type error, and it exposes no accessor) — the only textual form available at
 all is `repr()`, which always renders as the Typst source expression
 `path("...")`. `path.typ::encode` strips that wrapper
 (`repr(value).slice(5, -1)`) and reverses `repr`'s string escaping by hand
-via `utils.typ::unescape-repr-string` (backslash/quote/`\n`/`\t`/`\r`/
-`\u{...}`, confirmed against Typst's actual escape set empirically since it
-isn't fully spelled out in the docs) — deliberately *not* `eval`, since that
-would execute the string as Typst code; this is pure string manipulation
-instead. `symbol.typ` needs the same trick (see below) and shares it via
-`utils.typ::unescape-repr-content`, which `unescape-repr-string` itself is a
-thin `.slice(1, -1)` wrapper around.
+via `utils.typ::unescape-repr-string`/`unescape-repr-content` (backslash/
+quote/`\n`/`\t`/`\r`/`\u{...}`, confirmed against Typst's actual escape set
+empirically since it isn't fully spelled out in the docs) — deliberately
+*not* `eval`, since that would execute the string as Typst code; this is
+pure string manipulation instead. `symbol.typ`/`regex.typ` need the same
+trick and share it (`unescape-repr-string` is a thin `.slice(1, -1)` wrapper
+around `unescape-repr-content`).
+
+`unescape-repr-content` has to apply all of `repr`'s escapes in **one**
+regex pass (`escape-pattern`, one alternation, one `.replace()` with a
+dispatching callback), not several independent `.replace()` calls run one
+after another. With independent passes, an escaped backslash immediately
+followed by a literal `n`/`t`/`r`/`"` — e.g. the 4-character string
+`\d\n` (backslash, d, backslash, n), `repr`'d as `\\d\\n` — gets corrupted:
+a later pass's search for `\n` matches across the boundary an earlier pass
+already consumed, turning the trailing literal `n` into an actual newline.
+This was a real bug caught during `regex` support (paths can never contain a
+backslash, so it never surfaced there; regex patterns are full of them) —
+reproduced with the naive multi-pass version, then verified fixed against it
+empirically before landing.
 
 `Symbol` carries a whole table of named modifier variants (e.g.
 `sym.arrow.r` also covers `.double`, `.long`, `.squiggly`, ...), and none of
@@ -246,6 +260,44 @@ round-trip `==`-exact, as long as its variants come back in the same order
 walk the variant list in the same order (equality between two
 `symbol(...)`-built values turned out to be order-sensitive too, confirmed
 empirically). See `tests/foundations/symbol/test.typ` for both cases.
+
+`regex` behaves like `path` for encoding purposes: no `str()` conversion, so
+`regex.typ::encode` recovers the pattern from `repr()`
+(`repr(value).slice(6, -1)`) via the same `unescape-repr-string` helper.
+Unlike `path`, a compiled pattern reliably `==`s another compiled from the
+same string (confirmed empirically), so `regex` round-trips `==`-exact with
+no `symbol`-style caveats.
+
+On the Rust side, `Regex` is feature-gated entirely (`foundations/regex.rs`,
+crate feature `regex`, backed by `regex-lite`, optional dependency) —
+`#![cfg(feature = "regex")]` as the file's first line, so the whole module
+(the type, `Any::Regex`, and every `Typwire`/`From` impl involving it)
+simply doesn't exist without the feature, confirmed by compiling a probe
+that names `typwire::Regex` and getting a real "not found" error pointing at
+the gate, not a runtime failure. There's deliberately no placeholder type
+for the disabled case (an earlier version had one, always erroring on
+decode) — a compile error for code that references `Regex` without the
+feature is a stronger, earlier signal than a value that builds fine and only
+fails when actually decoded. `Any`'s `"regex"` match arm in `from_map` (and
+the `Any::Regex` enum variant and its `Serialize` arm) are individually
+`#[cfg(feature = "regex")]`-gated too, so a `regex`-tagged value reaching
+`Any` without the feature falls through to `Any`'s ordinary "unknown
+typwire-type tag" error instead of a dedicated message — an acceptable
+loss of specificity for not having to maintain a whole parallel
+always-errors implementation.
+
+With the feature, `Regex` follows the same `…Cbor` shadow-struct convention
+as every other native type (`#[serde(try_from = "RegexCbor", into =
+"RegexCbor")]`) even though its real field is a foreign `regex_lite::Regex`
+that isn't itself `Serialize`/`Deserialize` — `try_from`/`into` only need
+*`RegexCbor`* to implement those, not `Regex`, so this works the same way it
+does for every other type here. `TryFrom<RegexCbor>` compiles the pattern
+immediately via `regex_lite::Regex::new`, so a malformed pattern fails at
+decode time rather than producing a value that silently doesn't work as
+advertised, and `Regex` derefs to `regex_lite::Regex` so `is_match`/`find`/
+etc. are directly usable. `typwire-tests-plugin` builds with
+`features = ["regex"]` so the
+Tytanic suite exercises the real thing.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.

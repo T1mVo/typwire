@@ -35,6 +35,25 @@
 /// -> bool
 #let is-debug-assert = sys.inputs.at("debug-assert", default: false) == "true"
 
+// Matches one escape sequence: a backslash followed by either `u{HEX}`
+// (captured) or any single character (the dedicated escapes `n`/`t`/`r`/
+// `"`/`\`, dispatched on in `unescape-repr-content` below).
+//
+// This has to be *one* pattern applied in a *single* `.replace()` pass, not
+// several independent `.replace()` calls one after another: with several
+// passes, an escaped backslash immediately followed by a literal `n`/`t`/
+// `r`/`"` (e.g. the string `\d\n`, four characters -- backslash, d,
+// backslash, n -- repr'd as `\\d\\n`) gets corrupted, because the second
+// pass's `\n` search matches across the boundary the first pass already
+// consumed (turning the trailing literal `n` into an actual newline
+// instead of leaving it alone). A single combined pattern can't do that,
+// since each match consumes the characters it covers and matching resumes
+// only after it -- confirmed by reproducing the corruption with the naive
+// multi-pass version and then verifying this one against it, empirically,
+// since path text can never contain a backslash but regex patterns are
+// full of them.
+#let escape-pattern = regex("\\\\(?:u\\{([0-9a-fA-F]+)\\}|.)")
+
 /// Reverse `repr`'s escaping for the inner content of a quoted string
 /// literal (the text between the quotes, not including them).
 ///
@@ -47,16 +66,26 @@
 /// - content (str): The text between a pair of `repr`-produced quotes.
 /// -> str
 #let unescape-repr-content(content) = {
-  content
-    .replace(
-      regex("\\\\u\\{([0-9a-fA-F]+)\\}"),
-      m => str.from-unicode(int(m.captures.at(0), base: 16)),
-    )
-    .replace("\\n", "\n")
-    .replace("\\t", "\t")
-    .replace("\\r", "\r")
-    .replace("\\\"", "\"")
-    .replace("\\\\", "\\")
+  content.replace(escape-pattern, m => {
+    let hex = m.captures.at(0)
+    if hex != none {
+      str.from-unicode(int(hex, base: 16))
+    } else if m.text == "\\n" {
+      "\n"
+    } else if m.text == "\\t" {
+      "\t"
+    } else if m.text == "\\r" {
+      "\r"
+    } else if m.text == "\\\"" {
+      "\""
+    } else if m.text == "\\\\" {
+      "\\"
+    } else {
+      // Not one of `repr`'s own escapes -- leave it untouched rather than
+      // guess.
+      m.text
+    }
+  })
 }
 
 /// Reverse `repr`'s escaping for a full quoted string literal, e.g.

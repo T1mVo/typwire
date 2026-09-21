@@ -81,6 +81,8 @@
     path
   } else if ty == "symbol" {
     symbol
+  } else if ty == "regex" {
+    regex
   } else if ty == "content" {
     content
   } else if ty == "function" {

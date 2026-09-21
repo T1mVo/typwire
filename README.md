@@ -100,6 +100,11 @@ Supported Rust values include:
 - `Any` for dynamic values and `OneOf2` through `OneOf8` for ordered alternatives
 - Typst angles, lengths, ratios, colors, gradients, datetimes, durations,
   versions, type objects, paths, symbols, and their helper types
+- `Regex` for a Typst regular expression, backed by a compiled
+  [`regex-lite`](https://docs.rs/regex-lite) pattern behind this crate's
+  optional `regex` feature — without that feature, decoding a `regex` value
+  fails with a clear error instead of silently accepting an unvalidated
+  pattern string
 
 Typst integers are signed 64-bit values and dictionaries require string keys.
 CBOR tags and values outside Typst's reliable CBOR subset are rejected.
