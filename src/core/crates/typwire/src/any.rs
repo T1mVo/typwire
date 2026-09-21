@@ -8,8 +8,8 @@ use crate::Decimal;
 #[cfg(feature = "regex")]
 use crate::Regex;
 use crate::{
-    Angle, Arguments, Auto, Bytes, Color, DateTime, Duration, Gradient, Length, Path, Ratio,
-    Symbol, Type, Typwire, Version,
+    Alignment, Angle, Arguments, Auto, Bytes, Color, DateTime, Duration, Gradient, Label, Length,
+    Path, Ratio, Stroke, Symbol, Type, Typwire, Version,
     wire::{invalid_value, value_to_owned},
 };
 
@@ -37,6 +37,9 @@ pub enum Any {
     Path(Path),
     Symbol(Symbol),
     Arguments(Arguments),
+    Label(Label),
+    Alignment(Alignment),
+    Stroke(Stroke),
     #[cfg(feature = "regex")]
     Regex(Regex),
     #[cfg(feature = "decimal")]
@@ -70,6 +73,9 @@ impl Serialize for Any {
             Self::Path(value) => value.serialize(serializer),
             Self::Symbol(value) => value.serialize(serializer),
             Self::Arguments(value) => value.serialize(serializer),
+            Self::Label(value) => value.serialize(serializer),
+            Self::Alignment(value) => value.serialize(serializer),
+            Self::Stroke(value) => value.serialize(serializer),
             #[cfg(feature = "regex")]
             Self::Regex(value) => value.serialize(serializer),
             #[cfg(feature = "decimal")]
@@ -136,6 +142,9 @@ fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
             "path" => value_to_owned(value).map(Any::Path),
             "symbol" => value_to_owned(value).map(Any::Symbol),
             "arguments" => value_to_owned(value).map(Any::Arguments),
+            "label" => value_to_owned(value).map(Any::Label),
+            "alignment" => value_to_owned(value).map(Any::Alignment),
+            "stroke" => value_to_owned(value).map(Any::Stroke),
             #[cfg(feature = "regex")]
             "regex" => value_to_owned(value).map(Any::Regex),
             #[cfg(feature = "decimal")]
@@ -235,6 +244,9 @@ native_conversions!(
     (Path, Path),
     (Symbol, Symbol),
     (Arguments, Arguments),
+    (Label, Label),
+    (Alignment, Alignment),
+    (Stroke, Stroke),
 );
 
 #[cfg(feature = "regex")]

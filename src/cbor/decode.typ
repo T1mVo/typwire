@@ -1,3 +1,4 @@
+#import "types/layout/alignment.typ"
 #import "types/layout/angle.typ"
 #import "types/layout/length.typ"
 #import "types/layout/ratio.typ"
@@ -11,6 +12,7 @@
 #import "types/foundations/datetime.typ"
 #import "types/foundations/decimal.typ"
 #import "types/foundations/duration.typ"
+#import "types/foundations/label.typ"
 #import "types/foundations/path.typ"
 #import "types/foundations/regex.typ"
 #import "types/foundations/symbol.typ"
@@ -19,9 +21,12 @@
 
 #import "types/visualize/color/color.typ"
 #import "types/visualize/gradient/gradient.typ"
+#import "types/visualize/stroke.typ"
 
 #let decode-tagged(tag, value) = {
-  if tag == angle.type-name {
+  if tag == alignment.type-name {
+    alignment.decode(value)
+  } else if tag == angle.type-name {
     angle.decode(value)
   } else if tag == auto-value.type-name {
     auto-value.decode(value)
@@ -33,12 +38,16 @@
     color.decode(tag, value)
   } else if tag.starts-with(gradient.common-type-name) {
     gradient.decode(tag, value)
+  } else if tag == stroke.type-name {
+    stroke.decode(value)
   } else if tag == datetime.type-name {
     datetime.decode(value)
   } else if tag == decimal.type-name {
     decimal.decode(value)
   } else if tag == duration.type-name {
     duration.decode(value)
+  } else if tag == label.type-name {
+    label.decode(value)
   } else if tag == version.type-name {
     version.decode(value)
   } else if tag == type.type-name {

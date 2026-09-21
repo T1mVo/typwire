@@ -13,6 +13,9 @@
 #roundtrip(plugin.roundtrip_any, regex("a.*b"))
 #roundtrip(plugin.roundtrip_any, decimal("3.14"))
 #roundtrip(plugin.roundtrip_any, arguments(1, "two", a: 3))
+#roundtrip(plugin.roundtrip_any, label("intro"))
+#roundtrip(plugin.roundtrip_any, left + top)
+#roundtrip(plugin.roundtrip_any, stroke(paint: red, thickness: 2pt))
 
 // Nested containers mixing native Typst values.
 #roundtrip(

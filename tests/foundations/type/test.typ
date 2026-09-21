@@ -12,3 +12,6 @@
 #roundtrip(plugin.roundtrip_type, type(regex("a")))
 #roundtrip(plugin.roundtrip_type, type(decimal("1")))
 #roundtrip(plugin.roundtrip_type, type(arguments()))
+#roundtrip(plugin.roundtrip_type, type(label("x")))
+#roundtrip(plugin.roundtrip_type, type(left))
+#roundtrip(plugin.roundtrip_type, type(stroke()))

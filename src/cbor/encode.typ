@@ -1,3 +1,4 @@
+#import "types/layout/alignment.typ"
 #import "types/layout/angle.typ"
 #import "types/layout/length.typ"
 #import "types/layout/ratio.typ"
@@ -11,6 +12,7 @@
 #import "types/foundations/datetime.typ"
 #import "types/foundations/decimal.typ"
 #import "types/foundations/duration.typ"
+#import "types/foundations/label.typ"
 #import "types/foundations/path.typ"
 #import "types/foundations/regex.typ"
 #import "types/foundations/symbol.typ"
@@ -19,6 +21,7 @@
 
 #import "types/visualize/color/color.typ"
 #import "types/visualize/gradient/gradient.typ"
+#import "types/visualize/stroke.typ"
 
 #let is-cbor-compatible(content) = {
   (
@@ -48,6 +51,8 @@
     // Typst's own reliable CBOR subset, so it needs a tagged dict like the
     // other native types below, distinguishing it on the wire from `none`.
     result = encode-inner(auto-value.encode())
+  } else if std.type(content) == std.alignment {
+    result = encode-inner(alignment.encode(content))
   } else if std.type(content) == std.angle {
     result = encode-inner(angle.encode(content))
   } else if std.type(content) == std.length {
@@ -58,12 +63,16 @@
     result = encode-inner(color.encode(content))
   } else if std.type(content) == std.gradient {
     result = encode-inner(gradient.encode(content))
+  } else if std.type(content) == std.stroke {
+    result = encode-inner(stroke.encode(content))
   } else if std.type(content) == std.datetime {
     result = encode-inner(datetime.encode(content))
   } else if std.type(content) == std.decimal {
     result = encode-inner(decimal.encode(content))
   } else if std.type(content) == std.duration {
     result = encode-inner(duration.encode(content))
+  } else if std.type(content) == std.label {
+    result = encode-inner(label.encode(content))
   } else if std.type(content) == std.version {
     result = encode-inner(version.encode(content))
   } else if std.type(content) == std.type {

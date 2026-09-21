@@ -157,13 +157,18 @@ reason: without it, cbor4ii can't even parse an incoming half-precision float.
 
 ### Native Typst value representation
 
-Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Color` and its
-8 spaces, `Gradient` variants, `DateTime`, `Duration`, `Version`, `Type`,
-`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`, `Regex`, `Decimal`,
-`Arguments`) are represented as **tagged dictionaries**: an ordinary map
-carrying a `typwire-type` string field (kebab-case, e.g. `"length"`,
-`"color-oklch"`, `"gradient-linear"`, `"auto"`, `"path"`, `"symbol"`,
-`"regex"`, `"decimal"`, `"arguments"`).
+Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Alignment`,
+`Color` and its 8 spaces, `Gradient` variants, `Stroke`, `DateTime`,
+`Duration`, `Version`, `Type`, `Center`, `Stop`, `Auto`, `Path`, `Symbol`,
+`Regex`, `Decimal`, `Arguments`, `Label`) are represented as **tagged
+dictionaries**: an ordinary map carrying a `typwire-type` string field
+(kebab-case, e.g. `"length"`, `"color-oklch"`, `"gradient-linear"`,
+`"alignment"`, `"stroke"`, `"auto"`, `"path"`, `"symbol"`, `"regex"`,
+`"decimal"`, `"arguments"`, `"label"`). `Radius` is the one exception: it has
+no matching Typst runtime type at all (`rect(radius: ...)` just takes a plain
+dictionary of corner keys), so it round-trips as an ordinary untagged dict —
+see the `DashPattern` paragraph below for another type in the same
+situation.
 
 Both sides are organized the same way, by Typst's own reference categories
 (<https://typst.app/docs/reference/>) — `foundations/`, `layout/`,
@@ -349,6 +354,66 @@ value instead, so this doesn't affect round-trip verification. This is also
 the first native type whose Rust representation directly embeds `Any`
 (mutual recursion between the two types is unproblematic — ordinary
 type-level recursion within one crate, not a cyclic dependency).
+
+`label` is the simplest type added so far: like `decimal`, it has a real
+`str()` conversion (documented as the supported way to read a label's name),
+so `label.typ::encode`/`decode` need no `repr()` handling at all —
+`label(str(value))` round-trips `==`-exact for every case tried, including
+names the dedicated `<...>` syntax can't express (spaces, non-ASCII
+characters), since the constructor "accepts any non-empty string" per
+upstream's own doc comment.
+
+`alignment` has no `str()` conversion and no accessor that returns a bare
+string either — `.x`/`.y` give back sub-`alignment` values (or `none`), and
+`repr()` of one is unquoted Typst source (`left`, `top`, `left + top`), not
+a string literal. Rather than parse that text like `path`/`symbol`/`regex`
+do, `alignment.typ` matches each component against Typst's own global
+constants by equality (`value == left`, `value == top`, ...) — there are
+only 5 horizontal and 3 vertical values, all fixed, so an equality chain is
+simpler and more robust than a text-parsing trick, and avoids depending on
+`repr()`'s formatting at all. On the Rust side, `Alignment` (`layout/
+alignment.rs`) mirrors upstream's own `Alignment::H`/`V`/`Both` shape as
+`{ x: Option<HAlignment>, y: Option<VAlignment> }`, with `TryFrom` rejecting
+the invalid all-`None` case at decode time. `HAlignment`/`VAlignment` are
+plain nested enums (serialized as their lowercase name, e.g. `"left"`) —
+like `ColorSpace`, they carry no `typwire-type` tag of their own and so have
+no `Any` variant, only `impl_typwire!` (for standalone export use).
+
+`stroke` turned out to need no `repr()` trick or even a hand-rolled
+encode/decode shape at all: every field, once read off a real `stroke`
+value, is *already* one of the wire's other supported shapes — `paint` is a
+`color`/`gradient` (or `auto`), `thickness` a `length` (or `auto`), `cap`/
+`join` plain strings (`"round"`, `"bevel"`, ...; Typst normalizes its
+enum-like constructor arguments to strings by the time they're readable back
+off the object), and `dash` is `none`, `auto`, or a plain dictionary
+`(array: (...), phase: ...)` whose `array` entries are lengths or the literal
+string `"dot"` — confirmed empirically field-by-field, including that
+`stroke(paint: .., thickness: .., cap: .., join: .., dash: .., miter-limit:
+..)` reconstructed from a stroke's own fields is `==` to the original.
+`stroke.typ::encode` therefore just reads the six fields into a dict and
+`decode` spreads them straight back into the constructor, relying entirely
+on `encode-inner`/`decode-inner`'s existing recursive handling — the same
+"just call the accessors" shape `arguments.typ` uses, taken one step
+further since there's no dedicated per-field logic left to write at all.
+Pattern/tiling paints have no `Typwire` representation (no such type exists
+in this crate yet) and fail the same way any other unsupported value does.
+On the Rust side, `Stroke` (`visualize/stroke.rs`) wires every field through
+`OneOf2<Auto, _>` rather than introducing a dedicated "smart value" wrapper
+type — `OneOf2`/`OneOf3` already exist for exactly this "value or other
+shape" composition (see the README's own example), so a Typst `Smart<T>`
+field just becomes `OneOf2<Auto, T>` here, no new abstraction needed.
+`Paint` is a plain type alias for `OneOf2<Color, Gradient>` (already
+`Typwire` via `OneOf2`'s blanket impl, so it's *not* separately listed in
+`impl_typwire!` — doing so would be a duplicate impl of the same concrete
+type under two names and fail to compile). `LineCap`/`LineJoin` are plain
+nested enums like `HAlignment`/`VAlignment` above. `DashPattern`'s wire
+shape is a plain dictionary, not a tagged one — the same situation `Radius`
+is already in (see the type list above) — because Typst represents a dash
+pattern as an ordinary dictionary too, not a distinct runtime type; its
+`array` entries (`DashLength`) need one small hand-written `Serialize`/
+`Deserialize` impl instead of the usual derive, since `"dot"` is a plain
+string sibling to `Length`'s own tagged-dict shape, not something an
+`#[serde(untagged)]` derive over `Length` alone could express.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.

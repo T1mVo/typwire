@@ -1,0 +1,89 @@
+use serde::{Deserialize, Serialize};
+
+const TYPE_NAME: &str = "alignment";
+
+/// Where to align something horizontally.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum HAlignment {
+    Start,
+    Left,
+    Center,
+    Right,
+    End,
+}
+
+/// Where to align something vertically.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(rename_all = "lowercase")]
+pub enum VAlignment {
+    Top,
+    Horizon,
+    Bottom,
+}
+
+/// A structure representing a Typst 1D or 2D alignment.
+///
+/// Mirrors Typst's own `Alignment::H`/`V`/`Both`: at least one of `x`/`y` is
+/// always present, enforced on decode.
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
+#[serde(try_from = "AlignmentCbor", into = "AlignmentCbor")]
+pub struct Alignment {
+    pub x: Option<HAlignment>,
+    pub y: Option<VAlignment>,
+}
+
+impl Alignment {
+    /// Creates a new `Alignment` from its horizontal and vertical components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use typwire::{Alignment, HAlignment};
+    ///
+    /// let value = Alignment::new(Some(HAlignment::Left), None);
+    /// assert_eq!(value.x, Some(HAlignment::Left));
+    /// ```
+    pub const fn new(x: Option<HAlignment>, y: Option<VAlignment>) -> Self {
+        Self { x, y }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct AlignmentCbor {
+    typwire_type: String,
+    x: Option<HAlignment>,
+    y: Option<VAlignment>,
+}
+
+// Serialize into AlignmentCbor
+impl From<Alignment> for AlignmentCbor {
+    fn from(value: Alignment) -> Self {
+        Self {
+            typwire_type: TYPE_NAME.to_string(),
+            x: value.x,
+            y: value.y,
+        }
+    }
+}
+
+// Deserialize from AlignmentCbor
+impl TryFrom<AlignmentCbor> for Alignment {
+    type Error = String;
+
+    fn try_from(value: AlignmentCbor) -> Result<Self, Self::Error> {
+        if value.typwire_type != TYPE_NAME {
+            return Err(format!(
+                "Invalid typwire-type for Alignment: {}",
+                value.typwire_type
+            ));
+        }
+
+        if value.x.is_none() && value.y.is_none() {
+            return Err("Alignment must have at least one of x or y set".to_owned());
+        }
+
+        Ok(Self::new(value.x, value.y))
+    }
+}

@@ -98,9 +98,9 @@ Supported Rust values include:
   arrays, tuples, boxes, sets, and string-keyed `HashMap`/`BTreeMap`
 - `Bytes` for a Typst byte string; `Vec<u8>` remains an ordinary array
 - `Any` for dynamic values and `OneOf2` through `OneOf8` for ordered alternatives
-- Typst angles, lengths, ratios, colors, gradients, datetimes, durations,
-  versions, type objects, paths, symbols, captured arguments, and their
-  helper types
+- Typst angles, lengths, ratios, alignments, colors, gradients, strokes,
+  datetimes, durations, versions, type objects, paths, symbols, labels,
+  captured arguments, and their helper types
 - `Regex` for a Typst regular expression, backed by a compiled
   [`regex-lite`](https://docs.rs/regex-lite) pattern, behind this crate's
   optional `regex` feature
@@ -119,7 +119,9 @@ CBOR tags and values outside Typst's reliable CBOR subset are rejected.
 representations select the first match.
 
 Borrowed Rust values (`&str`, `&[u8]`, and borrowed models), Typst content,
-fractions, directions, relative lengths, and decimals are not supported.
+fractions, directions, and relative lengths are not supported. Stroke paints
+are limited to solid colors and gradients; Typst's tiling patterns have no
+`Typwire` representation.
 
 `typwire.encode` and `typwire.decode` are available for manual integration.
 `typwire.call` accepts positional arguments only and recursively preserves

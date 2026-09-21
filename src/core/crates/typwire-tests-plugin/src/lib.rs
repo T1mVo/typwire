@@ -70,6 +70,7 @@ case!("foundations/datetime");
 case!("foundations/decimal");
 case!("foundations/duration");
 case!("foundations/float");
+case!("foundations/label");
 case!("foundations/none");
 case!("foundations/path");
 case!("foundations/regex");
@@ -94,6 +95,7 @@ case!("foundations/dictionary/hash-map");
 case!("foundations/dictionary/struct");
 
 // https://typst.app/docs/reference/layout/
+case!("layout/alignment");
 case!("layout/angle");
 case!("layout/length");
 case!("layout/ratio");
@@ -102,6 +104,7 @@ case!("layout/radius");
 // https://typst.app/docs/reference/visualize/
 case!("visualize/color");
 case!("visualize/gradient");
+case!("visualize/stroke");
 
 // No dedicated reference page of their own, but grouped here since they only
 // exist in service of the types above: `color-space` is the gradient/color
