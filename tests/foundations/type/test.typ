@@ -7,3 +7,5 @@
 #roundtrip(plugin.roundtrip_type, dictionary)
 #roundtrip(plugin.roundtrip_type, type(none))
 #roundtrip(plugin.roundtrip_type, type(auto))
+#roundtrip(plugin.roundtrip_type, type(path("test.typ")))
+#roundtrip(plugin.roundtrip_type, type(symbol("★")))

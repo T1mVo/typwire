@@ -8,6 +8,8 @@
 #import "types/foundations/auto.typ" as auto-value
 #import "types/foundations/datetime.typ"
 #import "types/foundations/duration.typ"
+#import "types/foundations/path.typ"
+#import "types/foundations/symbol.typ"
 #import "types/foundations/type.typ"
 #import "types/foundations/version.typ"
 
@@ -60,6 +62,10 @@
     result = encode-inner(version.encode(content))
   } else if std.type(content) == std.type {
     result = encode-inner(type.encode(content))
+  } else if std.type(content) == std.path {
+    result = encode-inner(path.encode(content))
+  } else if std.type(content) == std.symbol {
+    result = encode-inner(symbol.encode(content))
   } else if std.type(content) == std.content {
     panic("typwire.encode: content values are not supported")
   } else {

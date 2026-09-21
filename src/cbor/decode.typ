@@ -8,6 +8,8 @@
 #import "types/foundations/auto.typ" as auto-value
 #import "types/foundations/datetime.typ"
 #import "types/foundations/duration.typ"
+#import "types/foundations/path.typ"
+#import "types/foundations/symbol.typ"
 #import "types/foundations/type.typ"
 #import "types/foundations/version.typ"
 
@@ -35,6 +37,10 @@
     version.decode(value)
   } else if tag == type.type-name {
     type.decode(value)
+  } else if tag == path.type-name {
+    path.decode(value)
+  } else if tag == symbol.type-name {
+    symbol.decode(value)
   } else {
     panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
   }
