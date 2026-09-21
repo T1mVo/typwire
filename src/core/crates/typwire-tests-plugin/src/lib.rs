@@ -114,3 +114,10 @@ case!("visualize/color-space");
 case!("visualize/paint");
 case!("visualize/center");
 case!("visualize/stop");
+
+// Wire formats other than the default (CBOR, exercised by every case
+// above): one representative slice per format, not a full re-run of the
+// suite -- see `tests/format/<name>/plugin.rs`.
+case!("format/json");
+case!("format/yaml");
+case!("format/toml");

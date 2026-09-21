@@ -6,14 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `typwire` is a two-sided library for typed, Serde-backed data exchange across the
 Typst ⇆ WASM-plugin boundary. It ships as **two coordinated packages that must
-stay version-locked** (`0.2.0` today, set in both `typst.toml` and every
+stay version-locked** (`0.3.0` today, set in both `typst.toml` and every
 `Cargo.toml`):
 
-- a **Typst package** (`src/lib.typ` + `src/cbor/`) that encodes native Typst
-  values to CBOR and reconstructs them on the way back;
+- a **Typst package** (`src/lib.typ` + `src/wire/` + `src/format/`) that
+  encodes native Typst values to a wire format and reconstructs them on the
+  way back;
 - a **Rust crate** (`src/core/crates/typwire`) plus its proc-macro crate
   (`src/core/crates/typwire-macros`) that a plugin author depends on to decode
   those bytes into owned Rust types and re-encode results.
+
+Four wire formats are supported — CBOR (the default on both sides), JSON,
+YAML, TOML — see *Wire formats* below.
 
 The version guard in `typwire-macros` is only implicit — mismatched packages
 fail at the wire level, not at compile time. When bumping the version, change it
@@ -59,6 +63,16 @@ fully-qualified paths) and each exported fn name must be **globally unique**
 is kept out of the workspace's `default-members`; a bare `cargo build`/`cargo
 test` in `src/core` skips it.
 
+`tests/format/{json,yaml,toml}/` cover `#[typwire::export(format = "...")]`
+and Typst's `typwire.json`/`typwire.yaml`/`typwire.toml` namespaces: a
+representative slice (a primitive, a native type, `bytes`, an `Any`, a user
+struct) per non-default format, not a full re-run of the suite above every
+other `tests/**` directory exercises once already against the CBOR default.
+`typwire-tests-plugin`'s `Cargo.toml` enables `json`/`yaml`/`toml` alongside
+`decimal`/`regex` unconditionally (one wasm binary covers every format; the
+feature only makes the code paths exist, each export still compiles to its
+own dedicated wasm function regardless of format).
+
 ## Repository layout note (mid-refactor)
 
 Commit `ff6be1127` ("refactor: change repo layout") moved `src-typst/src/` →
@@ -88,6 +102,7 @@ cargo test --doc -p typwire      # doctests only (type modules carry runnable ex
 cargo test bytes_use_a_byte_string   # single test by name
 cargo build --target wasm32-unknown-unknown   # plugin-target build
 cargo test -p typwire --features decimal,regex   # also exercise `Decimal`/`Regex`
+cargo test -p typwire --features json,yaml,toml  # also exercise the non-default wire formats
 ```
 
 Note: `src/core/Cargo.toml` declares `[workspace.dev-dependencies]` (trybuild),
@@ -99,8 +114,8 @@ End-to-end Typst tests: see *Testing* above (`python3 scripts/test.py`).
 `scripts/package.sh` assembles the publishable Typst package under
 `scripts/typwire/<version>/` (also references stale `src-typst/` paths).
 
-Typst debug assertions in `src/cbor/**` are gated on
-`--input debug-assert=true` (see `is-debug-assert` in `src/cbor/utils.typ`); the
+Typst debug assertions in `src/wire/**` are gated on
+`--input debug-assert=true` (see `is-debug-assert` in `src/wire/utils.typ`); the
 roundtrip suite does not enable them.
 
 The working copy is managed with **Jujutsu** (`.jj/`) on top of Git; plain `git`
@@ -116,6 +131,14 @@ commands still work.
 `Typwire` (user types) or have a blanket/manual impl (primitives, collections,
 native wrappers). This deliberately prevents an unrelated Serde type from
 silently becoming part of a plugin ABI.
+
+This section describes CBOR specifically — `Cbor`, the default `Format` impl
+and the one every native type/`Any`/`OneOfN` was originally designed against.
+See *Wire formats* below for `Json`/`Yaml`/`Toml` and why almost none of what
+follows needed to change to add them. The crate's top-level `encode`/`decode`
+free functions always mean `Cbor` (`Cbor::encode`/`Cbor::decode` under the
+hood) — they predate the `Format` trait and keep their original,
+unparameterized signature so existing direct callers see no change.
 
 `encode` is a single `cbor4ii::serde::to_vec` pass. `decode` is a single parse
 pass through cbor4ii's own `Deserializer`, wrapped in a private
@@ -152,8 +175,92 @@ just the deserializer — the same "deserializer middleware" pattern
 `Color` and `Gradient` are internally tagged enums
 (`#[serde(tag = "typwire-type")]`) with `f64` fields inside their variants.
 `Bytes` serializes as a CBOR byte string (→ Typst `bytes`) while `Vec<u8>`
-stays an array. The crate needs the `half-f16` feature for the same width
-reason: without it, cbor4ii can't even parse an incoming half-precision float.
+stays an array — true only for `Cbor`; see *Wire formats* for how the other
+three formats represent `Bytes` instead. The crate needs the `half-f16`
+feature for the same width reason: without it, cbor4ii can't even parse an
+incoming half-precision float.
+
+### Wire formats
+
+`Format` (`wire.rs`) is the trait behind multi-format support: `fn
+encode<T: Typwire>(&T) -> Result<Vec<u8>, Error>` / `fn decode<T:
+Typwire>(&[u8]) -> Result<T, Error>`. `Cbor` (unconditional) implements it
+with the body described above; `Json`/`Yaml`/`Toml` (`src/format/*.rs`,
+each behind its own crate feature — `json`/`yaml`/`toml`, off by default,
+same convention as `decimal`/`regex`) implement it with `serde_json`/
+`serde-saphyr`/`toml` respectively. Picking a format whose feature isn't
+enabled is a compile error (the marker type doesn't exist), the same
+property `Regex`/`Decimal` already have when their feature is off.
+`#[typwire::export(format = "json")]` (default `"cbor"`;
+`typwire-macros/src/lib.rs`) resolves the option to the matching marker
+type and threads it as a generic parameter into `__private::decode_argument`/
+`encode_result`. On the Typst side, `typwire.json`/`typwire.yaml`/
+`typwire.toml` (`src/format/*.typ`) each wrap the matching native Typst
+format function (`json.encode`, ...) around the shared `wire.encode`/
+`wire.decode` tree layer (`src/wire/encode.typ`/`decode.typ` — the
+`encode-inner`/`decode-inner` from before this feature existed, promoted to
+public and renamed since they're no longer CBOR-specific); `typwire.cbor`
+is the same shape, and `typwire.call`/`typwire.encode`/`typwire.decode`
+(top-level) are aliases for `typwire.cbor.call`/`.encode`/`.decode`, so
+existing callers see no behavior change.
+
+Two problems, solved without touching almost any of the type system
+described elsewhere in this document:
+
+- **Numbers.** JSON/YAML can't distinguish an integer from a float at the
+  type-system level the way CBOR/TOML can — but confirmed empirically,
+  Typst's own `json.encode`/`yaml.encode` already write `5` for an int and
+  `5.0` for a float (never a bare `5` for a whole float), and
+  `json(...)`/`yaml(...)` already decode back to `int`/`float` correctly
+  based on that literal syntax — so nothing in `typwire.typ` needs to care.
+  On the Rust side, `Any`'s `Deserialize` already goes through
+  `cbor4ii::core::Value`, and that type's `Deserialize` is fully generic
+  over `D: Deserializer<'de>` (not CBOR-specific in what it consumes, only
+  in which crate it happens to live in) — `deserialize_any`/Visitor
+  dispatch is what every self-describing serde format uses to report
+  int-vs-float, so `Value` reconstructs `Any` correctly regardless of which
+  format produced the bytes, with **zero changes to `any.rs`**. TOML has no
+  ambiguity to begin with: its grammar requires the decimal point for
+  floats, and `toml::Value` already has separate variants.
+- **Bytes.** None of JSON/YAML/TOML have a native byte-string type — Typst's
+  own `json.encode(bytes(..))`/`yaml.encode`/`toml.encode` all confirmed
+  (empirically) to silently produce the useless placeholder string
+  `"bytes(3)"` rather than actual content. `Cbor` is untouched — it keeps
+  encoding `Bytes`/`bytes` natively on both sides, exactly as described
+  above. The other three formats rewrite `Bytes`/`bytes` into a tagged
+  array *around* the shared core, not inside it: Typst's
+  `src/wire/rewrite-bytes.typ::bytes-to-array` walks the tree
+  `wire.encode` produced and turns any `bytes` leaf into `(typwire-type:
+  "bytes", data: (...))` before `format/json.typ`/etc. hand it to
+  `json.encode`; decode is simpler and fully shared — `decode-tagged`
+  (`wire/decode.typ`) just gained one more tag arm (`"bytes"` →
+  `bytes(value.data)`), harmless for `Cbor` since its own `cbor.encode`
+  never produces that tag. `data` is a plain array of byte integers, not
+  base64 — confirmed empirically Typst has no built-in base64 codec to
+  match a base64 string against, so the array form needs no new dependency
+  on either side. On the Rust side, `Format::Cbor` and `Bytes`'s
+  `Serialize`/`Deserialize` (`serialize_bytes`/`deserialize_byte_buf`) are
+  untouched; `Json`/`Yaml`/`Toml::encode` instead round-trip the value
+  through a `cbor4ii::core::Value` tree first (`value_from_owned`, a new
+  sibling to the existing `value_to_owned` `any.rs` already relies on —
+  same "round-trip through real CBOR bytes to change representation"
+  idiom, just in the other direction), rewrite `Value::Bytes` nodes into
+  the same tagged-array shape with `rewrite_bytes_to_array`, then serialize
+  *that* tree; `decode` mirrors it with `rewrite_array_to_bytes` before
+  `value_to_owned`. This tree round-trip is the one real, non-mechanical
+  piece of new logic anywhere in the type system, and it's confined to the
+  three non-default formats — `Cbor` stays a single direct pass, exactly as
+  fast as before this feature existed.
+
+TOML's own grammar requires a top-level table: encoding a `Typwire` value
+that isn't struct/dictionary-shaped at the root (a bare `i64`, a `Vec<T>`,
+`Any` holding a scalar, ...) fails with a clear error from the `toml` crate
+itself — confirmed Typst's own `toml.encode` rejects a bare top-level
+scalar the same way, so this isn't a gap `typwire` introduces, just a
+property of TOML every user of it already has to live with. A top-level
+`Bytes`/`bytes` value is a partial exception: the bytes-rewrite pass turns
+it into a tagged dictionary before TOML ever sees it, so it satisfies the
+top-level-table requirement "for free," confirmed empirically.
 
 ### Native Typst value representation
 
@@ -187,12 +294,13 @@ Both sides are organized the same way, by Typst's own reference categories
   Each `<type>.rs` defines a private `…Cbor` shadow struct with
   `#[serde(try_from = "…Cbor", into = "…Cbor")]` on the public type;
   `const TYPE_NAME` is the tag, `TryFrom` verifies it.
-- Typst: `src/cbor/types/{foundations,layout,visualize}/<type>.typ` each
+- Typst: `src/wire/types/{foundations,layout,visualize}/<type>.typ` each
   expose `type-name`, `encode`, `decode` (`Center` and `Stop` live under
-  `src/cbor/types/visualize/gradient/`, since they're only ever nested inside
-  a gradient, never a standalone Typst value). `src/cbor/encode.typ` and
-  `decode.typ` themselves stay at `src/cbor/`, outside that category split,
-  since they aren't type-specific. `encode.typ::encode-inner` dispatches on
+  `src/wire/types/visualize/gradient/`, since they're only ever nested inside
+  a gradient, never a standalone Typst value). `src/wire/encode.typ` and
+  `decode.typ` themselves stay at `src/wire/`, outside that category split,
+  since they aren't type-specific — see *Wire formats* above for why this
+  directory is named `wire/`, not `cbor/`. `encode.typ::encode` dispatches on
   `std.type(...)` when serializing — except `Auto`, which has no `std.type`
   of its own and is matched by direct value equality (`content == auto`)
   instead, same as how `none` is detected. `decode.typ::decode-tagged`
@@ -416,7 +524,7 @@ string sibling to `Length`'s own tagged-dict shape, not something an
 `#[serde(untagged)]` derive over `Length` alone could express.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
-`any.rs` (`from_map`) and `src/cbor/decode.typ`.
+`any.rs` (`from_map`) and `src/wire/decode.typ`.
 
 ### `Any` and `OneOfN`
 
@@ -440,8 +548,10 @@ In `typwire-macros/src/lib.rs`. It takes a free function
    (errors name the function and argument), calls the impl, maps `E` through
    `Display`, and encodes the result.
 
-`#[typwire::export(rename = "wire-name")]` parses one option (`syn::meta::parser`
-in the `export` entry point). Since `#[wasm_func]` always exports under the
+`#[typwire::export(rename = "wire-name")]`/`#[typwire::export(format =
+"json")]` parse two independent options (`syn::meta::parser` in the
+`export` entry point, combinable) — see *Wire formats* above for `format`.
+Since `#[wasm_func]` always exports under the
 wrapper's *identifier*, the rename path skips `#[wasm_func]` entirely: it emits
 an `extern "C"` fn with `#[unsafe(export_name = "wire-name")]` that re-declares
 the two `typst_env` protocol imports, reads/splits the argument buffer itself,
@@ -463,12 +573,22 @@ The derive macro (`derive_typwire`) just emits `impl Typwire for T {}` with a
 
 ### Typst entrypoint
 
-`src/lib.typ` re-exports `cbor` as `encode`/`decode` and defines
-`typwire.call(function, ..args)`: rejects named args, encodes each positional
-arg **independently**, calls the plugin function with the resulting byte
-strings, and decodes the single returned byte string. This positional,
-separately-encoded calling convention is what `#[typwire::export]`'s
-`&[u8]`-per-parameter wrapper expects.
+`src/lib.typ` re-exports `wire.encode`/`wire.decode` (the format-agnostic
+tree layer — see *Wire formats* above) as `typwire.encode`/`typwire.decode`,
+and each format namespace (`typwire.cbor`/`json`/`yaml`/`toml`,
+`src/format/*.typ`) as itself — importing a file `as <name>` inside a
+module Typst re-exports it from is enough to expose it under that name on
+the outer module too, confirmed empirically, no extra re-export syntax
+needed. `typwire.call = typwire.cbor.call`, matching the Rust side's CBOR
+default. Every namespace's `call(function, ..args)` has the same shape:
+rejects named args, encodes each positional arg **independently**, calls
+the plugin function with the resulting byte strings (wrapped in `bytes(..)`
+first for the three formats whose own `.encode` returns `str`, not
+`bytes` — confirmed empirically that a Typst plugin call rejects a bare
+`str` argument outright), and decodes the single returned byte string. This
+positional, separately-encoded calling convention is what
+`#[typwire::export]`'s `&[u8]`-per-parameter wrapper expects, for every
+format.
 
 ## Explicitly unsupported (by design)
 
