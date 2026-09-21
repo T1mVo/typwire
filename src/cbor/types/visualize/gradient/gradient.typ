@@ -3,7 +3,7 @@
 #import "conic.typ"
 #import "stop.typ"
 #import "center.typ"
-#import "../../utils.typ": is-debug-assert
+#import "../../../utils.typ": is-debug-assert
 
 #let common-type-name = "gradient-"
 

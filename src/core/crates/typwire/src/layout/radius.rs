@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::length::Length;
+use crate::Length;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(from = "RadiusCbor", into = "RadiusCbor", rename_all = "kebab-case")]

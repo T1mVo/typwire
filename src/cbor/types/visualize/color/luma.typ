@@ -1,4 +1,4 @@
-#import "../../utils.typ": is-debug-assert
+#import "../../../utils.typ": is-debug-assert
 
 #let type-name = "color-luma"
 

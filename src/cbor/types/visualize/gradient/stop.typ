@@ -1,4 +1,4 @@
-#import "../../utils.typ": is-debug-assert
+#import "../../../utils.typ": is-debug-assert
 
 /// Encode a stop into a CBOR-compatible dictionary.
 ///

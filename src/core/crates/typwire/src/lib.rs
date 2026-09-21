@@ -1,39 +1,20 @@
-pub use angle::Angle;
 pub use any::Any;
-pub use auto::Auto;
-pub use center::Center;
-pub use color::{Cmyk, Color, ColorGradient, Hsl, Hsv, LinearRgb, Luma, Oklab, Oklch, Rgb};
-pub use datetime::{DateTime, DateTimeBuilder};
-pub use duration::{Duration, DurationBuilder};
-pub use gradient::{
-    ColorSpace, ConicGradientBuilder, Gradient, LinearGradientBuilder, RadialGradientBuilder,
-};
-pub use length::Length;
+pub use foundations::{Auto, DateTime, DateTimeBuilder, Duration, DurationBuilder, Type, Version};
+pub use layout::{Angle, Length, Radius, Ratio};
 pub use one_of::{OneOf2, OneOf3, OneOf4, OneOf5, OneOf6, OneOf7, OneOf8};
-pub use radius::Radius;
-pub use ratio::Ratio;
-pub use stop::Stop;
-pub use r#type::Type;
 pub use typwire_macros::{Typwire, export};
-pub use version::Version;
+pub use visualize::{
+    Center, Cmyk, Color, ColorGradient, ColorSpace, ConicGradientBuilder, Gradient, Hsl, Hsv,
+    LinearGradientBuilder, LinearRgb, Luma, Oklab, Oklch, RadialGradientBuilder, Rgb, Stop, color,
+};
 pub use wasm_minimal_protocol::initiate_protocol;
 pub use wire::{Bytes, Error, Typwire, decode, encode};
 
-mod angle;
 mod any;
-mod auto;
-mod center;
-pub mod color;
-mod datetime;
-mod duration;
-mod gradient;
-mod length;
+mod foundations;
+mod layout;
 mod one_of;
-mod radius;
-mod ratio;
-mod stop;
-mod r#type;
-mod version;
+mod visualize;
 mod wire;
 
 macro_rules! impl_typwire {
