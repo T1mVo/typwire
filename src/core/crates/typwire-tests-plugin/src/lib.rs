@@ -88,28 +88,41 @@ case!("char");
 // one dir per Typst type name, not per Rust type -- e.g. this is `int`, not
 // `i64`. When more than one Rust type can receive the same Typst type, that
 // dir holds subtests (one per Rust type) instead of a `plugin.rs`/`test.typ`
-// pair directly, as `int`, `array`, and `dictionary` do below.
+// pair directly, as `int`, `bool`, `float`, `str`, `array`, and `dictionary`
+// do below -- each of those six now also has a `wrapper` subtest for its
+// named `Int`/`Bool`/`Float`/`Str`/`Array<T>`/`Dictionary<T>` type
+// (`typwire::Int`'s doc comment explains why that type exists).
 
 // https://typst.app/docs/reference/foundations/
 case!("foundations/arguments");
 case!("foundations/auto");
-case!("foundations/bool");
 case!("foundations/bytes");
 case!("foundations/datetime");
 case!("foundations/decimal");
 case!("foundations/duration");
-case!("foundations/float");
 case!("foundations/label");
 case!("foundations/none");
 case!("foundations/path");
 case!("foundations/regex");
-case!("foundations/str");
 case!("foundations/symbol");
 case!("foundations/type");
 case!("foundations/version");
 
+// `bool`/`float`/`str` each have two Rust representations -- the bare
+// primitive and the named `Bool`/`Float`/`Str` wrapper (`typwire::Int`'s
+// doc comment explains why the wrapper exists) -- so, like `int`/`array`/
+// `dictionary` below, they're subtest dirs rather than a single
+// `plugin.rs`/`test.typ` pair.
+case!("foundations/bool/bool");
+case!("foundations/bool/wrapper");
+case!("foundations/float/float");
+case!("foundations/float/wrapper");
+case!("foundations/str/str");
+case!("foundations/str/wrapper");
+
 case!("foundations/int/i64");
 case!("foundations/int/u8");
+case!("foundations/int/wrapper");
 
 case!("foundations/array/vec");
 case!("foundations/array/vec-deque");
@@ -118,10 +131,12 @@ case!("foundations/array/btree-set");
 case!("foundations/array/hash-set");
 case!("foundations/array/fixed-size");
 case!("foundations/array/tuple");
+case!("foundations/array/wrapper");
 
 case!("foundations/dictionary/btree-map");
 case!("foundations/dictionary/hash-map");
 case!("foundations/dictionary/struct");
+case!("foundations/dictionary/wrapper");
 
 // https://typst.app/docs/reference/layout/
 case!("layout/alignment");
