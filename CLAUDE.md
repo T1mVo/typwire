@@ -343,6 +343,30 @@ dictionary of corner keys), so it round-trips as an ordinary untagged dict —
 see the `DashPattern` paragraph below for another type in the same
 situation.
 
+Typst types that *do* have a CBOR primitive (`int`, `float`, `str`, `bool`,
+`array`, `dictionary`) need none of the above: `i64`/`f64`/`String`/`bool`/
+`Vec<T>`/`BTreeMap<String, T>` are already `Typwire` directly (`wire.rs`),
+and Typst's own `cbor.encode`/`json.encode`/etc. already produce exactly
+that shape for them. `Int`/`Float`/`Str`/`Bool`/`Array<T>`/`Dictionary<T>`
+(`foundations/{int,float,str,bool,array,dictionary}.rs`) are purely additive
+named wrappers around those same primitives, for a plugin author who wants
+an exported signature to read `Int`/`Array<T>`/etc. rather than `i64`/
+`Vec<T>`/etc. — matching Typst's own reference type names the way `Length`/
+`Angle`/etc. already do for the tagged types. Each is `#[serde(transparent)]`
+over a single private field (no `…Typst` shadow struct, no tag, no `TryFrom`
+validation — there's nothing to validate: the wire shape *is* the
+primitive's), so `encode(&Int::new(5))` and `encode(&5_i64)` produce
+byte-identical output on every format, confirmed per-type in each file's own
+test (`wire_shape_is_identical_to_a_bare_i64` etc.) rather than assumed.
+Because the two spellings are wire-identical, the Typst side needs zero
+changes to support them — this is the one category of type in this section
+that requires no matching `src/wire/types/**` file at all. `Array<T>`/
+`Dictionary<T>` get their `impl<T: Typwire> Typwire for ...` written directly
+alongside the type (same pattern `OneOf2`..`OneOf8` use in `one_of.rs`)
+rather than through the crate-root `impl_typwire!` macro, since that macro
+only takes concrete (non-generic) types — `Int`/`Float`/`Str`/`Bool` do go
+through it, same as every other concrete native type.
+
 Both sides are organized the same way, by Typst's own reference categories
 (<https://typst.app/docs/reference/>) — `foundations/`, `layout/`,
 `visualize/` — mirroring how `tests/` is laid out (see *Testing* below):

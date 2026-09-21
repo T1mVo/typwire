@@ -132,6 +132,10 @@ Supported Rust values include:
 
 - booleans, `i64`, `f64`, `char`, `String`, and unit — matching Typst's own
   integer and float types; no other Rust integer or float width is `Typwire`
+- `Int`, `Float`, `Str`, `Bool`, `Array<T>`, and `Dictionary<T>` as named,
+  wire-identical wrappers around `i64`/`f64`/`String`/`bool`/`Vec<T>`/
+  `BTreeMap<String, T>`, for exported signatures that want to read like
+  Typst's own reference type names
 - `Option` for Typst's `none`, `Auto` for Typst's `auto`; owned sequences,
   arrays, tuples, boxes, sets, and string-keyed `HashMap`/`BTreeMap`
 - `Bytes` for a Typst byte string; `Vec<u8>` remains an ordinary array
