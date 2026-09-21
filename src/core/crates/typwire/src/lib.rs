@@ -1,4 +1,5 @@
 pub use any::Any;
+pub use format::Cbor;
 #[cfg(feature = "json")]
 pub use format::Json;
 #[cfg(feature = "toml")]
@@ -22,7 +23,7 @@ pub use visualize::{
     Paint, RadialGradientBuilder, Rgb, Stop, Stroke, color,
 };
 pub use wasm_minimal_protocol::initiate_protocol;
-pub use wire::{Bytes, Cbor, Error, Format, Typwire, decode, encode};
+pub use wire::{Bytes, Error, Format, Typwire, decode, encode};
 
 mod any;
 mod format;

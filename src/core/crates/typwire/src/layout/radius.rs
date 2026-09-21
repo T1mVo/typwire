@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::Length;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(from = "RadiusCbor", into = "RadiusCbor", rename_all = "kebab-case")]
+#[serde(from = "RadiusTypst", into = "RadiusTypst", rename_all = "kebab-case")]
 pub struct Radius {
     pub top_left: Option<Length>,
     pub top_right: Option<Length>,
@@ -123,7 +123,7 @@ impl RadiusBuilder {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct RadiusCbor {
+struct RadiusTypst {
     top_left: Option<Length>,
     top_right: Option<Length>,
     bottom_left: Option<Length>,
@@ -135,7 +135,7 @@ struct RadiusCbor {
     rest: Option<Length>,
 }
 
-impl From<Radius> for RadiusCbor {
+impl From<Radius> for RadiusTypst {
     fn from(value: Radius) -> Self {
         Self {
             top_left: value.top_left,
@@ -151,8 +151,8 @@ impl From<Radius> for RadiusCbor {
     }
 }
 
-impl From<RadiusCbor> for Radius {
-    fn from(value: RadiusCbor) -> Self {
+impl From<RadiusTypst> for Radius {
+    fn from(value: RadiusTypst) -> Self {
         Self::new(
             value
                 .top_left

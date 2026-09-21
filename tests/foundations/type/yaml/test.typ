@@ -1,0 +1,18 @@
+#import "../../../common.typ": roundtrip-format, plugin, typwire
+#let exports = dictionary(plugin)
+
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), int)
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), str)
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), bool)
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), length)
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), dictionary)
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(none))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(auto))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(path("test.typ")))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(symbol("★")))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(regex("a")))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(decimal("1")))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(arguments()))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(label("x")))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(left))
+#roundtrip-format(typwire.yaml, exports.at("roundtrip-type-yaml"), type(stroke()))

@@ -27,7 +27,7 @@ pub enum VAlignment {
 /// Mirrors Typst's own `Alignment::H`/`V`/`Both`: at least one of `x`/`y` is
 /// always present, enforced on decode.
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
-#[serde(try_from = "AlignmentCbor", into = "AlignmentCbor")]
+#[serde(try_from = "AlignmentTypst", into = "AlignmentTypst")]
 pub struct Alignment {
     pub x: Option<HAlignment>,
     pub y: Option<VAlignment>,
@@ -51,14 +51,14 @@ impl Alignment {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct AlignmentCbor {
+struct AlignmentTypst {
     typwire_type: String,
     x: Option<HAlignment>,
     y: Option<VAlignment>,
 }
 
-// Serialize into AlignmentCbor
-impl From<Alignment> for AlignmentCbor {
+// Serialize into AlignmentTypst
+impl From<Alignment> for AlignmentTypst {
     fn from(value: Alignment) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -68,11 +68,11 @@ impl From<Alignment> for AlignmentCbor {
     }
 }
 
-// Deserialize from AlignmentCbor
-impl TryFrom<AlignmentCbor> for Alignment {
+// Deserialize from AlignmentTypst
+impl TryFrom<AlignmentTypst> for Alignment {
     type Error = String;
 
-    fn try_from(value: AlignmentCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: AlignmentTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Alignment: {}",

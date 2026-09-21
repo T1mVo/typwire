@@ -11,7 +11,7 @@ const TYPE_NAME: &str = "arguments";
 /// `pos` and `named` mirror Typst's own `.pos()`/`.named()` split; order is
 /// only meaningful within each group, not between them.
 #[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(try_from = "ArgumentsCbor", into = "ArgumentsCbor")]
+#[serde(try_from = "ArgumentsTypst", into = "ArgumentsTypst")]
 pub struct Arguments {
     pub pos: Vec<Any>,
     pub named: BTreeMap<String, Any>,
@@ -35,14 +35,14 @@ impl Arguments {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct ArgumentsCbor {
+struct ArgumentsTypst {
     typwire_type: String,
     pos: Vec<Any>,
     named: BTreeMap<String, Any>,
 }
 
-// Serialize into ArgumentsCbor
-impl From<Arguments> for ArgumentsCbor {
+// Serialize into ArgumentsTypst
+impl From<Arguments> for ArgumentsTypst {
     fn from(value: Arguments) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -52,11 +52,11 @@ impl From<Arguments> for ArgumentsCbor {
     }
 }
 
-// Deserialize from ArgumentsCbor
-impl TryFrom<ArgumentsCbor> for Arguments {
+// Deserialize from ArgumentsTypst
+impl TryFrom<ArgumentsTypst> for Arguments {
     type Error = String;
 
-    fn try_from(value: ArgumentsCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: ArgumentsTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Arguments: {}",

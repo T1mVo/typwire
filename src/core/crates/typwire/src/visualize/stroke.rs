@@ -95,7 +95,7 @@ pub struct DashPattern {
 /// bespoke "smart" wrapper, the same composition `OneOf2`/`OneOf3` already
 /// exist for.
 #[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(try_from = "StrokeCbor", into = "StrokeCbor")]
+#[serde(try_from = "StrokeTypst", into = "StrokeTypst")]
 pub struct Stroke {
     pub paint: OneOf2<Auto, Paint>,
     pub thickness: OneOf2<Auto, Length>,
@@ -128,7 +128,7 @@ impl Stroke {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct StrokeCbor {
+struct StrokeTypst {
     typwire_type: String,
     paint: OneOf2<Auto, Paint>,
     thickness: OneOf2<Auto, Length>,
@@ -138,8 +138,8 @@ struct StrokeCbor {
     miter_limit: OneOf2<Auto, f64>,
 }
 
-// Serialize into StrokeCbor
-impl From<Stroke> for StrokeCbor {
+// Serialize into StrokeTypst
+impl From<Stroke> for StrokeTypst {
     fn from(value: Stroke) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -153,11 +153,11 @@ impl From<Stroke> for StrokeCbor {
     }
 }
 
-// Deserialize from StrokeCbor
-impl TryFrom<StrokeCbor> for Stroke {
+// Deserialize from StrokeTypst
+impl TryFrom<StrokeTypst> for Stroke {
     type Error = String;
 
-    fn try_from(value: StrokeCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: StrokeTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Stroke: {}",

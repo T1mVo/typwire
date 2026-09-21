@@ -4,7 +4,7 @@ const TYPE_NAME: &str = "version";
 
 /// A structure representing version with 5 components.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
-#[serde(try_from = "VersionCbor", into = "VersionCbor")]
+#[serde(try_from = "VersionTypst", into = "VersionTypst")]
 pub struct Version {
     pub major: i64,
     pub minor: i64,
@@ -27,7 +27,7 @@ impl Version {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct VersionCbor {
+struct VersionTypst {
     typwire_type: String,
     major: i64,
     minor: i64,
@@ -36,8 +36,8 @@ struct VersionCbor {
     build: i64,
 }
 
-// Serilaize into VersionCbor
-impl From<Version> for VersionCbor {
+// Serilaize into VersionTypst
+impl From<Version> for VersionTypst {
     fn from(value: Version) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -50,11 +50,11 @@ impl From<Version> for VersionCbor {
     }
 }
 
-// Deserialize from VersionCbor
-impl TryFrom<VersionCbor> for Version {
+// Deserialize from VersionTypst
+impl TryFrom<VersionTypst> for Version {
     type Error = String;
 
-    fn try_from(value: VersionCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: VersionTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Version: {}",

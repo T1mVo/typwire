@@ -113,14 +113,13 @@ checks this for you, the same way argument types on either side already
 have to agree.
 
 JSON/YAML have no native way to tell an integer apart from a float the way
-CBOR/TOML can, and none of the three have a native byte-string type; both
-are handled transparently (see `CLAUDE.md` if you're curious how), so this
-mostly isn't something you need to think about. Two exceptions: TOML
-requires a struct/dictionary-shaped value at the top level of a call or
-export (a bare `i64` or `Vec<T>` argument fails to encode; TOML's own
-grammar requires a root table, matching Typst's own `toml.encode`), and a
-stroke's tiling-pattern paint isn't representable in any format (see
-*Wire contract* below).
+CBOR/TOML can, and none of JSON/YAML/TOML have a native byte-string type or
+(TOML specifically) a `none`/null; TOML also can't have anything but a
+table at the top level. All of this is handled transparently — nothing to
+think about, no exceptions, every value shape round-trips through every
+format (see `CLAUDE.md` if you're curious how). The one real gap is a
+stroke's tiling-pattern paint, which isn't representable in any format
+(see *Wire contract* below).
 
 ## Wire contract
 

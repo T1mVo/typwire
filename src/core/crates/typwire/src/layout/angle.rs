@@ -4,7 +4,7 @@ const TYPE_NAME: &str = "angle";
 
 /// A structure representing an angle in radians.
 #[derive(Serialize, Deserialize, Clone, PartialEq, PartialOrd, Debug)]
-#[serde(try_from = "AngleCbor", into = "AngleCbor")]
+#[serde(try_from = "AngleTypst", into = "AngleTypst")]
 pub struct Angle {
     radians: f64,
 }
@@ -59,26 +59,26 @@ impl Angle {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct AngleCbor {
+struct AngleTypst {
     typwire_type: String,
     radians: f64,
 }
 
-// Serialize into AngleCbor
-impl From<Angle> for AngleCbor {
+// Serialize into AngleTypst
+impl From<Angle> for AngleTypst {
     fn from(angle: Angle) -> Self {
-        AngleCbor {
+        AngleTypst {
             typwire_type: TYPE_NAME.to_string(),
             radians: angle.radians,
         }
     }
 }
 
-// Deserialize from AngleCbor
-impl TryFrom<AngleCbor> for Angle {
+// Deserialize from AngleTypst
+impl TryFrom<AngleTypst> for Angle {
     type Error = String;
 
-    fn try_from(value: AngleCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: AngleTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Angle: {}",

@@ -1,17 +1,23 @@
 #import "../wire/lib.typ" as wire
 #import "../wire/rewrite-bytes.typ": bytes-to-array
+#import "../wire/rewrite-none.typ": none-to-tagged
 
 /// Encode a value into a TOML string.
 ///
-/// TOML has no native byte-string type, so any `bytes` value is rewritten
-/// into a tagged array first -- see `wire/rewrite-bytes.typ`. TOML's own
-/// grammar requires a top-level table: encoding a value that isn't
-/// dictionary-shaped (a bare `int`, an `array`, ...) fails with a clear
-/// error from `toml.encode` itself.
+/// TOML has no native byte-string type and no `none`/null, so `bytes` and
+/// `none` are both rewritten into tagged shapes first -- see
+/// `wire/rewrite-bytes.typ`/`rewrite-none.typ`. TOML's own grammar also
+/// requires a top-level table, unlike CBOR/JSON/YAML, which can encode any
+/// shape at the root -- so, unconditionally, the whole tree is wrapped
+/// under one fixed key (`"value"`) before reaching `toml.encode`, the same
+/// way on both sides of the wire (see the mirrored envelope in
+/// `typwire::Toml::encode`, `src/core/crates/typwire/src/format/toml.rs`).
+/// This makes every value shape, scalars and `none` included, representable
+/// in TOML -- there is no longer any value `typwire.toml` can't round-trip.
 ///
 /// - value (any): The value to encode.
 /// -> str
-#let encode(value) = toml.encode(bytes-to-array(wire.encode(value)))
+#let encode(value) = toml.encode((value: none-to-tagged(bytes-to-array(wire.encode(value)))))
 
 /// Decode a TOML string or bytes and reconstruct supported native Typst
 /// values.
@@ -27,7 +33,7 @@
   if std.type(data) == str {
     data = bytes(data)
   }
-  wire.decode(toml(data))
+  wire.decode(toml(data).value)
 }
 
 /// Call a typed Typwire plugin function with positional arguments, using

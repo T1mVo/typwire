@@ -28,15 +28,28 @@ together.
 ## Testing
 
 The real test suite is the **Typst roundtrip suite** under `tests/`, run with
-[Tytanic](https://typst-community.github.io/tytanic/) (`tt`). Each
-`tests/<type>/` directory is a `compile-only` test with two files:
+[Tytanic](https://typst-community.github.io/tytanic/) (`tt`). Every test
+covers all four wire formats: `tests/<type>/{cbor,json,yaml,toml}/`, each a
+`compile-only` test with two files:
 
-- `test.typ` — imports `../common.typ` (shared `roundtrip` helper + the
-  `plugin(...)` handle) and asserts that Typst values survive a
-  Typst→Rust→Typst round trip via `typwire.call`.
-- `plugin.rs` — usually one `#[typwire::export] fn roundtrip_<type>(v: T) ->
-  Result<T, String>` for that test (`tests/rename/` covers the `rename` option
-  and defines several).
+- `test.typ` — imports `../../common.typ` (shared `roundtrip-format` helper
+  + the `plugin(...)` handle) and asserts that Typst values survive a
+  Typst→Rust→Typst round trip via `typwire.<format>.call`. Every export is
+  reached through `#let exports = dictionary(plugin)` +
+  `exports.at("roundtrip-<type>-<format>")`, never a bare `plugin.foo` field
+  access — the kebab-case rename (below) makes that syntactically required,
+  not just a style choice (`plugin.roundtrip-i64-json` would parse as
+  subtraction).
+- `plugin.rs` — usually one function per format,
+  `#[typwire::export(format = "<format>", rename = "roundtrip-<type>-<format>")]
+  fn roundtrip_<type>_<format>(v: T) -> Result<T, String>` (`format`/the Rust
+  fn-name suffix omitted for `cbor`'s default, though `rename` is still given
+  — uniform accessor pattern across all four beats saving one macro arg).
+  `tests/rename/` combines this with a *second*, orthogonal rename (its own
+  point is exercising `rename` itself) by suffixing its existing custom
+  names, e.g. `"round-trip-json"`. A case is free to define several
+  functions when closely related (`tests/foundations/regex/*/plugin.rs`
+  each have two).
 
 Tytanic has **no build hook**, so `scripts/test.py` is the entry point: it
 `cargo build`s `typwire-tests-plugin` for wasm, copies the artifact to
@@ -50,28 +63,27 @@ python3 scripts/test.py --no-build type   # skip cargo, reuse existing wasm
 python3 scripts/test.py update        # forwarded: tt update
 ```
 
-`tests/<type>/plugin.rs` files are **`include!`d into the crate root** of
-`src/core/crates/typwire-tests-plugin/src/lib.rs` (a `mod` won't work — the
-`#[wasm_func]` wrapper needs `initiate_protocol!()`'s items in scope, which only
-holds at the crate root). Consequences: a case file must have **no `use`
-items** (they collide when concatenated — rely on `lib.rs`'s glob imports or
-fully-qualified paths) and each exported fn name must be **globally unique**
-(hence `roundtrip_<type>`). Adding a test = new `tests/<name>/` dir + one
-`case!("<name>");` line in that `lib.rs`.
+`tests/<type>/<format>/plugin.rs` files are **`include!`d into the crate
+root** of `src/core/crates/typwire-tests-plugin/src/lib.rs` (a `mod` won't
+work — the `#[wasm_func]` wrapper needs `initiate_protocol!()`'s items in
+scope, which only holds at the crate root). Consequences: a case file must
+have **no `use` items** (they collide when concatenated — rely on
+`lib.rs`'s glob imports or fully-qualified paths) and each exported fn name
+— and any locally defined type, e.g. a `#[derive(Typwire)]` struct — must be
+**globally unique** across the whole suite (hence `roundtrip_<type>_<format>`,
+and `<Name><Format>` for a per-case struct, e.g.
+`tests/foundations/dictionary/struct/*/plugin.rs`'s `PointCbor`/`PointJson`/
+etc.). `case!("<name>")` (the same `lib.rs`) expands to all four
+`include!`s at once, so adding a test is: `mkdir -p
+tests/<name>/{cbor,json,yaml,toml}`, a `test.typ` + `plugin.rs` pair in
+each, then one `case!("<name>");` line.
 
 `typwire-tests-plugin` is a wasm-only cdylib (it can't link for the host), so it
 is kept out of the workspace's `default-members`; a bare `cargo build`/`cargo
-test` in `src/core` skips it.
-
-`tests/format/{json,yaml,toml}/` cover `#[typwire::export(format = "...")]`
-and Typst's `typwire.json`/`typwire.yaml`/`typwire.toml` namespaces: a
-representative slice (a primitive, a native type, `bytes`, an `Any`, a user
-struct) per non-default format, not a full re-run of the suite above every
-other `tests/**` directory exercises once already against the CBOR default.
-`typwire-tests-plugin`'s `Cargo.toml` enables `json`/`yaml`/`toml` alongside
-`decimal`/`regex` unconditionally (one wasm binary covers every format; the
-feature only makes the code paths exist, each export still compiles to its
-own dedicated wasm function regardless of format).
+test` in `src/core` skips it. Its `Cargo.toml` enables `json`/`yaml`/`toml`
+alongside `decimal`/`regex` unconditionally — one wasm binary covers every
+format; the feature only makes the code paths exist, each export still
+compiles to its own dedicated wasm function regardless of format.
 
 ## Repository layout note (mid-refactor)
 
@@ -132,17 +144,18 @@ commands still work.
 native wrappers). This deliberately prevents an unrelated Serde type from
 silently becoming part of a plugin ABI.
 
-This section describes CBOR specifically — `Cbor`, the default `Format` impl
-and the one every native type/`Any`/`OneOfN` was originally designed against.
-See *Wire formats* below for `Json`/`Yaml`/`Toml` and why almost none of what
-follows needed to change to add them. The crate's top-level `encode`/`decode`
-free functions always mean `Cbor` (`Cbor::encode`/`Cbor::decode` under the
-hood) — they predate the `Format` trait and keep their original,
-unparameterized signature so existing direct callers see no change.
+This section describes CBOR specifically — `Cbor` (`src/format/cbor.rs`),
+the default `Format` impl and the one every native type/`Any`/`OneOfN` was
+originally designed against. See *Wire formats* below for `Json`/`Yaml`/
+`Toml` and why almost none of what follows needed to change to add them.
+The crate's top-level `encode`/`decode` free functions (`wire.rs`) always
+mean `Cbor` (`Cbor::encode`/`Cbor::decode` under the hood) — they predate
+the `Format` trait and keep their original, unparameterized signature so
+existing direct callers see no change.
 
 `encode` is a single `cbor4ii::serde::to_vec` pass. `decode` is a single parse
 pass through cbor4ii's own `Deserializer`, wrapped in a private
-`LenientDeserializer` (`wire.rs`). There is no separate validation pass: the
+`LenientDeserializer` (`format/cbor.rs`). There is no separate validation pass: the
 CBOR subset Typst's own `cbor.encode` can produce (int/float/bytes/text/
 bool/none/array/map, string-keyed maps, no tags — verified against Typst's
 upstream `cbor.rs`, which is itself `ciborium`-based) is exactly what
@@ -184,11 +197,14 @@ incoming half-precision float.
 
 `Format` (`wire.rs`) is the trait behind multi-format support: `fn
 encode<T: Typwire>(&T) -> Result<Vec<u8>, Error>` / `fn decode<T:
-Typwire>(&[u8]) -> Result<T, Error>`. `Cbor` (unconditional) implements it
-with the body described above; `Json`/`Yaml`/`Toml` (`src/format/*.rs`,
-each behind its own crate feature — `json`/`yaml`/`toml`, off by default,
-same convention as `decimal`/`regex`) implement it with `serde_json`/
-`serde-saphyr`/`toml` respectively. Picking a format whose feature isn't
+Typwire>(&[u8]) -> Result<T, Error>`. Every impl lives under
+`src/format/*.rs`, one file per format (`format/mod.rs` re-exports each
+marker type; `cbor` is unconditional, `json`/`yaml`/`toml` each behind
+their own feature). `Cbor` (`format/cbor.rs`, unconditional) implements it
+with the body described above; `Json`/`Yaml`/`Toml` (`format/{json,yaml,
+toml}.rs`, each behind its own crate feature — `json`/`yaml`/`toml`, off by
+default, same convention as `decimal`/`regex`) implement it with
+`serde_json`/`serde-saphyr`/`toml` respectively. Picking a format whose feature isn't
 enabled is a compile error (the marker type doesn't exist), the same
 property `Regex`/`Decimal` already have when their feature is off.
 `#[typwire::export(format = "json")]` (default `"cbor"`;
@@ -204,8 +220,9 @@ is the same shape, and `typwire.call`/`typwire.encode`/`typwire.decode`
 (top-level) are aliases for `typwire.cbor.call`/`.encode`/`.decode`, so
 existing callers see no behavior change.
 
-Two problems, solved without touching almost any of the type system
-described elsewhere in this document:
+Two problems anticipated from the start, solved without touching almost any
+of the type system described elsewhere in this document — plus a third one
+found only once the multi-format test suite existed to catch it (below):
 
 - **Numbers.** JSON/YAML can't distinguish an integer from a float at the
   type-system level the way CBOR/TOML can — but confirmed empirically,
@@ -221,7 +238,11 @@ described elsewhere in this document:
   int-vs-float, so `Value` reconstructs `Any` correctly regardless of which
   format produced the bytes, with **zero changes to `any.rs`**. TOML has no
   ambiguity to begin with: its grammar requires the decimal point for
-  floats, and `toml::Value` already has separate variants.
+  floats, and `toml::Value` already has separate variants. (This claim
+  holds for int-vs-float specifically — it does *not* generalize to every
+  scalar `cbor4ii::core::Value` reads through every format's
+  `deserialize_any`, confirmed the hard way; see the `Yaml`-specific bug
+  below.)
 - **Bytes.** None of JSON/YAML/TOML have a native byte-string type — Typst's
   own `json.encode(bytes(..))`/`yaml.encode`/`toml.encode` all confirmed
   (empirically) to silently produce the useless placeholder string
@@ -252,15 +273,60 @@ described elsewhere in this document:
   three non-default formats — `Cbor` stays a single direct pass, exactly as
   fast as before this feature existed.
 
-TOML's own grammar requires a top-level table: encoding a `Typwire` value
-that isn't struct/dictionary-shaped at the root (a bare `i64`, a `Vec<T>`,
-`Any` holding a scalar, ...) fails with a clear error from the `toml` crate
-itself — confirmed Typst's own `toml.encode` rejects a bare top-level
-scalar the same way, so this isn't a gap `typwire` introduces, just a
-property of TOML every user of it already has to live with. A top-level
-`Bytes`/`bytes` value is a partial exception: the bytes-rewrite pass turns
-it into a tagged dictionary before TOML ever sees it, so it satisfies the
-top-level-table requirement "for free," confirmed empirically.
+A third problem surfaced only once the test suite below started exercising
+every native type through every format: **`Yaml::decode` mis-resolved a
+bare `y`/`n` map key as a boolean** (`Alignment`/`Center` both use literal
+`x`/`y` field names, and both failed — `foundations/dictionary/struct`,
+`layout/alignment`, `visualize/center`, `visualize/gradient`,
+`visualize/paint` all round-trip a value with a `y` key somewhere). Root
+cause, confirmed with a standalone probe: `serde-saphyr` follows legacy
+YAML 1.1 core-schema scalar resolution (`y`/`n`/`yes`/`no`/`on`/`off` →
+boolean, the "Norway problem") for any position it's asked to deserialize
+*generically* — and `cbor4ii::core::Value`'s `Deserialize`, unlike
+`serde_json::Value`'s, reads map keys generically (`deserialize_any`, not a
+`String`-typed hint), since CBOR itself allows non-string map keys and the
+type has to stay general enough to represent that. `{y: 1}` parsed straight
+into `cbor4ii::core::Value` comes back `Map([(Bool(true), Integer(1))])`;
+the *identical* bytes into `serde_json::Value` correctly come back `Object
+{"y": 1}`, because `serde_json::Value` always deserializes keys through a
+`String`-typed hint, sidestepping the ambiguous-scalar path entirely. Fix,
+confined to `Yaml::decode` (`format/yaml.rs`) — `encode` is unaffected,
+since the ambiguity is a parsing-time concern only: parse into
+`serde_json::Value` first, then `serde_json::from_value` into
+`cbor4ii::core::Value` (a second, purely in-memory conversion with no text
+left to misinterpret), *then* run the normal `rewrite_array_to_bytes`/
+`value_to_owned` pipeline. `yaml`'s Cargo feature pulls in `serde_json` as
+a dependency unconditionally now (even with `json` off) for exactly this.
+
+TOML has two more gaps of its own, both closed rather than left as
+documented limitations: its grammar requires a top-level table (confirmed
+`toml.encode(5)`/`toml::to_string(&42_i64)` both reject a bare scalar the
+same way), and it has no `none`/null at all (confirmed `toml.encode((v:
+none))` silently *drops* the key, and `toml::to_string` on a bare `None`
+hard-errors with "unsupported None value" — two different failure modes on
+the two sides for the same underlying gap). Both are handled unconditionally,
+not just for the values that would otherwise fail, keeping `Toml`'s
+encode/decode branch-free on "does this particular value need special
+handling":
+- **Top-level table.** Every encode wraps the whole tree under one fixed
+  key (`"value"`) before it ever reaches `toml.encode`/`toml::to_string`;
+  decode unwraps the same key first. Typst: `format/toml.typ::encode` is
+  `toml.encode((value: ...))`, `decode` is `wire.decode(toml(data).value)`.
+  Rust: `Toml::encode` builds `Value::Map(vec![(Value::Text("value"),
+  tree)])` before serializing; `decode` finds and extracts that key from
+  the parsed envelope, erroring clearly if it's missing or the parse wasn't
+  even a table.
+- **`none`/null.** Rewritten into the tagged dictionary `{typwire-type:
+  "none"}`, the same pattern as `Bytes` below, and — also the same as
+  `Bytes` — decode is fully shared: `decode-tagged` (`wire/decode.typ`)
+  gained a `"none"` arm (`bytes` got `"bytes"`) that just returns `none`,
+  harmless for the three formats that never produce that tag. Encode is
+  format-specific: `wire/rewrite-none.typ::none-to-tagged` (Typst) /
+  `rewrite_none_to_tagged` (`format/toml.rs`, Rust) walk the tree the same
+  shape `rewrite_bytes_to_array`/`rewrite_array_to_bytes` do.
+
+Between the envelope and the two rewrites, there is no longer any value
+shape `typwire.toml`/`Toml` can't round-trip.
 
 ### Native Typst value representation
 
@@ -291,9 +357,11 @@ Both sides are organized the same way, by Typst's own reference categories
   re-exported. Anything without a matching reference category (`Any`,
   `OneOfN`, the wire protocol itself) stays at the crate root instead of in
   one of these three modules.
-  Each `<type>.rs` defines a private `…Cbor` shadow struct with
-  `#[serde(try_from = "…Cbor", into = "…Cbor")]` on the public type;
-  `const TYPE_NAME` is the tag, `TryFrom` verifies it.
+  Each `<type>.rs` defines a private `…Typst` shadow struct with
+  `#[serde(try_from = "…Typst", into = "…Typst")]` on the public type
+  (named for the Typst-side wire shape it mirrors, not for any one format —
+  every format's encode/decode passes through it); `const TYPE_NAME` is the
+  tag, `TryFrom` verifies it.
 - Typst: `src/wire/types/{foundations,layout,visualize}/<type>.typ` each
   expose `type-name`, `encode`, `decode` (`Center` and `Stop` live under
   `src/wire/types/visualize/gradient/`, since they're only ever nested inside
@@ -400,12 +468,12 @@ typwire-type tag" error instead of a dedicated message — an acceptable
 loss of specificity for not having to maintain a whole parallel
 always-errors implementation.
 
-With the feature, `Regex` follows the same `…Cbor` shadow-struct convention
-as every other native type (`#[serde(try_from = "RegexCbor", into =
-"RegexCbor")]`) even though its real field is a foreign `regex_lite::Regex`
+With the feature, `Regex` follows the same `…Typst` shadow-struct convention
+as every other native type (`#[serde(try_from = "RegexTypst", into =
+"RegexTypst")]`) even though its real field is a foreign `regex_lite::Regex`
 that isn't itself `Serialize`/`Deserialize` — `try_from`/`into` only need
-*`RegexCbor`* to implement those, not `Regex`, so this works the same way it
-does for every other type here. `TryFrom<RegexCbor>` compiles the pattern
+*`RegexTypst`* to implement those, not `Regex`, so this works the same way it
+does for every other type here. `TryFrom<RegexTypst>` compiles the pattern
 immediately via `regex_lite::Regex::new`, so a malformed pattern fails at
 decode time rather than producing a value that silently doesn't work as
 advertised, and `Regex` derefs to `regex_lite::Regex` so `is_match`/`find`/
@@ -432,12 +500,12 @@ covers negative values specifically as a regression test for this.
 `Decimal` (`foundations/decimal.rs`) is feature-gated exactly like `Regex` —
 crate feature `decimal`, `#![cfg(feature = "decimal")]` gating the whole
 module, no placeholder type, `Any::Decimal` individually gated in `any.rs`
-the same way `Any::Regex` is — and follows the same `…Cbor` shadow-struct
+the same way `Any::Regex` is — and follows the same `…Typst` shadow-struct
 convention. It's backed by `rust_decimal::Decimal`, which is worth calling
 out: that's not just *a* decimal crate, it's the *same* one Typst's own
 `decimal` type wraps internally (`pub struct
 Decimal(rust_decimal::Decimal);` in Typst's own source), so this is Typst's
-actual representation, not a reimplementation of it. `TryFrom<DecimalCbor>`
+actual representation, not a reimplementation of it. `TryFrom<DecimalTypst>`
 uses `rust_decimal::Decimal::from_str_exact`, the same exact (non-rounding)
 parse Typst's own `FromStr` impl for `decimal` uses, and `Decimal` derefs
 to `rust_decimal::Decimal` so its arithmetic methods are directly usable.
@@ -455,7 +523,7 @@ it wraps no external crate, only `Vec<Any>`/`BTreeMap<String, Any>` — already
 unconditionally available — so it's wired into `any.rs` the same way the
 always-on native types are (a plain `native_conversions!` entry, not a
 standalone `#[cfg(...)]`-gated `From` impl). It still follows the same
-`…Cbor` shadow-struct convention as everything else. Because `Any` doesn't
+`…Typst` shadow-struct convention as everything else. Because `Any` doesn't
 derive `PartialEq`/`Eq`, neither does `Arguments`; the Tytanic suite's
 `roundtrip` helper compares via Typst's own `==`/`repr()` on the decoded
 value instead, so this doesn't affect round-trip verification. This is also

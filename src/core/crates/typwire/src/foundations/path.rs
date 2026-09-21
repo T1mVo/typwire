@@ -12,7 +12,7 @@ const TYPE_NAME: &str = "path";
 /// independent of which file constructed it, since a relative path string
 /// only means something relative to the file it was written in.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-#[serde(try_from = "PathCbor", into = "PathCbor")]
+#[serde(try_from = "PathTypst", into = "PathTypst")]
 pub struct Path {
     pub path: String,
 }
@@ -35,13 +35,13 @@ impl Path {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct PathCbor {
+struct PathTypst {
     typwire_type: String,
     path: String,
 }
 
-// Serialize into PathCbor
-impl From<Path> for PathCbor {
+// Serialize into PathTypst
+impl From<Path> for PathTypst {
     fn from(value: Path) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -50,11 +50,11 @@ impl From<Path> for PathCbor {
     }
 }
 
-// Deserialize from PathCbor
-impl TryFrom<PathCbor> for Path {
+// Deserialize from PathTypst
+impl TryFrom<PathTypst> for Path {
     type Error = String;
 
-    fn try_from(value: PathCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: PathTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Path: {}",

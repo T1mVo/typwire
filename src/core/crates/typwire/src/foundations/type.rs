@@ -4,7 +4,7 @@ const TYPE_NAME: &str = "type";
 
 /// A structure representing a type defined by a string.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-#[serde(try_from = "TypeCbor", into = "TypeCbor")]
+#[serde(try_from = "TypeTypst", into = "TypeTypst")]
 pub struct Type {
     pub ty: String,
 }
@@ -31,13 +31,13 @@ impl Type {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct TypeCbor {
+struct TypeTypst {
     typwire_type: String,
     ty: String,
 }
 
-// Serialize into TypeCbor
-impl From<Type> for TypeCbor {
+// Serialize into TypeTypst
+impl From<Type> for TypeTypst {
     fn from(value: Type) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -46,11 +46,11 @@ impl From<Type> for TypeCbor {
     }
 }
 
-// Deserialize from TypeCbor
-impl TryFrom<TypeCbor> for Type {
+// Deserialize from TypeTypst
+impl TryFrom<TypeTypst> for Type {
     type Error = String;
 
-    fn try_from(value: TypeCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: TypeTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Type: {}",

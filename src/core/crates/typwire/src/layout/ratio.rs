@@ -4,7 +4,7 @@ const TYPE_NAME: &str = "ratio";
 
 /// A structure representing a ratio from 0 to 1.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, PartialOrd, Debug)]
-#[serde(try_from = "RatioCbor", into = "RatioCbor")]
+#[serde(try_from = "RatioTypst", into = "RatioTypst")]
 pub struct Ratio {
     pub ratio: f64,
 }
@@ -45,26 +45,26 @@ impl Ratio {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct RatioCbor {
+struct RatioTypst {
     typwire_type: String,
     ratio: f64,
 }
 
-// Serialize into RatioCbor
-impl From<Ratio> for RatioCbor {
+// Serialize into RatioTypst
+impl From<Ratio> for RatioTypst {
     fn from(value: Ratio) -> Self {
-        RatioCbor {
+        RatioTypst {
             typwire_type: TYPE_NAME.to_string(),
             ratio: value.ratio,
         }
     }
 }
 
-// Deserialize from RatioCbor
-impl TryFrom<RatioCbor> for Ratio {
+// Deserialize from RatioTypst
+impl TryFrom<RatioTypst> for Ratio {
     type Error = String;
 
-    fn try_from(value: RatioCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: RatioTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Ratio: {}",

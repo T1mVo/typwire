@@ -1,29 +1,38 @@
 //! Wasm plugin for the Typst roundtrip test suite.
 //!
 //! Every test in `<repo>/tests/<name>/` (`<name>` may nest, e.g.
-//! `foundations/bool`) ships its own `plugin.rs` next to its `test.typ`.
-//! Usually that's one exported function
+//! `foundations/bool`) ships **four** sibling cases, one per wire format --
+//! `tests/<name>/{cbor,json,yaml,toml}/`, each its own `plugin.rs` next to
+//! its `test.typ`. `plugin.rs` usually has one exported function
 //!
 //! ```ignore
-//! #[typwire::export]
-//! fn roundtrip_<name>(value: T) -> Result<T, String> { Ok(value) }
+//! #[typwire::export(rename = "roundtrip-<name>-<format>")]
+//! fn roundtrip_<name>_<format>(value: T) -> Result<T, String> { Ok(value) }
 //! ```
 //!
-//! per file, though a case is free to define several when they're closely
-//! related (see `tests/rename/plugin.rs`).
-//! Every case is pulled in here with `case!`. `#[typwire::export]` expands to
-//! a `#[wasm_func]` wrapper that needs the `initiate_protocol!()` items in
-//! scope, which only holds at the crate root, so the case files are
-//! `include!`d here rather than mounted as `mod`s.
+//! (`format`/`rename` omitted for the `cbor` case, since `cbor` is
+//! `#[typwire::export]`'s own default -- though `rename` is still given, for
+//! a uniform `dictionary(plugin).at("roundtrip-<name>-<format>")` access
+//! pattern across all four), though a case is free to define several
+//! functions when they're closely related (see `tests/rename/*/plugin.rs`).
+//! Every group of four is pulled in here with one `case!` call.
+//! `#[typwire::export]` expands to a `#[wasm_func]` wrapper that needs the
+//! `initiate_protocol!()` items in scope, which only holds at the crate
+//! root, so the case files are `include!`d here rather than mounted as
+//! `mod`s.
 //!
 //! Rules for a `plugin.rs` case file, because its tokens land in this module:
 //! - no `use` items (they would collide across cases); rely on the glob imports
 //!   below or write fully-qualified paths,
-//! - every exported function name must be unique across the whole suite —
-//!   hence the `roundtrip_<name>` convention.
+//! - every exported function name (and any locally defined type, e.g. a
+//!   `#[derive(Typwire)]` struct) must be unique across the whole suite --
+//!   hence the `roundtrip_<name>_<format>` convention and, where a case
+//!   needs a local struct, a `<Name><Format>` naming pattern (see
+//!   `tests/foundations/dictionary/struct/*/plugin.rs`).
 //!
-//! To add a test: `mkdir tests/<name>`, add `test.typ` + `plugin.rs`, then add
-//! one `case!("<name>");` line below.
+//! To add a test: `mkdir -p tests/<name>/{cbor,json,yaml,toml}`, add a
+//! `test.typ` + `plugin.rs` pair to each, then add one `case!("<name>");`
+//! line below -- it expands to all four `include!`s.
 
 #![allow(unused_imports)]
 
@@ -32,13 +41,33 @@ typwire::initiate_protocol!();
 use serde::{Deserialize, Serialize};
 use typwire::*;
 
+/// Pulls in all four format variants of one test: `tests/<name>/{cbor,json,
+/// yaml,toml}/plugin.rs`.
 macro_rules! case {
     ($name:literal) => {
         include!(concat!(
             env!("CARGO_MANIFEST_DIR"),
             "/../../../../tests/",
             $name,
-            "/plugin.rs"
+            "/cbor/plugin.rs"
+        ));
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../../tests/",
+            $name,
+            "/json/plugin.rs"
+        ));
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../../tests/",
+            $name,
+            "/yaml/plugin.rs"
+        ));
+        include!(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/../../../../tests/",
+            $name,
+            "/toml/plugin.rs"
         ));
     };
 }
@@ -114,10 +143,3 @@ case!("visualize/color-space");
 case!("visualize/paint");
 case!("visualize/center");
 case!("visualize/stop");
-
-// Wire formats other than the default (CBOR, exercised by every case
-// above): one representative slice per format, not a full re-run of the
-// suite -- see `tests/format/<name>/plugin.rs`.
-case!("format/json");
-case!("format/yaml");
-case!("format/toml");

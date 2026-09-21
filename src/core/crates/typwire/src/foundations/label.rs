@@ -7,7 +7,7 @@ const TYPE_NAME: &str = "label";
 /// `name` is the label's resolved name, the same string `str(value)` gives
 /// back in Typst -- there is no `repr()` trick involved, unlike `Path`.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[serde(try_from = "LabelCbor", into = "LabelCbor")]
+#[serde(try_from = "LabelTypst", into = "LabelTypst")]
 pub struct Label {
     pub name: String,
 }
@@ -30,13 +30,13 @@ impl Label {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct LabelCbor {
+struct LabelTypst {
     typwire_type: String,
     name: String,
 }
 
-// Serialize into LabelCbor
-impl From<Label> for LabelCbor {
+// Serialize into LabelTypst
+impl From<Label> for LabelTypst {
     fn from(value: Label) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -45,11 +45,11 @@ impl From<Label> for LabelCbor {
     }
 }
 
-// Deserialize from LabelCbor
-impl TryFrom<LabelCbor> for Label {
+// Deserialize from LabelTypst
+impl TryFrom<LabelTypst> for Label {
     type Error = String;
 
-    fn try_from(value: LabelCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: LabelTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Label: {}",

@@ -21,7 +21,7 @@ const TYPE_NAME: &str = "symbol";
 /// (e.g. some arrow variants are a base character plus a variation
 /// selector).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-#[serde(try_from = "SymbolCbor", into = "SymbolCbor")]
+#[serde(try_from = "SymbolTypst", into = "SymbolTypst")]
 pub struct Symbol {
     pub default: String,
     pub variants: Vec<SymbolVariant>,
@@ -96,14 +96,14 @@ impl SymbolVariant {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct SymbolCbor {
+struct SymbolTypst {
     typwire_type: String,
     default: String,
     variants: Vec<SymbolVariant>,
 }
 
-// Serialize into SymbolCbor
-impl From<Symbol> for SymbolCbor {
+// Serialize into SymbolTypst
+impl From<Symbol> for SymbolTypst {
     fn from(value: Symbol) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -113,11 +113,11 @@ impl From<Symbol> for SymbolCbor {
     }
 }
 
-// Deserialize from SymbolCbor
-impl TryFrom<SymbolCbor> for Symbol {
+// Deserialize from SymbolTypst
+impl TryFrom<SymbolTypst> for Symbol {
     type Error = String;
 
-    fn try_from(value: SymbolCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: SymbolTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Symbol: {}",
