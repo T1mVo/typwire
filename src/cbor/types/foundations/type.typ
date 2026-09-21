@@ -71,6 +71,8 @@
     gradient
   } else if ty == "datetime" {
     datetime
+  } else if ty == "decimal" {
+    decimal
   } else if ty == "duration" {
     duration
   } else if ty == "version" {

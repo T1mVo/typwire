@@ -12,5 +12,5 @@ publish = false
 crate-type = ["cdylib"]
 
 [dependencies]
-typwire = { path = "../typwire", features = ["regex"] }
+typwire = { path = "../typwire", features = ["decimal", "regex"] }
 serde = { workspace = true }

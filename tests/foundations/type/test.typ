@@ -9,3 +9,5 @@
 #roundtrip(plugin.roundtrip_type, type(auto))
 #roundtrip(plugin.roundtrip_type, type(path("test.typ")))
 #roundtrip(plugin.roundtrip_type, type(symbol("★")))
+#roundtrip(plugin.roundtrip_type, type(regex("a")))
+#roundtrip(plugin.roundtrip_type, type(decimal("1")))

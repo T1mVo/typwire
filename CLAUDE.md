@@ -87,7 +87,7 @@ cargo test -p typwire            # single crate
 cargo test --doc -p typwire      # doctests only (type modules carry runnable examples)
 cargo test bytes_use_a_byte_string   # single test by name
 cargo build --target wasm32-unknown-unknown   # plugin-target build
-cargo test -p typwire --features regex   # also exercise the regex-lite-backed `Regex` path
+cargo test -p typwire --features decimal,regex   # also exercise `Decimal`/`Regex`
 ```
 
 Note: `src/core/Cargo.toml` declares `[workspace.dev-dependencies]` (trybuild),
@@ -159,10 +159,10 @@ reason: without it, cbor4ii can't even parse an incoming half-precision float.
 
 Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Color` and its
 8 spaces, `Gradient` variants, `DateTime`, `Duration`, `Version`, `Type`,
-`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`, `Regex`) are represented
-as **tagged dictionaries**: an ordinary map carrying a `typwire-type` string
-field (kebab-case, e.g. `"length"`, `"color-oklch"`, `"gradient-linear"`,
-`"auto"`, `"path"`, `"symbol"`, `"regex"`).
+`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`, `Regex`, `Decimal`) are
+represented as **tagged dictionaries**: an ordinary map carrying a
+`typwire-type` string field (kebab-case, e.g. `"length"`, `"color-oklch"`,
+`"gradient-linear"`, `"auto"`, `"path"`, `"symbol"`, `"regex"`, `"decimal"`).
 
 Both sides are organized the same way, by Typst's own reference categories
 (<https://typst.app/docs/reference/>) — `foundations/`, `layout/`,
@@ -296,8 +296,37 @@ immediately via `regex_lite::Regex::new`, so a malformed pattern fails at
 decode time rather than producing a value that silently doesn't work as
 advertised, and `Regex` derefs to `regex_lite::Regex` so `is_match`/`find`/
 etc. are directly usable. `typwire-tests-plugin` builds with
-`features = ["regex"]` so the
-Tytanic suite exercises the real thing.
+`features = ["decimal", "regex"]` so the Tytanic suite exercises the real
+thing for both.
+
+`decimal` is the simplest of the four "extra" foundations types: unlike
+`path`/`symbol`/`regex`, it has a real `str()` conversion that gives back
+its exact digits directly, so `decimal.typ::encode` needs no `repr()`/
+unescaping trick at all. The one real gotcha, caught empirically rather than
+assumed: Typst's `Display` for a *negative* decimal writes the typographic
+minus sign U+2212, not ASCII `-` (confirmed by reading
+`typst-library/src/foundations/decimal.rs` upstream — its `Display` impl
+writes `repr::MINUS_SIGN` explicitly before the magnitude). Typst's own
+`decimal(...)` constructor happens to accept that character back (it
+normalizes internally), but the Rust side parses the wire string directly
+with `rust_decimal::Decimal::from_str_exact`, which only understands ASCII
+`-` — so `decimal.typ::encode` normalizes U+2212 to `-` before it ever
+reaches the wire, rather than relying on Rust-side preprocessing to undo a
+Typst-specific typographic choice. `tests/foundations/decimal/test.typ`
+covers negative values specifically as a regression test for this.
+
+`Decimal` (`foundations/decimal.rs`) is feature-gated exactly like `Regex` —
+crate feature `decimal`, `#![cfg(feature = "decimal")]` gating the whole
+module, no placeholder type, `Any::Decimal` individually gated in `any.rs`
+the same way `Any::Regex` is — and follows the same `…Cbor` shadow-struct
+convention. It's backed by `rust_decimal::Decimal`, which is worth calling
+out: that's not just *a* decimal crate, it's the *same* one Typst's own
+`decimal` type wraps internally (`pub struct
+Decimal(rust_decimal::Decimal);` in Typst's own source), so this is Typst's
+actual representation, not a reimplementation of it. `TryFrom<DecimalCbor>`
+uses `rust_decimal::Decimal::from_str_exact`, the same exact (non-rounding)
+parse Typst's own `FromStr` impl for `decimal` uses, and `Decimal` derefs
+to `rust_decimal::Decimal` so its arithmetic methods are directly usable.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.
@@ -356,6 +385,6 @@ separately-encoded calling convention is what `#[typwire::export]`'s
 
 ## Explicitly unsupported (by design)
 
-Borrowed values (`&str`, `&[u8]`, borrowed models), Typst `content`, `function`,
-fractions, directions, relative lengths, and `decimal`. `content`/`function`
+Borrowed values (`&str`, `&[u8]`, borrowed models), Typst `content`,
+`function`, fractions, directions, and relative lengths. `content`/`function`
 encoding panics on the Typst side; references are a compile error via the macro.

@@ -66,6 +66,7 @@ case!("foundations/auto");
 case!("foundations/bool");
 case!("foundations/bytes");
 case!("foundations/datetime");
+case!("foundations/decimal");
 case!("foundations/duration");
 case!("foundations/float");
 case!("foundations/none");

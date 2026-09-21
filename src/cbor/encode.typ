@@ -7,6 +7,7 @@
 // under a different name to be reachable at all.
 #import "types/foundations/auto.typ" as auto-value
 #import "types/foundations/datetime.typ"
+#import "types/foundations/decimal.typ"
 #import "types/foundations/duration.typ"
 #import "types/foundations/path.typ"
 #import "types/foundations/regex.typ"
@@ -57,6 +58,8 @@
     result = encode-inner(gradient.encode(content))
   } else if std.type(content) == std.datetime {
     result = encode-inner(datetime.encode(content))
+  } else if std.type(content) == std.decimal {
+    result = encode-inner(decimal.encode(content))
   } else if std.type(content) == std.duration {
     result = encode-inner(duration.encode(content))
   } else if std.type(content) == std.version {
