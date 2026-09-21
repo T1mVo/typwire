@@ -159,10 +159,11 @@ reason: without it, cbor4ii can't even parse an incoming half-precision float.
 
 Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Color` and its
 8 spaces, `Gradient` variants, `DateTime`, `Duration`, `Version`, `Type`,
-`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`, `Regex`, `Decimal`) are
-represented as **tagged dictionaries**: an ordinary map carrying a
-`typwire-type` string field (kebab-case, e.g. `"length"`, `"color-oklch"`,
-`"gradient-linear"`, `"auto"`, `"path"`, `"symbol"`, `"regex"`, `"decimal"`).
+`Center`, `Radius`, `Stop`, `Auto`, `Path`, `Symbol`, `Regex`, `Decimal`,
+`Arguments`) are represented as **tagged dictionaries**: an ordinary map
+carrying a `typwire-type` string field (kebab-case, e.g. `"length"`,
+`"color-oklch"`, `"gradient-linear"`, `"auto"`, `"path"`, `"symbol"`,
+`"regex"`, `"decimal"`, `"arguments"`).
 
 Both sides are organized the same way, by Typst's own reference categories
 (<https://typst.app/docs/reference/>) — `foundations/`, `layout/`,
@@ -327,6 +328,27 @@ actual representation, not a reimplementation of it. `TryFrom<DecimalCbor>`
 uses `rust_decimal::Decimal::from_str_exact`, the same exact (non-rounding)
 parse Typst's own `FromStr` impl for `decimal` uses, and `Decimal` derefs
 to `rust_decimal::Decimal` so its arithmetic methods are directly usable.
+
+`arguments` needs no `repr()` trick either: it has a real constructor
+(`arguments(..pos, ..named)`) and real accessors (`.pos()` → array, `.named()`
+→ dictionary), so `arguments.typ::encode` just calls those directly and
+`decode` spreads them back through the constructor. Confirmed empirically
+that order between the positional and named groups doesn't need preserving
+across the split (only within each group) — `arguments(..a.pos(), ..a.named())`
+is `==` to a real captured `a` with interleaved positional/named arguments,
+and the empty case (`arguments()`) round-trips `==` too. Unlike `Regex`/
+`Decimal`, `Arguments` (`foundations/arguments.rs`) needs **no feature gate**:
+it wraps no external crate, only `Vec<Any>`/`BTreeMap<String, Any>` — already
+unconditionally available — so it's wired into `any.rs` the same way the
+always-on native types are (a plain `native_conversions!` entry, not a
+standalone `#[cfg(...)]`-gated `From` impl). It still follows the same
+`…Cbor` shadow-struct convention as everything else. Because `Any` doesn't
+derive `PartialEq`/`Eq`, neither does `Arguments`; the Tytanic suite's
+`roundtrip` helper compares via Typst's own `==`/`repr()` on the decoded
+value instead, so this doesn't affect round-trip verification. This is also
+the first native type whose Rust representation directly embeds `Any`
+(mutual recursion between the two types is unproblematic — ordinary
+type-level recursion within one crate, not a cyclic dependency).
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.

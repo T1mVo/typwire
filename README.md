@@ -99,7 +99,8 @@ Supported Rust values include:
 - `Bytes` for a Typst byte string; `Vec<u8>` remains an ordinary array
 - `Any` for dynamic values and `OneOf2` through `OneOf8` for ordered alternatives
 - Typst angles, lengths, ratios, colors, gradients, datetimes, durations,
-  versions, type objects, paths, symbols, and their helper types
+  versions, type objects, paths, symbols, captured arguments, and their
+  helper types
 - `Regex` for a Typst regular expression, backed by a compiled
   [`regex-lite`](https://docs.rs/regex-lite) pattern, behind this crate's
   optional `regex` feature

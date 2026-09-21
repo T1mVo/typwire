@@ -62,6 +62,7 @@ case!("char");
 // pair directly, as `int`, `array`, and `dictionary` do below.
 
 // https://typst.app/docs/reference/foundations/
+case!("foundations/arguments");
 case!("foundations/auto");
 case!("foundations/bool");
 case!("foundations/bytes");
