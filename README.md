@@ -1,8 +1,10 @@
 # typwire
 
 Typed, Serde-backed data exchange for [Typst](https://typst.app/) WASM
-plugins. Typwire preserves native Typst values across the CBOR plugin boundary
-and generates protocol wrappers for ordinary Rust functions.
+plugins. Typwire preserves native Typst values across the plugin boundary and
+generates protocol wrappers for ordinary Rust functions. CBOR is the default
+wire format on both sides; JSON, YAML, and TOML are available per export/call
+(see *Wire formats* below).
 
 The Typst and Rust package versions must match exactly.
 
@@ -58,7 +60,7 @@ fn measure(
 Call it from Typst with separately encoded positional arguments:
 
 ```typ
-#import "@preview/typwire:0.2.0"
+#import "@preview/typwire:0.3.0"
 
 #let plugin = plugin("plugin.wasm")
 #let report = typwire.call(
@@ -82,6 +84,43 @@ By default the wasm export takes the Rust function's name. Pass
 `#[typwire::export(rename = "other-name")]` to choose a different one; the name
 need not be a valid Rust identifier. A non-identifier export is reached from
 Typst through `dictionary(plugin).at("other-name")`.
+
+## Wire formats
+
+CBOR is the default everywhere. Pass `#[typwire::export(format = "json")]`
+(also `"yaml"`/`"toml"`) to decode/encode that export's arguments and result
+through a different format instead — each behind its own crate feature
+(`json`/`yaml`/`toml`, off by default, `cargo add typwire --features json`):
+
+```rust
+#[typwire::export(format = "json")]
+fn measure_json(options: Options) -> Result<Report, String> {
+    /* .. */
+}
+```
+
+Call it from Typst through the matching namespace instead of `typwire.call`:
+
+```typ
+#let report = typwire.json.call(plugin.measure_json, (label: "Value: ", scale: 1.5))
+```
+
+`typwire.cbor`/`typwire.json`/`typwire.yaml`/`typwire.toml` each expose the
+same `call`/`encode`/`decode` shape; `typwire.call`/`typwire.encode`/
+`typwire.decode` (no namespace) are aliases for the `cbor` ones. A plugin
+export and the Typst call site must agree on the same format — nothing
+checks this for you, the same way argument types on either side already
+have to agree.
+
+JSON/YAML have no native way to tell an integer apart from a float the way
+CBOR/TOML can, and none of the three have a native byte-string type; both
+are handled transparently (see `CLAUDE.md` if you're curious how), so this
+mostly isn't something you need to think about. Two exceptions: TOML
+requires a struct/dictionary-shaped value at the top level of a call or
+export (a bare `i64` or `Vec<T>` argument fails to encode; TOML's own
+grammar requires a root table, matching Typst's own `toml.encode`), and a
+stroke's tiling-pattern paint isn't representable in any format (see
+*Wire contract* below).
 
 ## Wire contract
 
@@ -123,7 +162,8 @@ fractions, directions, and relative lengths are not supported. Stroke paints
 are limited to solid colors and gradients; Typst's tiling patterns have no
 `Typwire` representation.
 
-`typwire.encode` and `typwire.decode` are available for manual integration.
-`typwire.call` accepts positional arguments only and recursively preserves
-supported native values inside arrays and dictionaries. Unknown Typwire tags and
-type objects that cannot be reconstructed fail explicitly.
+`typwire.encode`/`typwire.decode` (and their per-format counterparts) are
+available for manual integration. `typwire.call` accepts positional
+arguments only and recursively preserves supported native values inside
+arrays and dictionaries. Unknown Typwire tags and type objects that cannot
+be reconstructed fail explicitly.

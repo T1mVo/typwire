@@ -60,18 +60,34 @@
     regex.decode(value)
   } else if tag == arguments.type-name {
     arguments.decode(value)
+  } else if tag == "bytes" {
+    // Not a native type with its own `types/**` module -- formats with no
+    // native byte-string type (everything but CBOR) rewrite a `bytes` leaf
+    // into this exact tagged shape before handing the tree to their native
+    // encoder; see `wire/rewrite-bytes.typ`. `Cbor` never produces this tag
+    // (its own `bytes` values pass straight through untagged), so this arm
+    // simply never triggers on the CBOR path.
+    bytes(value.data)
   } else {
     panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
   }
 }
 
-#let decode-inner(value) = {
+/// The mirror of `encode.typ::encode`: recursively reconstruct native
+/// Typst values from a plain dictionary/array/primitive tree. Format-
+/// agnostic -- this is the shared layer every `typwire.<format>.decode`
+/// wraps a native format decoder with (`cbor(...)`, `json(...)`, ...).
+///
+/// - value (any): A tree produced by `encode`, after a native format
+///   decoder has parsed it back out of the wire bytes.
+/// -> any
+#let decode(value) = {
   if std.type(value) == array {
-    value.map(decode-inner)
+    value.map(decode)
   } else if std.type(value) == dictionary {
     let decoded = (:)
     for (key, field) in value.pairs() {
-      decoded.insert(key, decode-inner(field))
+      decoded.insert(key, decode(field))
     }
 
     if decoded.keys().contains("typwire-type") {
@@ -86,15 +102,4 @@
   } else {
     value
   }
-}
-
-/// Decode CBOR bytes and reconstruct supported native Typst values.
-///
-/// - data (bytes): The encoded Typwire value.
-/// -> any
-#let decode(data) = {
-  if std.type(data) != bytes {
-    panic("typwire.decode: data must be bytes")
-  }
-  decode-inner(cbor(data))
 }

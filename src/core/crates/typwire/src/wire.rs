@@ -92,33 +92,57 @@ impl<'de> Deserialize<'de> for Bytes {
     }
 }
 
-/// An error raised while encoding or decoding the supported wire subset.
+/// An error raised while encoding or decoding a supported wire format.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum Error {
-    #[error("could not serialize value as CBOR: {0}")]
+    #[error("could not serialize value: {0}")]
     Serialization(String),
-    #[error("could not deserialize CBOR value: {0}")]
+    #[error("could not deserialize value: {0}")]
     Deserialization(String),
+}
+
+/// A wire format `typwire` can encode/decode a [`Typwire`] value through.
+///
+/// `#[typwire::export(format = "...")]` and `typwire::<Format>::encode`/
+/// `decode` are the two ways to pick a non-default format; [`encode`]/
+/// [`decode`] (this module's free functions) always mean [`Cbor`], matching
+/// Typst's own `typwire.call` default.
+pub trait Format {
+    fn encode<T: Typwire>(value: &T) -> Result<Vec<u8>, Error>;
+    fn decode<T: Typwire>(bytes: &[u8]) -> Result<T, Error>;
+}
+
+/// The default wire format: CBOR, via `cbor4ii`.
+pub struct Cbor;
+
+impl Format for Cbor {
+    fn encode<T: Typwire>(value: &T) -> Result<Vec<u8>, Error> {
+        cbor4ii::serde::to_vec(Vec::new(), value)
+            .map_err(|error| Error::Serialization(error.to_string()))
+    }
+
+    fn decode<T: Typwire>(bytes: &[u8]) -> Result<T, Error> {
+        // `T`'s derived `Deserialize` reads typed scalars (e.g. `deserialize_f64`),
+        // which cbor4ii resolves strictly: a bare `f64` field rejects wire bytes
+        // that used the narrower CBOR float widths Typst's encoder picks
+        // canonically. `LenientDeserializer` redirects only the float-hinted
+        // calls through cbor4ii's own width-tolerant `deserialize_any`, so this
+        // stays a single parse pass.
+        let reader = cbor4ii::core::utils::SliceReader::new(bytes);
+        let mut inner = cbor4ii::serde::Deserializer::new(reader);
+        T::deserialize(LenientDeserializer(&mut inner))
+            .map_err(|error| Error::Deserialization(error.to_string()))
+    }
 }
 
 /// Encode an explicitly supported value into CBOR bytes.
 pub fn encode<T: Typwire>(value: &T) -> Result<Vec<u8>, Error> {
-    cbor4ii::serde::to_vec(Vec::new(), value)
-        .map_err(|error| Error::Serialization(error.to_string()))
+    Cbor::encode(value)
 }
 
 /// Decode CBOR bytes into an explicitly supported owned value.
 pub fn decode<T: Typwire>(bytes: &[u8]) -> Result<T, Error> {
-    // `T`'s derived `Deserialize` reads typed scalars (e.g. `deserialize_f64`),
-    // which cbor4ii resolves strictly: a bare `f64` field rejects wire bytes
-    // that used the narrower CBOR float widths Typst's encoder picks
-    // canonically. `LenientDeserializer` redirects only the float-hinted
-    // calls through cbor4ii's own width-tolerant `deserialize_any`, so this
-    // stays a single parse pass.
-    let reader = cbor4ii::core::utils::SliceReader::new(bytes);
-    let mut inner = cbor4ii::serde::Deserializer::new(reader);
-    T::deserialize(LenientDeserializer(&mut inner))
-        .map_err(|error| Error::Deserialization(error.to_string()))
+    Cbor::decode(bytes)
 }
 
 /// A `Deserializer` wrapper that widens narrow CBOR floats.
@@ -513,6 +537,95 @@ tuple_impls!(
 pub(crate) fn value_to_owned<T: DeserializeOwned>(value: Value) -> Result<T, String> {
     let bytes = cbor4ii::serde::to_vec(Vec::new(), &value).map_err(|error| error.to_string())?;
     cbor4ii::serde::from_slice(&bytes).map_err(|error| error.to_string())
+}
+
+/// The mirror of [`value_to_owned`]: turn any `Typwire` value into a generic
+/// [`Value`] tree, round-tripping through real CBOR bytes the same way
+/// `value_to_owned` does in the other direction. Used by the text formats
+/// (`Json`/`Yaml`/`Toml`) to get a tree they can rewrite [`Bytes`] nodes in
+/// before handing it to a format that has no native byte-string concept --
+/// see `rewrite_bytes_to_array`. `Cbor` never needs this: it serializes
+/// `T` directly in one pass, `Bytes` included, exactly as today.
+#[cfg(any(feature = "json", feature = "yaml", feature = "toml"))]
+pub(crate) fn value_from_owned<T: Serialize>(value: &T) -> Result<Value, String> {
+    let bytes = cbor4ii::serde::to_vec(Vec::new(), value).map_err(|error| error.to_string())?;
+    cbor4ii::serde::from_slice(&bytes).map_err(|error| error.to_string())
+}
+
+/// Replace every [`Value::Bytes`] node in `value` with the same tagged
+/// dictionary shape the Typst side uses for a format with no native
+/// byte-string type (`src/wire/rewrite-bytes.typ`): `{typwire-type:
+/// "bytes", data: [...]}`, `data` a plain array of byte integers -- not
+/// base64, since Typst has no built-in base64 codec to match it against.
+#[cfg(any(feature = "json", feature = "yaml", feature = "toml"))]
+pub(crate) fn rewrite_bytes_to_array(value: &mut Value) {
+    match value {
+        Value::Bytes(data) => {
+            let entries = vec![
+                (
+                    Value::Text("typwire-type".to_owned()),
+                    Value::Text("bytes".to_owned()),
+                ),
+                (
+                    Value::Text("data".to_owned()),
+                    Value::Array(
+                        data.iter()
+                            .map(|byte| Value::Integer(*byte as i128))
+                            .collect(),
+                    ),
+                ),
+            ];
+            *value = Value::Map(entries);
+        }
+        Value::Array(items) => items.iter_mut().for_each(rewrite_bytes_to_array),
+        Value::Map(entries) => entries
+            .iter_mut()
+            .for_each(|(_, entry)| rewrite_bytes_to_array(entry)),
+        _ => {}
+    }
+}
+
+/// The inverse of [`rewrite_bytes_to_array`]: replace every `{typwire-type:
+/// "bytes", data: [...]}` tagged dictionary with a real [`Value::Bytes`].
+#[cfg(any(feature = "json", feature = "yaml", feature = "toml"))]
+pub(crate) fn rewrite_array_to_bytes(value: &mut Value) {
+    match value {
+        Value::Map(entries) => {
+            let is_tagged_bytes = entries.iter().any(|(key, entry)| {
+                matches!(
+                    (key, entry),
+                    (Value::Text(key), Value::Text(tag))
+                        if key == "typwire-type" && tag == "bytes"
+                )
+            });
+
+            if is_tagged_bytes {
+                let data = entries
+                    .iter()
+                    .find_map(|(key, entry)| match (key, entry) {
+                        (Value::Text(key), Value::Array(items)) if key == "data" => {
+                            Some(items.clone())
+                        }
+                        _ => None,
+                    })
+                    .unwrap_or_default();
+                let bytes = data
+                    .into_iter()
+                    .filter_map(|item| match item {
+                        Value::Integer(byte) => u8::try_from(byte).ok(),
+                        _ => None,
+                    })
+                    .collect();
+                *value = Value::Bytes(bytes);
+            } else {
+                entries
+                    .iter_mut()
+                    .for_each(|(_, entry)| rewrite_array_to_bytes(entry));
+            }
+        }
+        Value::Array(items) => items.iter_mut().for_each(rewrite_array_to_bytes),
+        _ => {}
+    }
 }
 
 pub(crate) fn invalid_value<E: serde::de::Error>(message: impl std::fmt::Display) -> E {

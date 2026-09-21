@@ -28,9 +28,16 @@ pub fn derive_typwire(input: TokenStream) -> TokenStream {
 /// - `rename = "wire-name"` — export under `wire-name` instead of the Rust
 ///   function name. The name need not be a valid identifier; reach a
 ///   non-identifier export from Typst via `dictionary(plugin).at("wire-name")`.
+/// - `format = "json"` — decode/encode arguments and the result through this
+///   wire format instead of the default `"cbor"`. One of `"cbor"`, `"json"`,
+///   `"yaml"`, `"toml"`. Picking a format whose crate feature isn't enabled
+///   on the `typwire` dependency is a compile error (the marker type doesn't
+///   exist), not a runtime one — the same property `Regex`/`Decimal` already
+///   have when their feature is off.
 #[proc_macro_attribute]
 pub fn export(arguments: TokenStream, input: TokenStream) -> TokenStream {
     let mut rename = None;
+    let mut format = None;
     if !arguments.is_empty() {
         let parser = syn::meta::parser(|meta| {
             if meta.path.is_ident("rename") {
@@ -40,9 +47,17 @@ pub fn export(arguments: TokenStream, input: TokenStream) -> TokenStream {
                 }
                 rename = Some(value);
                 Ok(())
+            } else if meta.path.is_ident("format") {
+                let value: syn::LitStr = meta.value()?.parse()?;
+                if !matches!(value.value().as_str(), "cbor" | "json" | "yaml" | "toml") {
+                    return Err(meta
+                        .error("`format` must be one of \"cbor\", \"json\", \"yaml\", \"toml\""));
+                }
+                format = Some(value);
+                Ok(())
             } else {
                 Err(meta.error(
-                    "unknown option; `#[typwire::export]` only accepts `rename = \"...\"`",
+                    "unknown option; `#[typwire::export]` only accepts `rename = \"...\"` and `format = \"...\"`",
                 ))
             }
         });
@@ -54,7 +69,7 @@ pub fn export(arguments: TokenStream, input: TokenStream) -> TokenStream {
 
     let function = parse_macro_input!(input as ItemFn);
 
-    match expand_export(function, rename) {
+    match expand_export(function, rename, format) {
         Ok(tokens) => tokens.into(),
         Err(error) => error.into_compile_error().into(),
     }
@@ -82,9 +97,11 @@ fn expand_derive(input: syn::DeriveInput) -> syn::Result<TokenStream2> {
 fn expand_export(
     mut implementation: ItemFn,
     rename: Option<syn::LitStr>,
+    format: Option<syn::LitStr>,
 ) -> syn::Result<TokenStream2> {
     let typwire = typwire_path()?;
     let arguments = validate_signature(&implementation.sig)?;
+    let format_marker = format_marker(&typwire, format.as_ref());
 
     let function_name = implementation.sig.ident.clone();
     let function_name_literal = syn::LitStr::new(&function_name.to_string(), function_name.span());
@@ -126,7 +143,7 @@ fn expand_export(
             let argument_name = syn::LitStr::new(&name.to_string(), name.span());
             quote! {
                 #(#attributes)*
-                let #name: #argument_type = #typwire::__private::decode_argument::<#argument_type>(
+                let #name: #argument_type = #typwire::__private::decode_argument::<#format_marker, #argument_type>(
                     #name,
                     #function_name_literal,
                     #argument_name,
@@ -153,7 +170,7 @@ fn expand_export(
         let value = #implementation_name(#(#call_arguments),*)
             .map_err(#typwire::__private::display_error)?;
 
-        #typwire::__private::encode_result(&value, #function_name_literal)
+        #typwire::__private::encode_result::<#format_marker, _>(&value, #function_name_literal)
     };
 
     let wire = match &rename {
@@ -473,6 +490,21 @@ fn implementation_name(function: &ItemFn) -> syn::Ident {
         function.sig.ident,
         span = function.sig.ident.span()
     )
+}
+
+/// Resolve the `format = "..."` option to the marker type it names
+/// (`typwire::Cbor` by default), each an ordinary path under the `typwire`
+/// crate root -- `syn::meta`'s own validation already rejected anything
+/// besides the four recognized names before this runs.
+fn format_marker(typwire: &TokenStream2, format: Option<&syn::LitStr>) -> TokenStream2 {
+    let marker = match format.map(syn::LitStr::value).as_deref() {
+        None | Some("cbor") => format_ident!("Cbor"),
+        Some("json") => format_ident!("Json"),
+        Some("yaml") => format_ident!("Yaml"),
+        Some("toml") => format_ident!("Toml"),
+        Some(_) => unreachable!("validated in `export`'s option parser"),
+    };
+    quote! { #typwire::#marker }
 }
 
 fn typwire_path() -> syn::Result<TokenStream2> {

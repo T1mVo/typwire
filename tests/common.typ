@@ -20,3 +20,15 @@
     message: "round trip mismatch:\n  in:  " + repr(value) + "\n  out: " + repr(got),
   )
 }
+
+/// Like `roundtrip`, but through a specific format namespace's `call`
+/// (`typwire.json`, `typwire.yaml`, `typwire.toml`, ...) instead of the
+/// default `typwire.call` (CBOR) -- for `#[typwire::export(format =
+/// "...")]` cases under `tests/format/`.
+#let roundtrip-format(namespace, func, value) = {
+  let got = namespace.call(func, value)
+  assert(
+    got == value or repr(got) == repr(value),
+    message: "round trip mismatch:\n  in:  " + repr(value) + "\n  out: " + repr(got),
+  )
+}

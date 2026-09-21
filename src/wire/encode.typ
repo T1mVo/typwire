@@ -23,7 +23,7 @@
 #import "types/visualize/gradient/gradient.typ"
 #import "types/visualize/stroke.typ"
 
-#let is-cbor-compatible(content) = {
+#let is-primitive(content) = {
   (
     std.type(content) == std.int
       or std.type(content) == std.float
@@ -34,57 +34,68 @@
   )
 }
 
-#let encode-inner(content) = {
+/// Recursively turn a Typst value into a plain dictionary/array/primitive
+/// tree: native types become `typwire-type`-tagged dictionaries, everything
+/// else passes through unchanged. Format-agnostic -- this is the shared
+/// layer every `typwire.<format>.encode` wraps with a native format encoder
+/// (`cbor.encode`, `json.encode`, ...). `bytes` values pass straight
+/// through as real Typst `bytes`; formats with no native byte-string type
+/// (everything but CBOR) rewrite them separately -- see
+/// `wire/rewrite-bytes.typ`.
+///
+/// - content (any): The content to encode.
+/// -> any
+#let encode(content) = {
   let result
 
-  if is-cbor-compatible(content) {
+  if is-primitive(content) {
     result = content
   } else if std.type(content) == std.array {
-    result = content.map(i => encode-inner(i))
+    result = content.map(i => encode(i))
   } else if std.type(content) == std.dictionary {
     result = (:)
     for (key, value) in content.pairs() {
-      result.insert(key, encode-inner(value))
+      result.insert(key, encode(value))
     }
   } else if content == auto {
     // `auto` has no dedicated `std.type`; unlike `none` it isn't part of
     // Typst's own reliable CBOR subset, so it needs a tagged dict like the
     // other native types below, distinguishing it on the wire from `none`.
-    result = encode-inner(auto-value.encode())
+    result = encode(auto-value.encode())
   } else if std.type(content) == std.alignment {
-    result = encode-inner(alignment.encode(content))
+    result = encode(alignment.encode(content))
   } else if std.type(content) == std.angle {
-    result = encode-inner(angle.encode(content))
+    result = encode(angle.encode(content))
   } else if std.type(content) == std.length {
-    result = encode-inner(length.encode(content))
+    result = encode(length.encode(content))
   } else if std.type(content) == std.ratio {
-    result = encode-inner(ratio.encode(content))
+    result = encode(ratio.encode(content))
   } else if std.type(content) == std.color {
-    result = encode-inner(color.encode(content))
+    result = encode(color.encode(content))
   } else if std.type(content) == std.gradient {
-    result = encode-inner(gradient.encode(content))
+    result = encode(gradient.encode(content))
   } else if std.type(content) == std.stroke {
-    result = encode-inner(stroke.encode(content))
+    result = encode(stroke.encode(content))
   } else if std.type(content) == std.datetime {
-    result = encode-inner(datetime.encode(content))
+    result = encode(datetime.encode(content))
   } else if std.type(content) == std.decimal {
-    result = encode-inner(decimal.encode(content))
+    result = encode(decimal.encode(content))
   } else if std.type(content) == std.duration {
-    result = encode-inner(duration.encode(content))
+    result = encode(duration.encode(content))
   } else if std.type(content) == std.label {
-    result = encode-inner(label.encode(content))
+    result = encode(label.encode(content))
   } else if std.type(content) == std.version {
-    result = encode-inner(version.encode(content))
+    result = encode(version.encode(content))
   } else if std.type(content) == std.type {
-    result = encode-inner(type.encode(content))
+    result = encode(type.encode(content))
   } else if std.type(content) == std.path {
-    result = encode-inner(path.encode(content))
+    result = encode(path.encode(content))
   } else if std.type(content) == std.symbol {
-    result = encode-inner(symbol.encode(content))
+    result = encode(symbol.encode(content))
   } else if std.type(content) == std.regex {
-    result = encode-inner(regex.encode(content))
+    result = encode(regex.encode(content))
   } else if std.type(content) == std.arguments {
-    result = encode-inner(arguments.encode(content))
+    result = encode(arguments.encode(content))
   } else if std.type(content) == std.content {
     panic("typwire.encode: content values are not supported")
   } else {
@@ -92,12 +103,4 @@
   }
 
   result
-}
-
-/// Encode content into CBOR format.
-///
-/// - content (any): The content to encode.
-/// -> bytes
-#let encode(content) = {
-  cbor.encode(encode-inner(content))
 }

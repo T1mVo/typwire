@@ -1,4 +1,10 @@
 pub use any::Any;
+#[cfg(feature = "json")]
+pub use format::Json;
+#[cfg(feature = "toml")]
+pub use format::Toml;
+#[cfg(feature = "yaml")]
+pub use format::Yaml;
 #[cfg(feature = "decimal")]
 pub use foundations::Decimal;
 #[cfg(feature = "regex")]
@@ -16,9 +22,10 @@ pub use visualize::{
     Paint, RadialGradientBuilder, Rgb, Stop, Stroke, color,
 };
 pub use wasm_minimal_protocol::initiate_protocol;
-pub use wire::{Bytes, Error, Typwire, decode, encode};
+pub use wire::{Bytes, Cbor, Error, Format, Typwire, decode, encode};
 
 mod any;
+mod format;
 mod foundations;
 mod layout;
 mod one_of;
@@ -79,23 +86,27 @@ impl Typwire for Regex {}
 pub mod __private {
     use std::fmt::Display;
 
-    use super::{Typwire, decode, encode};
+    use super::{Format, Typwire};
 
     pub use serde::{Serialize, de::DeserializeOwned};
     pub use wasm_minimal_protocol::wasm_func;
 
-    pub fn decode_argument<T: Typwire>(
+    pub fn decode_argument<F: Format, T: Typwire>(
         bytes: &[u8],
         function: &str,
         argument: &str,
     ) -> Result<T, String> {
-        decode(bytes).map_err(|error| {
+        F::decode(bytes).map_err(|error| {
             format!("failed to decode argument `{argument}` for `{function}`: {error}")
         })
     }
 
-    pub fn encode_result<T: Typwire>(value: &T, function: &str) -> Result<Vec<u8>, String> {
-        encode(value).map_err(|error| format!("failed to encode result of `{function}`: {error}"))
+    pub fn encode_result<F: Format, T: Typwire>(
+        value: &T,
+        function: &str,
+    ) -> Result<Vec<u8>, String> {
+        F::encode(value)
+            .map_err(|error| format!("failed to encode result of `{function}`: {error}"))
     }
 
     pub fn display_error(error: impl Display) -> String {
