@@ -54,10 +54,20 @@ covers all four wire formats: `tests/<type>/{cbor,json,yaml,toml}/`, each a
 Tytanic has **no build hook**, so `scripts/test.py` is the entry point: it
 `cargo build`s `typwire-tests-plugin` for wasm, copies the artifact to
 `target/typwire-tests/plugin.wasm` (git-ignored; the path every `test.typ`
-loads), then runs `tt`.
+loads), then runs `tt`. With `--release` *and* `wasm-opt` (Binaryen) on
+PATH, that copy is instead `wasm-opt -O4 -Oz <artifact> -o
+target/typwire-tests/plugin.wasm` — `wasm-opt` is optional (checked via
+`shutil.which`, not `require`d like `cargo`/`tt`), so its absence falls
+back to the plain copy rather than erroring. Empirically this made almost
+no difference to the *test-run* phase itself for this suite (`tt run`'s own
+time was unchanged before/after) — the win is a ~24% smaller artifact — but
+it costs a real, one-time ~8s of its own on this codebase's current size,
+on top of the ~7s `cargo build --release` step, so it's opt-in via
+`wasm-opt` being installed rather than always-on.
 
 ```sh
 python3 scripts/test.py               # build plugin + tt run --no-fail-fast (all tests)
+python3 scripts/test.py --release     # release profile; also runs wasm-opt if installed
 python3 scripts/test.py length ratio  # forwarded: tt run length ratio
 python3 scripts/test.py --no-build type   # skip cargo, reuse existing wasm
 python3 scripts/test.py update        # forwarded: tt update
