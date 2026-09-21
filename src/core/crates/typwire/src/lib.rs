@@ -1,6 +1,7 @@
 pub use any::Any;
 pub use foundations::{
-    Auto, DateTime, DateTimeBuilder, Duration, DurationBuilder, Path, Symbol, Type, Version,
+    Auto, DateTime, DateTimeBuilder, Duration, DurationBuilder, Path, Symbol, SymbolVariant, Type,
+    Version,
 };
 pub use layout::{Angle, Length, Radius, Ratio};
 pub use one_of::{OneOf2, OneOf3, OneOf4, OneOf5, OneOf6, OneOf7, OneOf8};

@@ -212,25 +212,40 @@ type error, and it exposes no accessor) — the only textual form available at
 all is `repr()`, which always renders as the Typst source expression
 `path("...")`. `path.typ::encode` strips that wrapper
 (`repr(value).slice(5, -1)`) and reverses `repr`'s string escaping by hand
-via `unescape-repr-string` (backslash/quote/`\n`/`\t`/`\r`/`\u{...}`,
-confirmed against Typst's actual escape set empirically since it isn't fully
-spelled out in the docs) — deliberately *not* `eval`, since that would
-execute the string as Typst code; this is pure string manipulation instead.
+via `utils.typ::unescape-repr-string` (backslash/quote/`\n`/`\t`/`\r`/
+`\u{...}`, confirmed against Typst's actual escape set empirically since it
+isn't fully spelled out in the docs) — deliberately *not* `eval`, since that
+would execute the string as Typst code; this is pure string manipulation
+instead. `symbol.typ` needs the same trick (see below) and shares it via
+`utils.typ::unescape-repr-content`, which `unescape-repr-string` itself is a
+thin `.slice(1, -1)` wrapper around.
 
-`Symbol` is lossy by necessity, not just by choice: a Typst `symbol` can
-carry a whole table of named modifier variants (e.g. `sym.arrow.r` also
-covers `.double`, `.long`, `.squiggly`, ...), but nothing in that variant
-table is reachable from script — `Symbol`'s `#[scope]` in Typst's own source
-only exposes the constructor, and `str`/`repr`/Typst's own `Serialize` for
-`Symbol` all only ever expose the *currently selected* glyph (confirmed by
-reading `typst-library/src/foundations/symbol.rs` upstream: `variants()`/
-`modifiers()` are plain `impl Symbol` methods, never `#[scope]`d). So
-`symbol.typ::encode` can only ever put that one glyph on the wire; decoding
-reconstructs a variant-less symbol from it, which is `==` to the original
-only when the original had no variants of its own (most of `sym.*` does, so
-most realistic values will *not* round-trip `==`-equal — see
-`tests/foundations/symbol/test.typ` for the asymmetric-assertion test this
-requires, same pattern as `tests/layout/radius/test.typ`'s shorthand cases).
+`Symbol` carries a whole table of named modifier variants (e.g.
+`sym.arrow.r` also covers `.double`, `.long`, `.squiggly`, ...), and none of
+that table is reachable from script through any dedicated API — `Symbol`'s
+`#[scope]` in Typst's own source only exposes the constructor; `variants()`/
+`modifiers()` are plain `impl Symbol` methods, never `#[scope]`d (confirmed
+by reading `typst-library/src/foundations/symbol.rs` upstream). `repr()`
+*does* print the full table, though, as Typst source
+(`symbol("→", ("double", "⇒"), ...)`), so `symbol.typ::encode` parses that
+text back out with `variant-pattern`, a regex matching the
+`("modifiers", "glyph")` tuples — a small, well-defined grammar, not
+`eval`. The bare/default entry is deliberately *not* read from that parse;
+`encode` gets it from `str(value)` instead (documented, stable API) so the
+wire format's most important piece doesn't depend on `repr`'s formatting.
+Reconstructing via `symbol(default, ..variants)` in decode is functionally
+equivalent to the original (`str(...)` and modifier field access both
+agree), but is never `==` to a *built-in* (`sym.*`/`emoji.*`) value no
+matter how completely the variant table is restored — confirmed
+empirically: Typst represents predefined symbols and anything
+`symbol(...)` constructs as different internal enum variants, and derived
+`PartialEq` never crosses that boundary. A symbol built with `symbol(...)`
+in the first place (not one of Typst's own predefined ones) *does*
+round-trip `==`-exact, as long as its variants come back in the same order
+`repr` listed them — which they always do, since both `repr` and `decode`
+walk the variant list in the same order (equality between two
+`symbol(...)`-built values turned out to be order-sensitive too, confirmed
+empirically). See `tests/foundations/symbol/test.typ` for both cases.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.
