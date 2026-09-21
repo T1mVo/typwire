@@ -1,33 +1,6 @@
-#import "../../utils.typ": is-debug-assert
+#import "../../utils.typ": is-debug-assert, unescape-repr-string
 
 #let type-name = "path"
-
-/// Undo the escaping `repr` applies to a string literal, without `eval`ing
-/// anything -- pure string manipulation, so this can never execute code.
-///
-/// - value (str): A `repr`'d string, quotes included (e.g. `repr("a\"b")`,
-///   i.e. the four characters `"`, `a`, `\`, `"`, `b`, `"`).
-/// -> str
-#let unescape-repr-string(value) = {
-  value
-    .slice(1, -1)
-    // `\u{...}` is `repr`'s escape for any non-printable character that
-    // doesn't have one of the dedicated escapes below (arbitrary hex
-    // codepoint, no fixed width, e.g. `\u{7}`, `\u{1b}`).
-    .replace(
-      regex("\\\\u\\{([0-9a-fA-F]+)\\}"),
-      m => str.from-unicode(int(m.captures.at(0), base: 16)),
-    )
-    .replace("\\n", "\n")
-    .replace("\\t", "\t")
-    .replace("\\r", "\r")
-    .replace("\\\"", "\"")
-    // A path can never legitimately contain a backslash (`path(...)`
-    // rejects it outright), so `repr` never has an actual backslash to
-    // escape here -- this is just defensive completeness, done last so it
-    // can't be misread as the start of one of the escapes above.
-    .replace("\\\\", "\\")
-}
 
 /// Encode a path into a CBOR-compatible dictionary.
 ///

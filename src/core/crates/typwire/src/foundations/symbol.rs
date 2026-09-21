@@ -5,25 +5,31 @@ const TYPE_NAME: &str = "symbol";
 /// A structure representing a Typst Unicode symbol.
 ///
 /// A Typst `symbol` can carry a whole table of named modifier variants
-/// (e.g. `sym.arrow.r` also covers `.double`, `.long`, `.squiggly`, ...),
-/// but Typst exposes no way to enumerate them from script -- only the
-/// *currently selected* glyph is ever observable (via `str`, `repr`, or
-/// Typst's own `Serialize` impl for `Symbol`, which all only expose that
-/// one glyph). So only that glyph crosses the wire; reconstructing a
-/// `Symbol` value from this loses any other variants the original had.
+/// (e.g. `sym.arrow.r` also covers `.double`, `.long`, `.squiggly`, ...).
+/// `default` is the currently selected glyph (what `str`/`Display` on the
+/// Typst value gives); `variants` is every other named modifier variant,
+/// extracted from Typst's `repr` of the symbol (the only place that table
+/// is observable from script at all). Reconstructing a Typst `symbol` value
+/// from this is functionally equivalent to the original -- `str()` and
+/// modifier field access both agree with it -- but is never `==` to a
+/// built-in (`sym.*`/`emoji.*`) original, since those use a different
+/// internal representation in Typst than anything a plugin can construct;
+/// see `src/cbor/types/foundations/symbol.typ`.
 ///
-/// Holds a `String`, not a `char`: Typst guarantees a symbol's text is
+/// Holds `String`s, not `char`s: Typst guarantees a variant's text is
 /// exactly one grapheme cluster, not necessarily one Unicode scalar value
 /// (e.g. some arrow variants are a base character plus a variation
 /// selector).
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(try_from = "SymbolCbor", into = "SymbolCbor")]
 pub struct Symbol {
-    pub symbol: String,
+    pub default: String,
+    pub variants: Vec<SymbolVariant>,
 }
 
 impl Symbol {
-    /// Creates a new `Symbol` instance from the given grapheme cluster.
+    /// Creates a new `Symbol` instance from the given default glyph, with no
+    /// modifier variants.
     ///
     /// # Examples
     ///
@@ -31,10 +37,60 @@ impl Symbol {
     /// use typwire::Symbol;
     ///
     /// let star = Symbol::new(String::from("★"));
-    /// assert_eq!(star.symbol, "★");
+    /// assert_eq!(star.default, "★");
+    /// assert!(star.variants.is_empty());
     /// ```
-    pub const fn new(symbol: String) -> Self {
-        Self { symbol }
+    pub const fn new(default: String) -> Self {
+        Self {
+            default,
+            variants: Vec::new(),
+        }
+    }
+
+    /// Creates a new `Symbol` instance from the given default glyph and
+    /// modifier variants.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use typwire::{Symbol, SymbolVariant};
+    ///
+    /// let arrow = Symbol::with_variants(
+    ///     String::from("→"),
+    ///     vec![SymbolVariant::new(String::from("double"), String::from("⇒"))],
+    /// );
+    /// assert_eq!(arrow.default, "→");
+    /// assert_eq!(arrow.variants.len(), 1);
+    /// ```
+    pub const fn with_variants(default: String, variants: Vec<SymbolVariant>) -> Self {
+        Self { default, variants }
+    }
+}
+
+/// A single named modifier variant of a [`Symbol`].
+#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[serde(rename_all = "kebab-case")]
+pub struct SymbolVariant {
+    /// Dot-joined modifier names, e.g. `"double.long"`.
+    pub modifiers: String,
+    /// The grapheme cluster this variant selects.
+    pub glyph: String,
+}
+
+impl SymbolVariant {
+    /// Creates a new `SymbolVariant` from the given modifiers and glyph.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use typwire::SymbolVariant;
+    ///
+    /// let variant = SymbolVariant::new(String::from("double"), String::from("⇒"));
+    /// assert_eq!(variant.modifiers, "double");
+    /// assert_eq!(variant.glyph, "⇒");
+    /// ```
+    pub const fn new(modifiers: String, glyph: String) -> Self {
+        Self { modifiers, glyph }
     }
 }
 
@@ -42,7 +98,8 @@ impl Symbol {
 #[serde(rename_all = "kebab-case")]
 struct SymbolCbor {
     typwire_type: String,
-    symbol: String,
+    default: String,
+    variants: Vec<SymbolVariant>,
 }
 
 // Serialize into SymbolCbor
@@ -50,7 +107,8 @@ impl From<Symbol> for SymbolCbor {
     fn from(value: Symbol) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
-            symbol: value.symbol,
+            default: value.default,
+            variants: value.variants,
         }
     }
 }
@@ -67,6 +125,6 @@ impl TryFrom<SymbolCbor> for Symbol {
             ));
         }
 
-        Ok(Self::new(value.symbol))
+        Ok(Self::with_variants(value.default, value.variants))
     }
 }

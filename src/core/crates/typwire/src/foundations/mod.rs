@@ -12,6 +12,6 @@ pub use auto::Auto;
 pub use datetime::{DateTime, DateTimeBuilder};
 pub use duration::{Duration, DurationBuilder};
 pub use path::Path;
-pub use symbol::Symbol;
+pub use symbol::{Symbol, SymbolVariant};
 pub use r#type::Type;
 pub use version::Version;
