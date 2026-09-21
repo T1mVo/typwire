@@ -1,4 +1,6 @@
 pub use any::Any;
+#[cfg(feature = "regex")]
+pub use foundations::Regex;
 pub use foundations::{
     Auto, DateTime, DateTimeBuilder, Duration, DurationBuilder, Path, Symbol, SymbolVariant, Type,
     Version,
@@ -53,6 +55,9 @@ impl_typwire!(
     Type,
     Version,
 );
+
+#[cfg(feature = "regex")]
+impl Typwire for Regex {}
 
 #[doc(hidden)]
 pub mod __private {

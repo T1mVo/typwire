@@ -3,6 +3,8 @@ use std::collections::BTreeMap;
 use cbor4ii::core::Value;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+#[cfg(feature = "regex")]
+use crate::Regex;
 use crate::{
     Angle, Auto, Bytes, Color, DateTime, Duration, Gradient, Length, Path, Ratio, Symbol, Type,
     Typwire, Version,
@@ -32,6 +34,8 @@ pub enum Any {
     Type(Type),
     Path(Path),
     Symbol(Symbol),
+    #[cfg(feature = "regex")]
+    Regex(Regex),
 }
 
 impl Serialize for Any {
@@ -60,6 +64,8 @@ impl Serialize for Any {
             Self::Type(value) => value.serialize(serializer),
             Self::Path(value) => value.serialize(serializer),
             Self::Symbol(value) => value.serialize(serializer),
+            #[cfg(feature = "regex")]
+            Self::Regex(value) => value.serialize(serializer),
         }
     }
 }
@@ -121,6 +127,8 @@ fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
             "type" => value_to_owned(value).map(Any::Type),
             "path" => value_to_owned(value).map(Any::Path),
             "symbol" => value_to_owned(value).map(Any::Symbol),
+            #[cfg(feature = "regex")]
+            "regex" => value_to_owned(value).map(Any::Regex),
             other => Err(format!("unknown typwire-type tag `{other}`")),
         };
     }
@@ -216,6 +224,13 @@ native_conversions!(
     (Path, Path),
     (Symbol, Symbol),
 );
+
+#[cfg(feature = "regex")]
+impl From<Regex> for Any {
+    fn from(value: Regex) -> Self {
+        Self::Regex(value)
+    }
+}
 
 #[cfg(test)]
 mod tests {

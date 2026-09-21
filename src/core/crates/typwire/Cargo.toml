@@ -12,10 +12,17 @@ keywords = ["typst", "typing", "wasm", "plugin"]
 categories = ["data-structures", "encoding", "wasm"]
 exclude = ["example", "test", "scripts", "src-typst"]
 
+[features]
+# Backs the Typst `regex` type with a compiled `regex_lite::Regex`. Without
+# it, `Regex` (and `Any::Regex`) don't exist at all -- see
+# `src/foundations/regex.rs`.
+regex = ["dep:regex-lite"]
+
 [dependencies]
 typwire-macros.workspace = true
 
 cbor4ii.workspace = true
+regex-lite = { workspace = true, optional = true }
 serde.workspace = true
 thiserror.workspace = true
 wasm-minimal-protocol.workspace = true
