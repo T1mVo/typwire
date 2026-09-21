@@ -14,7 +14,7 @@ const TYPE_NAME: &str = "datetime";
 /// assert_eq!(dt.month, Some(12));
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Default, Debug)]
-#[serde(try_from = "DateTimeCbor", into = "DateTimeCbor")]
+#[serde(try_from = "DateTimeTypst", into = "DateTimeTypst")]
 pub struct DateTime {
     pub year: Option<i64>,
     pub month: Option<i64>,
@@ -185,7 +185,7 @@ impl DateTimeBuilder {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct DateTimeCbor {
+struct DateTimeTypst {
     typwire_type: String,
     year: Option<i64>,
     month: Option<i64>,
@@ -195,8 +195,8 @@ struct DateTimeCbor {
     second: Option<i64>,
 }
 
-// Serialize into DateTimeCbor
-impl From<DateTime> for DateTimeCbor {
+// Serialize into DateTimeTypst
+impl From<DateTime> for DateTimeTypst {
     fn from(value: DateTime) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -210,11 +210,11 @@ impl From<DateTime> for DateTimeCbor {
     }
 }
 
-// Deserialize from DateTimeCbor
-impl TryFrom<DateTimeCbor> for DateTime {
+// Deserialize from DateTimeTypst
+impl TryFrom<DateTimeTypst> for DateTime {
     type Error = String;
 
-    fn try_from(value: DateTimeCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: DateTimeTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for DateTime: {}",

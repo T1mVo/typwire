@@ -68,6 +68,11 @@
     // (its own `bytes` values pass straight through untagged), so this arm
     // simply never triggers on the CBOR path.
     bytes(value.data)
+  } else if tag == "none" {
+    // Same situation as `"bytes"` above, but for `none`/null: only TOML
+    // needs this (see `wire/rewrite-none.typ`) -- `Cbor`/`json`/`yaml`
+    // never produce this tag, since they all represent `none` natively.
+    none
   } else {
     panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
   }

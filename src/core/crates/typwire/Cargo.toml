@@ -27,12 +27,15 @@ regex = ["dep:regex-lite"]
 # doesn't exist at all -- see `src/format/json.rs`.
 json = ["dep:serde_json"]
 # Enables the `Yaml` wire format, backed by `serde-saphyr`. Without it,
-# `Yaml` doesn't exist at all -- see `src/format/yaml.rs`.
-yaml = ["dep:serde-saphyr"]
+# `Yaml` doesn't exist at all -- see `src/format/yaml.rs`. Also pulls in
+# `serde_json` regardless of whether the `json` feature is on: `decode`
+# parses into `serde_json::Value` first to route around a real bug where
+# parsing straight into `cbor4ii::core::Value` mis-resolves a bare `y`/`n`
+# map key as a boolean (YAML 1.1's "Norway problem") -- see the doc comment
+# on `Yaml` in `src/format/yaml.rs`.
+yaml = ["dep:serde-saphyr", "dep:serde_json"]
 # Enables the `Toml` wire format, backed by the `toml` crate. Without it,
-# `Toml` doesn't exist at all -- see `src/format/toml.rs`. TOML's own
-# grammar requires a top-level table, so this format only works for
-# struct/dictionary-shaped `Typwire` values, not bare primitives or arrays.
+# `Toml` doesn't exist at all -- see `src/format/toml.rs`.
 toml = ["dep:toml"]
 
 [dependencies]

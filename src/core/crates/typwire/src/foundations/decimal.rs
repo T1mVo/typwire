@@ -23,7 +23,7 @@ const TYPE_NAME: &str = "decimal";
 /// to `Any`'s normal "unknown typwire-type tag" error instead of a
 /// dedicated message -- see `any.rs`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-#[serde(try_from = "DecimalCbor", into = "DecimalCbor")]
+#[serde(try_from = "DecimalTypst", into = "DecimalTypst")]
 pub struct Decimal(rust_decimal::Decimal);
 
 impl Decimal {
@@ -54,13 +54,13 @@ impl std::ops::Deref for Decimal {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct DecimalCbor {
+struct DecimalTypst {
     typwire_type: String,
     decimal: String,
 }
 
-// Serialize into DecimalCbor
-impl From<Decimal> for DecimalCbor {
+// Serialize into DecimalTypst
+impl From<Decimal> for DecimalTypst {
     fn from(value: Decimal) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -69,11 +69,11 @@ impl From<Decimal> for DecimalCbor {
     }
 }
 
-// Deserialize from DecimalCbor
-impl TryFrom<DecimalCbor> for Decimal {
+// Deserialize from DecimalTypst
+impl TryFrom<DecimalTypst> for Decimal {
     type Error = String;
 
-    fn try_from(value: DecimalCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: DecimalTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Decimal: {}",
@@ -94,10 +94,10 @@ mod tests {
     #[test]
     fn invalid_decimal_fails_to_decode() {
         // Bypasses `Decimal::new`'s own validation on purpose, to exercise
-        // `TryFrom<DecimalCbor>`'s.
+        // `TryFrom<DecimalTypst>`'s.
         let bytes = cbor4ii::serde::to_vec(
             Vec::new(),
-            &DecimalCbor {
+            &DecimalTypst {
                 typwire_type: TYPE_NAME.to_string(),
                 decimal: "not-a-number".to_string(),
             },

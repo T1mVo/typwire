@@ -21,7 +21,7 @@ const TYPE_NAME: &str = "regex";
 /// "unknown typwire-type tag" error instead of a dedicated message -- see
 /// `any.rs`.
 #[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "RegexCbor", into = "RegexCbor")]
+#[serde(try_from = "RegexTypst", into = "RegexTypst")]
 pub struct Regex(regex_lite::Regex);
 
 impl Regex {
@@ -58,13 +58,13 @@ impl Eq for Regex {}
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct RegexCbor {
+struct RegexTypst {
     typwire_type: String,
     pattern: String,
 }
 
-// Serialize into RegexCbor
-impl From<Regex> for RegexCbor {
+// Serialize into RegexTypst
+impl From<Regex> for RegexTypst {
     fn from(value: Regex) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -73,11 +73,11 @@ impl From<Regex> for RegexCbor {
     }
 }
 
-// Deserialize from RegexCbor
-impl TryFrom<RegexCbor> for Regex {
+// Deserialize from RegexTypst
+impl TryFrom<RegexTypst> for Regex {
     type Error = String;
 
-    fn try_from(value: RegexCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: RegexTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Regex: {}",
@@ -98,10 +98,10 @@ mod tests {
     #[test]
     fn invalid_pattern_fails_to_decode() {
         // Bypasses `Regex::new`'s own validation on purpose, to exercise
-        // `TryFrom<RegexCbor>`'s.
+        // `TryFrom<RegexTypst>`'s.
         let bytes = cbor4ii::serde::to_vec(
             Vec::new(),
-            &RegexCbor {
+            &RegexTypst {
                 typwire_type: TYPE_NAME.to_string(),
                 pattern: "(unclosed".to_string(),
             },

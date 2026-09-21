@@ -1,0 +1,6 @@
+#import "../../../common.typ": roundtrip-format, plugin, typwire
+#let exports = dictionary(plugin)
+
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-duration-cbor"), duration(hours: 2))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-duration-cbor"), duration(days: 1, minutes: 30))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-duration-cbor"), duration(seconds: -90))

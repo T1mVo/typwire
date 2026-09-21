@@ -15,17 +15,17 @@ const TYPE_NAME: &str = "auto";
 /// let value = Auto;
 /// ```
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
-#[serde(try_from = "AutoCbor", into = "AutoCbor")]
+#[serde(try_from = "AutoTypst", into = "AutoTypst")]
 pub struct Auto;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct AutoCbor {
+struct AutoTypst {
     typwire_type: String,
 }
 
-// Serialize into AutoCbor
-impl From<Auto> for AutoCbor {
+// Serialize into AutoTypst
+impl From<Auto> for AutoTypst {
     fn from(_: Auto) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -33,11 +33,11 @@ impl From<Auto> for AutoCbor {
     }
 }
 
-// Deserialize from AutoCbor
-impl TryFrom<AutoCbor> for Auto {
+// Deserialize from AutoTypst
+impl TryFrom<AutoTypst> for Auto {
     type Error = String;
 
-    fn try_from(value: AutoCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: AutoTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Auto: {}",

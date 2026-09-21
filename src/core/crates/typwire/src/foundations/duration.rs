@@ -18,7 +18,7 @@ const DAYS_IN_WEEK: f64 = 7.0;
 /// assert_eq!(d.hours(), 1.0);
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(try_from = "DurationCbor", into = "DurationCbor")]
+#[serde(try_from = "DurationTypst", into = "DurationTypst")]
 pub struct Duration {
     seconds: f64,
 }
@@ -249,13 +249,13 @@ impl DurationBuilder {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct DurationCbor {
+struct DurationTypst {
     typwire_type: String,
     seconds: f64,
 }
 
-// Serialize into DurationCbor
-impl From<Duration> for DurationCbor {
+// Serialize into DurationTypst
+impl From<Duration> for DurationTypst {
     fn from(value: Duration) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -264,11 +264,11 @@ impl From<Duration> for DurationCbor {
     }
 }
 
-// Deserialize from DurationCbor
-impl TryFrom<DurationCbor> for Duration {
+// Deserialize from DurationTypst
+impl TryFrom<DurationTypst> for Duration {
     type Error = String;
 
-    fn try_from(value: DurationCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: DurationTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Duration: {}",

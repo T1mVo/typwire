@@ -1,0 +1,18 @@
+#import "../../../common.typ": roundtrip-format, plugin, typwire
+#let exports = dictionary(plugin)
+
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), int)
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), str)
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), bool)
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), length)
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), dictionary)
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(none))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(auto))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(path("test.typ")))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(symbol("★")))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(regex("a")))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(decimal("1")))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(arguments()))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(label("x")))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(left))
+#roundtrip-format(typwire.cbor, exports.at("roundtrip-type-cbor"), type(stroke()))

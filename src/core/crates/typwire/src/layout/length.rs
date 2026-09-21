@@ -14,7 +14,7 @@ const TYPE_NAME: &str = "length";
 /// assert_eq!(length.inches(), 1.0);
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(try_from = "LengthCbor", into = "LengthCbor")]
+#[serde(try_from = "LengthTypst", into = "LengthTypst")]
 pub struct Length {
     points: f64,
 }
@@ -97,13 +97,13 @@ impl Length {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct LengthCbor {
+struct LengthTypst {
     typwire_type: String,
     points: f64,
 }
 
-// Serialize into LengthCbor
-impl From<Length> for LengthCbor {
+// Serialize into LengthTypst
+impl From<Length> for LengthTypst {
     fn from(value: Length) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
@@ -112,11 +112,11 @@ impl From<Length> for LengthCbor {
     }
 }
 
-// Deserialize from LengthCbor
-impl TryFrom<LengthCbor> for Length {
+// Deserialize from LengthTypst
+impl TryFrom<LengthTypst> for Length {
     type Error = String;
 
-    fn try_from(value: LengthCbor) -> Result<Self, Self::Error> {
+    fn try_from(value: LengthTypst) -> Result<Self, Self::Error> {
         if value.typwire_type != TYPE_NAME {
             return Err(format!(
                 "Invalid typwire-type for Length: {}",
