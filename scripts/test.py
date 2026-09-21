@@ -6,6 +6,11 @@ Tytanic has no build hook, so this script is the entry point for the suite in
 where the tests load it from (`<repo>/target/typwire-tests/plugin.wasm`, which
 is git-ignored), then invokes `tt`.
 
+With `--release` and `wasm-opt` (from Binaryen) on PATH, the release artifact
+is additionally optimized with `wasm-opt -O4 -Oz` before being placed at that
+path; without `wasm-opt` installed, the plain `cargo build --release` output
+is used as-is instead.
+
 Usage:
     scripts/test.py [--release] [--no-build] [TT_ARG ...]
     scripts/test.py length ratio         # -> tt run length ratio
@@ -82,6 +87,26 @@ def build_plugin(release: bool) -> Path:
     return artifact
 
 
+def optimize_with_wasm_opt(source: Path, dest: Path) -> bool:
+    """Run `wasm-opt -O4 -Oz` from `source` into `dest`.
+
+    Returns whether `wasm-opt` was found and used; the caller falls back to
+    a plain copy of `source` otherwise, since `wasm-opt` is an optional,
+    separately-installed tool (part of Binaryen), not a Rust toolchain
+    dependency.
+    """
+    wasm_opt = shutil.which("wasm-opt")
+    if wasm_opt is None:
+        return False
+
+    cmd = [wasm_opt, "-O4", "-Oz", str(source), "-o", str(dest)]
+    print(f"$ {' '.join(cmd)}")
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        die("wasm-opt failed")
+    return True
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description=__doc__,
@@ -104,8 +129,14 @@ def main() -> int:
     if args.build:
         artifact = build_plugin(args.release)
         PLUGIN_DEST.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(artifact, PLUGIN_DEST)
-        print(f"copied {artifact.relative_to(ROOT)} -> {PLUGIN_DEST.relative_to(ROOT)}")
+        if args.release and optimize_with_wasm_opt(artifact, PLUGIN_DEST):
+            print(
+                f"optimized {artifact.relative_to(ROOT)} -> "
+                f"{PLUGIN_DEST.relative_to(ROOT)} (wasm-opt -O4 -Oz)"
+            )
+        else:
+            shutil.copy2(artifact, PLUGIN_DEST)
+            print(f"copied {artifact.relative_to(ROOT)} -> {PLUGIN_DEST.relative_to(ROOT)}")
     elif not PLUGIN_DEST.is_file():
         die(f"--no-build given but {PLUGIN_DEST.relative_to(ROOT)} does not exist")
 
