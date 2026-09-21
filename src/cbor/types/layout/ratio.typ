@@ -1,4 +1,4 @@
-#import "../utils.typ": float-to-ratio, is-debug-assert, ratio-to-float
+#import "../../utils.typ": float-to-ratio, is-debug-assert, ratio-to-float
 
 #let type-name = "ratio"
 

@@ -162,29 +162,44 @@ Typst types with no CBOR primitive (`Length`, `Angle`, `Ratio`, `Color` and its
 an ordinary map carrying a `typwire-type` string field (kebab-case, e.g.
 `"length"`, `"color-oklch"`, `"gradient-linear"`, `"auto"`).
 
-This tag scheme is implemented **twice and must agree**:
+Both sides are organized the same way, by Typst's own reference categories
+(<https://typst.app/docs/reference/>) — `foundations/`, `layout/`,
+`visualize/` — mirroring how `tests/` is laid out (see *Testing* below):
 
-- Rust: each `src/core/crates/typwire/src/<type>.rs` defines a private
-  `…Cbor` shadow struct with `#[serde(try_from = "…Cbor", into = "…Cbor")]` on
-  the public type. `const TYPE_NAME` is the tag; `TryFrom` verifies it.
-- Typst: each `src/cbor/types/<type>.typ` exposes `type-name`, `encode`,
-  `decode` (`Center` and `Stop` live under `src/cbor/types/gradient/`, since
-  they're only ever nested inside a gradient, never a standalone Typst value).
-  `src/cbor/encode.typ::encode-inner` dispatches on `std.type(...)` when
-  serializing — except `Auto`, which has no `std.type` of its own and is
-  matched by direct value equality (`content == auto`) instead, same as how
-  `none` is detected; `src/cbor/decode.typ::decode-tagged` dispatches on the
-  `typwire-type` string when deserializing. Color/gradient use a
-  `common-type-name` prefix match. Note `decode-tagged` evaluates
+- Rust: `src/core/crates/typwire/src/{foundations,layout,visualize}/mod.rs`
+  are thin re-export modules (`mod <type>; pub use <type>::TypeName;` for
+  each type in that category); the actual implementation lives alongside
+  each `mod.rs`, in `{foundations,layout,visualize}/<type>.rs`. `color`'s own
+  submodule (`color::BLACK` etc.) is `pub` inside `visualize/mod.rs`
+  specifically so `lib.rs` can re-export it at the crate root as
+  `typwire::color`; every other submodule stays private, with only its types
+  re-exported. Anything without a matching reference category (`Any`,
+  `OneOfN`, the wire protocol itself) stays at the crate root instead of in
+  one of these three modules.
+  Each `<type>.rs` defines a private `…Cbor` shadow struct with
+  `#[serde(try_from = "…Cbor", into = "…Cbor")]` on the public type;
+  `const TYPE_NAME` is the tag, `TryFrom` verifies it.
+- Typst: `src/cbor/types/{foundations,layout,visualize}/<type>.typ` each
+  expose `type-name`, `encode`, `decode` (`Center` and `Stop` live under
+  `src/cbor/types/visualize/gradient/`, since they're only ever nested inside
+  a gradient, never a standalone Typst value). `src/cbor/encode.typ` and
+  `decode.typ` themselves stay at `src/cbor/`, outside that category split,
+  since they aren't type-specific. `encode.typ::encode-inner` dispatches on
+  `std.type(...)` when serializing — except `Auto`, which has no `std.type`
+  of its own and is matched by direct value equality (`content == auto`)
+  instead, same as how `none` is detected. `decode.typ::decode-tagged`
+  dispatches on the `typwire-type` string when deserializing. Color/gradient
+  use a `common-type-name` prefix match. Note `decode-tagged` evaluates
   `<module>.type-name` for the modules *before* the matching one, so every
   module in that chain must actually define `type-name` (a missing binding is a
   hard error for unrelated types, not just its own).
 
 `auto` and `none` are both Typst keyword literals, not ordinary identifiers —
-a bare `auto`/`none` always evaluates to that literal, so `types/auto.typ`
-can't be `#import`ed under its own name (that binding would be unreachable,
-shadowed by the keyword in every expression position). It's imported as
-`auto-value` in both `encode.typ` and `decode.typ`.
+a bare `auto`/`none` always evaluates to that literal, so
+`types/foundations/auto.typ` can't be `#import`ed under its own name (that
+binding would be unreachable, shadowed by the keyword in every expression
+position). It's imported as `auto-value` in both `encode.typ` and
+`decode.typ`.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
 `any.rs` (`from_map`) and `src/cbor/decode.typ`.

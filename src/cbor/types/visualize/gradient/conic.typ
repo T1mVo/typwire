@@ -1,4 +1,4 @@
-#import "../../utils.typ": is-debug-assert
+#import "../../../utils.typ": is-debug-assert
 #import "../color/color.typ"
 #import "center.typ"
 #import "stop.typ"
