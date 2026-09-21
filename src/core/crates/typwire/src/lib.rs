@@ -11,8 +11,8 @@ pub use foundations::Decimal;
 #[cfg(feature = "regex")]
 pub use foundations::Regex;
 pub use foundations::{
-    Arguments, Auto, DateTime, DateTimeBuilder, Duration, DurationBuilder, Label, Path, Symbol,
-    SymbolVariant, Type, Version,
+    Arguments, Array, Auto, Bool, DateTime, DateTimeBuilder, Dictionary, Duration, DurationBuilder,
+    Float, Int, Label, Path, Str, Symbol, SymbolVariant, Type, Version,
 };
 pub use layout::{Alignment, Angle, HAlignment, Length, Radius, Ratio, VAlignment};
 pub use one_of::{OneOf2, OneOf3, OneOf4, OneOf5, OneOf6, OneOf7, OneOf8};
@@ -44,6 +44,10 @@ impl_typwire!(
     Angle,
     Arguments,
     Auto,
+    Bool,
+    Float,
+    Int,
+    Str,
     Center,
     Luma,
     Oklab,
