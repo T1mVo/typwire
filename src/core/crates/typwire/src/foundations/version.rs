@@ -2,26 +2,31 @@ use serde::{Deserialize, Serialize};
 
 const TYPE_NAME: &str = "version";
 
-/// A structure representing version with 5 components.
+/// A structure representing a Typst version.
+///
+/// Typst's `version(...)` constructor accepts any number of components
+/// (`version()`, `version(1)`, `version(1, 2, 3, 4, 5, 6, 7)`, ... are all
+/// valid) -- there is no fixed major/minor/patch/revision/build scheme, so
+/// `components` is a plain `Vec<i64>` rather than named fields.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(try_from = "VersionTypst", into = "VersionTypst")]
 pub struct Version {
-    pub major: i64,
-    pub minor: i64,
-    pub patch: i64,
-    pub revision: i64,
-    pub build: i64,
+    pub components: Vec<i64>,
 }
 
 impl Version {
-    pub const fn new(major: i64, minor: i64, patch: i64, revision: i64, build: i64) -> Self {
-        Self {
-            major,
-            minor,
-            patch,
-            revision,
-            build,
-        }
+    /// Creates a new `Version` from the given components.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use typwire::Version;
+    ///
+    /// let version = Version::new(vec![1, 2, 3]);
+    /// assert_eq!(version.components, vec![1, 2, 3]);
+    /// ```
+    pub const fn new(components: Vec<i64>) -> Self {
+        Self { components }
     }
 }
 
@@ -29,23 +34,15 @@ impl Version {
 #[serde(rename_all = "kebab-case")]
 struct VersionTypst {
     typwire_type: String,
-    major: i64,
-    minor: i64,
-    patch: i64,
-    revision: i64,
-    build: i64,
+    components: Vec<i64>,
 }
 
-// Serilaize into VersionTypst
+// Serialize into VersionTypst
 impl From<Version> for VersionTypst {
     fn from(value: Version) -> Self {
         Self {
             typwire_type: TYPE_NAME.to_string(),
-            major: value.major,
-            minor: value.minor,
-            patch: value.patch,
-            revision: value.revision,
-            build: value.build,
+            components: value.components,
         }
     }
 }
@@ -62,12 +59,6 @@ impl TryFrom<VersionTypst> for Version {
             ));
         }
 
-        Ok(Self::new(
-            value.major,
-            value.minor,
-            value.patch,
-            value.revision,
-            value.build,
-        ))
+        Ok(Self::new(value.components))
     }
 }
