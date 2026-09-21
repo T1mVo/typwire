@@ -2,6 +2,8 @@
 #import "types/layout/length.typ"
 #import "types/layout/ratio.typ"
 
+#import "types/foundations/arguments.typ"
+
 // `auto` is a Typst keyword/literal, not an ordinary identifier -- a bare
 // `auto` always evaluates to that literal, so the module must be imported
 // under a different name to be reachable at all.
@@ -47,6 +49,8 @@
     symbol.decode(value)
   } else if tag == regex.type-name {
     regex.decode(value)
+  } else if tag == arguments.type-name {
+    arguments.decode(value)
   } else {
     panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
   }

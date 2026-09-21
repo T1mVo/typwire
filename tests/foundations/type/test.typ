@@ -11,3 +11,4 @@
 #roundtrip(plugin.roundtrip_type, type(symbol("★")))
 #roundtrip(plugin.roundtrip_type, type(regex("a")))
 #roundtrip(plugin.roundtrip_type, type(decimal("1")))
+#roundtrip(plugin.roundtrip_type, type(arguments()))

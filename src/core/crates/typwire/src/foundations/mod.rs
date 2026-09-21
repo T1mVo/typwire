@@ -1,5 +1,6 @@
 //! Types from Typst's `foundations` category: <https://typst.app/docs/reference/foundations/>.
 
+mod arguments;
 mod auto;
 mod datetime;
 #[cfg(feature = "decimal")]
@@ -12,6 +13,7 @@ mod symbol;
 mod r#type;
 mod version;
 
+pub use arguments::Arguments;
 pub use auto::Auto;
 pub use datetime::{DateTime, DateTimeBuilder};
 #[cfg(feature = "decimal")]

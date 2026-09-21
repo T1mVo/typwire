@@ -8,8 +8,8 @@ use crate::Decimal;
 #[cfg(feature = "regex")]
 use crate::Regex;
 use crate::{
-    Angle, Auto, Bytes, Color, DateTime, Duration, Gradient, Length, Path, Ratio, Symbol, Type,
-    Typwire, Version,
+    Angle, Arguments, Auto, Bytes, Color, DateTime, Duration, Gradient, Length, Path, Ratio,
+    Symbol, Type, Typwire, Version,
     wire::{invalid_value, value_to_owned},
 };
 
@@ -36,6 +36,7 @@ pub enum Any {
     Type(Type),
     Path(Path),
     Symbol(Symbol),
+    Arguments(Arguments),
     #[cfg(feature = "regex")]
     Regex(Regex),
     #[cfg(feature = "decimal")]
@@ -68,6 +69,7 @@ impl Serialize for Any {
             Self::Type(value) => value.serialize(serializer),
             Self::Path(value) => value.serialize(serializer),
             Self::Symbol(value) => value.serialize(serializer),
+            Self::Arguments(value) => value.serialize(serializer),
             #[cfg(feature = "regex")]
             Self::Regex(value) => value.serialize(serializer),
             #[cfg(feature = "decimal")]
@@ -133,6 +135,7 @@ fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
             "type" => value_to_owned(value).map(Any::Type),
             "path" => value_to_owned(value).map(Any::Path),
             "symbol" => value_to_owned(value).map(Any::Symbol),
+            "arguments" => value_to_owned(value).map(Any::Arguments),
             #[cfg(feature = "regex")]
             "regex" => value_to_owned(value).map(Any::Regex),
             #[cfg(feature = "decimal")]
@@ -231,6 +234,7 @@ native_conversions!(
     (Type, Type),
     (Path, Path),
     (Symbol, Symbol),
+    (Arguments, Arguments),
 );
 
 #[cfg(feature = "regex")]

@@ -85,6 +85,8 @@
     symbol
   } else if ty == "regex" {
     regex
+  } else if ty == "arguments" {
+    arguments
   } else if ty == "content" {
     content
   } else if ty == "function" {

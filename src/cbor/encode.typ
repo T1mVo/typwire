@@ -2,6 +2,8 @@
 #import "types/layout/length.typ"
 #import "types/layout/ratio.typ"
 
+#import "types/foundations/arguments.typ"
+
 // `auto` is a Typst keyword/literal, not an ordinary identifier -- a bare
 // `auto` always evaluates to that literal, so the module must be imported
 // under a different name to be reachable at all.
@@ -72,6 +74,8 @@
     result = encode-inner(symbol.encode(content))
   } else if std.type(content) == std.regex {
     result = encode-inner(regex.encode(content))
+  } else if std.type(content) == std.arguments {
+    result = encode-inner(arguments.encode(content))
   } else if std.type(content) == std.content {
     panic("typwire.encode: content values are not supported")
   } else {
