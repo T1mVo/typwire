@@ -26,3 +26,21 @@ wasm-minimal-protocol = "0.1.0"
 
 [workspace.dev-dependencies]
 trybuild = "1.0.114"
+
+# Applies workspace-wide (Cargo has no way to scope `lto` to one package),
+# so a `--release` build of `typwire`/`typwire-macros` for the host is also
+# affected, not just `typwire-tests-plugin`'s wasm build -- worth knowing if
+# anything ever runs `cargo build --release`/`cargo test --release` here;
+# the documented commands (`cargo test`, `cargo build`) use the untouched
+# `dev` profile.
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+# `opt-level = "z"` and `panic = "abort"` were both tried here and removed:
+# `opt-level = "z"` was the single biggest size lever (raw wasm 2,686 KiB ->
+# 1,464 KiB) but also the only setting in this profile that measurably slowed
+# down actual test *execution*, not just build output size (~5.8s -> ~7.8s
+# for the full suite) -- see CLAUDE.md's *Testing* section for the full
+# before/after. `panic = "abort"` made no measurable difference either way
+# for this wasm target, which can't unwind regardless of this setting.

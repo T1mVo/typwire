@@ -1,0 +1,4 @@
+# Scoped to the wasm target only -- does not affect host builds of
+# `typwire`/`typwire-macros` in this same workspace.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+bulk-memory,+simd128"]

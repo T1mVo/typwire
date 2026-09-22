@@ -36,6 +36,17 @@
 
 #![allow(unused_imports)]
 
+// Rust's default wasm32-unknown-unknown allocator (dlmalloc) is both slower
+// and larger than it needs to be for this single-threaded plugin; `talc`'s
+// wasm-specific allocator grows the wasm memory itself on demand instead of
+// going through a general-purpose allocator design meant to also cover
+// native targets. `new_wasm_dynamic_allocator` itself panics off-wasm (this
+// crate never builds for the host -- see the module doc above -- but the
+// `cfg` still guards e.g. an IDE's non-wasm `cargo check`).
+#[cfg(all(not(target_feature = "atomics"), target_family = "wasm"))]
+#[global_allocator]
+static ALLOCATOR: talc::wasm::WasmDynamicTalc = talc::wasm::new_wasm_dynamic_allocator();
+
 typwire::initiate_protocol!();
 
 use serde::{Deserialize, Serialize};
