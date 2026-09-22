@@ -1,172 +1,511 @@
 # typwire
 
-Typed, Serde-backed data exchange for [Typst](https://typst.app/) WASM
-plugins. Typwire preserves native Typst values across the plugin boundary and
-generates protocol wrappers for ordinary Rust functions. CBOR is the default
-wire format on both sides; JSON, YAML, and TOML are available per export/call
-(see *Wire formats* below).
+Typed data exchange between Typst and (Rust) WASM plugins.
 
-The Typst and Rust package versions must match exactly.
+## Installation
 
-## Usage
-
-Add `typwire` and Serde to a Rust plugin:
+Add the Rust crate to a plugin:
 
 ```sh
 cargo add typwire
-cargo add serde --features derive
 ```
 
+Add the Typst package to a document:
+
+```typ
+#import "@preview/typwire:0.3.0"
+```
+
+## Quick Start
+
+Export a plugin function from Rust:
+
 ```rust
-use serde::{Deserialize, Serialize};
-use typwire::{Any, Length, OneOf3, Typwire, initiate_protocol};
+use typwire::{Length, initiate_protocol};
 
 initiate_protocol!();
 
-#[derive(Serialize, Deserialize, Typwire)]
-struct Options {
-    label: String,
-    scale: f64,
-}
-
-#[derive(Serialize, Deserialize, Typwire)]
-struct Report {
-    text: String,
-    width: Length,
-    metadata: Any,
-}
-
 #[typwire::export]
-fn measure(
-    value: OneOf3<i64, f64, String>,
-    options: Options,
-    fallback: Option<Length>,
-    metadata: Any,
-) -> Result<Report, String> {
-    let value = match value {
-        OneOf3::First(value) => value.to_string(),
-        OneOf3::Second(value) => value.to_string(),
-        OneOf3::Third(value) => value,
-    };
-
-    Ok(Report {
-        text: format!("{}{}", options.label, value),
-        width: fallback.unwrap_or_else(|| Length::new(12.0 * options.scale)),
-        metadata,
-    })
+fn measure(label: String, scale: f64) -> Result<(String, Length), String> {
+    Ok((format!("{label}{scale}"), Length::new(12.0 * scale)))
 }
 ```
 
-Call it from Typst with separately encoded positional arguments:
+Call the plugin function from Typst:
 
 ```typ
 #import "@preview/typwire:0.3.0"
 
 #let plugin = plugin("plugin.wasm")
-#let report = typwire.call(
-  plugin.measure,
-  42,
-  (label: "Value: ", scale: 1.5),
-  12pt,
-  (source: "example", enabled: true),
-)
+#let (text, width) = typwire.call(plugin.measure, "Value: ", 1.5)
 
-#assert(report.text == "Value: 42")
-#assert(report.width == 12pt)
+#assert(text == "Value: 1.5")
+#assert(width == 18pt)
 ```
 
-`#[typwire::export]` requires owned, identifier-named parameters and an explicit
-`Result<T, E>` return, where all parameters and `T` implement `Typwire` and `E`
-implements `Display`. Decode errors identify the function and argument. Rust
-errors and result-encoding errors are surfaced by Typst as plugin panics.
+## Reference
 
-By default the wasm export takes the Rust function's name. Pass
-`#[typwire::export(rename = "other-name")]` to choose a different one; the name
-need not be a valid Rust identifier. A non-identifier export is reached from
-Typst through `dictionary(plugin).at("other-name")`.
+### `typwire`
 
-## Wire formats
-
-CBOR is the default everywhere. Pass `#[typwire::export(format = "json")]`
-(also `"yaml"`/`"toml"`) to decode/encode that export's arguments and result
-through a different format instead — each behind its own crate feature
-(`json`/`yaml`/`toml`, off by default, `cargo add typwire --features json`):
-
-```rust
-#[typwire::export(format = "json")]
-fn measure_json(options: Options) -> Result<Report, String> {
-    /* .. */
-}
-```
-
-Call it from Typst through the matching namespace instead of `typwire.call`:
+Alias for `typwire.cbor` below — CBOR is the default wire format on both
+sides, the same one `#[typwire::export]` picks when no `format` is given.
 
 ```typ
-#let report = typwire.json.call(plugin.measure_json, (label: "Value: ", scale: 1.5))
+/// Calls a plugin function: encodes each positional argument
+/// independently, invokes the export, and decodes its single return value,
+/// using CBOR. Named arguments are not supported.
+/// -> any
+#let call(function, ..args) = { /* .. */ }
 ```
 
-`typwire.cbor`/`typwire.json`/`typwire.yaml`/`typwire.toml` each expose the
-same `call`/`encode`/`decode` shape; `typwire.call`/`typwire.encode`/
-`typwire.decode` (no namespace) are aliases for the `cbor` ones. A plugin
-export and the Typst call site must agree on the same format — nothing
-checks this for you, the same way argument types on either side already
-have to agree.
+```typ
+/// Encodes a value into CBOR bytes.
+/// -> bytes
+#let encode(value) = { /* .. */ }
+```
 
-JSON/YAML have no native way to tell an integer apart from a float the way
-CBOR/TOML can, and none of JSON/YAML/TOML have a native byte-string type or
-(TOML specifically) a `none`/null; TOML also can't have anything but a
-table at the top level. All of this is handled transparently — nothing to
-think about, no exceptions, every value shape round-trips through every
-format (see `CLAUDE.md` if you're curious how). The one real gap is a
-stroke's tiling-pattern paint, which isn't representable in any format
-(see *Wire contract* below).
+```typ
+/// Decodes CBOR bytes and reconstructs supported native Typst values.
+/// -> any
+#let decode(data) = { /* .. */ }
+```
 
-## Wire contract
+### `typwire.debug`
 
-Serde determines representation, but it does not automatically grant wire
-access. User structs and enums must explicitly derive `Typwire` alongside
-`Serialize` and `Deserialize`. This prevents an unrelated Serde type from
-silently becoming part of a plugin ABI.
+No serialization at all — `encode` stops at the shared dictionary/array/
+primitive tree every other namespace's `encode` would otherwise hand to a
+native format encoder, and `decode` reconstructs from that same tree. No
+`call`: there's no `bytes`/`str` here to hand a plugin. Useful for
+inspecting or testing the wire shape Typwire produces without going through
+an actual format or a plugin round trip.
 
-Supported Rust values include:
+```typ
+/// Encodes a value into the format-agnostic tree, with no serialization.
+/// -> any
+#let encode(value) = { /* .. */ }
+```
 
-- booleans, `i64`, `f64`, `char`, `String`, and unit — matching Typst's own
-  integer and float types; no other Rust integer or float width is `Typwire`
-- `Int`, `Float`, `Str`, `Bool`, `Array<T>`, and `Dictionary<T>` as named,
-  wire-identical wrappers around `i64`/`f64`/`String`/`bool`/`Vec<T>`/
-  `BTreeMap<String, T>`, for exported signatures that want to read like
-  Typst's own reference type names
-- `Option` for Typst's `none`, `Auto` for Typst's `auto`; owned sequences,
-  arrays, tuples, boxes, sets, and string-keyed `HashMap`/`BTreeMap`
-- `Bytes` for a Typst byte string; `Vec<u8>` remains an ordinary array
-- `Any` for dynamic values and `OneOf2` through `OneOf8` for ordered alternatives
-- Typst angles, lengths, ratios, alignments, colors, gradients, strokes,
-  datetimes, durations, versions, type objects, paths, symbols, labels,
-  captured arguments, and their helper types
-- `Regex` for a Typst regular expression, backed by a compiled
-  [`regex-lite`](https://docs.rs/regex-lite) pattern, behind this crate's
-  optional `regex` feature
-- `Decimal` for a Typst fixed-point decimal number, backed by
-  [`rust_decimal`](https://docs.rs/rust_decimal) — the same crate Typst's
-  own `decimal` type wraps internally — behind this crate's optional
-  `decimal` feature
+```typ
+/// The mirror of `encode`: reconstructs native Typst values from a tree
+/// that was never serialized.
+/// -> any
+#let decode(data) = { /* .. */ }
+```
 
-Both `Regex` and `Decimal` only exist when their feature is enabled: without
-it, referencing the type is a compile error, not a value that builds fine
-and only fails when decoded.
+<details>
+<summary><code>typwire.cbor</code></summary>
 
-Typst integers are signed 64-bit values and dictionaries require string keys.
-CBOR tags and values outside Typst's reliable CBOR subset are rejected.
-`OneOfN` deserialization tries variants in declaration order, so overlapping
-representations select the first match.
+```typ
+/// Encodes a value into CBOR bytes.
+/// -> bytes
+#let encode(value) = { /* .. */ }
+```
 
-Borrowed Rust values (`&str`, `&[u8]`, and borrowed models), Typst content,
-fractions, directions, and relative lengths are not supported. Stroke paints
-are limited to solid colors and gradients; Typst's tiling patterns have no
-`Typwire` representation.
+```typ
+/// Decodes CBOR bytes and reconstructs supported native Typst values.
+/// -> any
+#let decode(data) = { /* .. */ }
+```
 
-`typwire.encode`/`typwire.decode` (and their per-format counterparts) are
-available for manual integration. `typwire.call` accepts positional
-arguments only and recursively preserves supported native values inside
-arrays and dictionaries. Unknown Typwire tags and type objects that cannot
-be reconstructed fail explicitly.
+```typ
+/// Calls a plugin function with positional arguments, using CBOR.
+/// -> any
+#let call(function, ..args) = { /* .. */ }
+```
+
+</details>
+
+<details>
+<summary><code>typwire.json</code></summary>
+
+```typ
+/// Encodes a value into a JSON string. JSON has no native byte-string
+/// type, so any `bytes` value is rewritten into a tagged array first.
+/// -> str
+#let encode(value) = { /* .. */ }
+```
+
+```typ
+/// Decodes a JSON string or bytes and reconstructs supported native Typst
+/// values.
+/// -> any
+#let decode(data) = { /* .. */ }
+```
+
+```typ
+/// Calls a plugin function with positional arguments, using JSON.
+/// -> any
+#let call(function, ..args) = { /* .. */ }
+```
+
+</details>
+
+<details>
+<summary><code>typwire.yaml</code></summary>
+
+```typ
+/// Encodes a value into a YAML string. YAML has no native byte-string
+/// type, so any `bytes` value is rewritten into a tagged array first.
+/// -> str
+#let encode(value) = { /* .. */ }
+```
+
+```typ
+/// Decodes a YAML string or bytes and reconstructs supported native Typst
+/// values.
+/// -> any
+#let decode(data) = { /* .. */ }
+```
+
+```typ
+/// Calls a plugin function with positional arguments, using YAML.
+/// -> any
+#let call(function, ..args) = { /* .. */ }
+```
+
+</details>
+
+<details>
+<summary><code>typwire.toml</code></summary>
+
+```typ
+/// Encodes a value into a TOML string. TOML has no native byte-string type
+/// and no `none`/null, and its grammar requires a top-level table -- all
+/// handled transparently by wrapping and rewriting the tree before it
+/// reaches TOML's own encoder.
+/// -> str
+#let encode(value) = { /* .. */ }
+```
+
+```typ
+/// Decodes a TOML string or bytes and reconstructs supported native Typst
+/// values.
+/// -> any
+#let decode(data) = { /* .. */ }
+```
+
+```typ
+/// Calls a plugin function with positional arguments, using TOML.
+/// -> any
+#let call(function, ..args) = { /* .. */ }
+```
+
+</details>
+
+## Supported types
+
+Every Typst value with a native CBOR/JSON primitive (`int`, `float`, `bool`,
+`str`, `none`, `array`, `dictionary`) round-trips directly, with no extra
+wire structure. Everything else is sent as a tagged dictionary carrying a
+`typwire-type` field, reconstructed back into the real Typst value on
+decode. A handful of those types have no other way to read their data back
+out of Typst at all and are encoded by parsing Typst's own `repr()` output
+instead of calling an accessor — marked below.
+
+| Typst type | Rust type(s) | Wire shape | Uses `repr()` |
+| --- | --- | --- | --- |
+| `int` | `i64`, `Int` | native | |
+| `float` | `f64`, `Float` | native | |
+| `bool` | `bool`, `Bool` | native | |
+| `str` | `String`, `Str` | native | |
+| `none` | `Option::None` | native¹ | |
+| `array` | `Vec<T>`, `VecDeque<T>`, `LinkedList<T>`, `BTreeSet<T>`, `HashSet<T>`, `[T; N]`, tuples, `Array<T>` | native | |
+| `dictionary` | `BTreeMap<String, T>`, `HashMap<String, T>`, derived structs, `Dictionary<T>` | native | |
+| `bytes` | `Bytes` (`Vec<u8>` stays a plain array) | native (CBOR); tagged array² (JSON/YAML/TOML) | |
+| `auto` | `Auto` | tagged | |
+| `type` | `Type` | tagged | |
+| `label` | `Label` | tagged | |
+| `version` | `Version` | tagged | component count |
+| `symbol` | `Symbol` | tagged | ✓ |
+| `path` | `Path` | tagged | ✓ |
+| `regex` (feature `regex`) | `Regex` | tagged | ✓ |
+| `decimal` (feature `decimal`) | `Decimal` | tagged | |
+| `datetime` | `DateTime` | tagged | |
+| `duration` | `Duration` | tagged | |
+| `arguments` | `Arguments` | tagged | |
+| `angle` | `Angle` | tagged | |
+| `length` | `Length` | tagged | |
+| `ratio` | `Ratio` | tagged | |
+| `alignment` | `Alignment` | tagged | |
+| corner radius dictionary | `Radius` | plain dictionary³ | |
+| `color` (and its 8 color spaces) | `Color` | tagged | |
+| `gradient` (linear/radial/conic, stops) | `Gradient` | tagged | |
+| `stroke` | `Stroke` | tagged, built from the wire shapes above | |
+
+¹ TOML has no `none`/null of its own, so its format layer alone rewrites
+`none` into a tagged dictionary behind the scenes; every other format keeps
+it native.
+² JSON/YAML/TOML have no byte-string type, so their format layer rewrites
+`bytes` into a tagged array of byte integers; CBOR keeps its native byte
+string.
+³ Typst represents a corner-radius dictionary as an ordinary dictionary too,
+not a distinct runtime type, so this is the one type with no `typwire-type`
+tag at all.
+
+Two more mechanisms sit outside this table: `Any` holds any supported value
+dynamically (reconstructing native types by their tag rather than falling
+back to a plain dictionary), and `OneOf2` through `OneOf8` accept an ordered
+list of alternative shapes, trying each in declaration order.
+
+Not supported: borrowed values (`&str`, `&[u8]`, borrowed models), Typst
+`content`, `function`, fractions, directions, relative lengths, and a
+stroke's tiling-pattern paint.
+
+## Wire shapes
+
+The actual Typst dictionary each tagged type above round-trips as — the
+same shape `typwire.debug.encode` returns. Every one carries a
+`typwire-type` string tag except the corner radius dictionary (the one
+exception — Typst itself has no distinct runtime type for it either).
+Native primitives (`int`, `float`, `bool`, `str`, `none`, `array`,
+`dictionary`) aren't repeated here; they pass through untagged.
+
+#### Foundations
+
+##### Auto
+
+```typ
+(typwire-type: "auto")
+```
+
+##### Type
+
+```typ
+(typwire-type: "type", ty: "int")
+```
+
+##### Label
+
+```typ
+(typwire-type: "label", name: "intro")
+```
+
+##### Version
+
+```typ
+(typwire-type: "version", components: (1, 2, 3))
+```
+
+**Note:** `version` uses `repr()` to determine the component count, whose output is unstable and might change any time. Use this type with caution.
+
+##### Symbol
+
+```typ
+(
+  typwire-type: "symbol",
+  default: "→",
+  variants: ((modifiers: "double", glyph: "⇒"),),
+)
+```
+
+**Note:** `symbol` uses `repr()` to access the variants, whose output is unstable and might change any time. Use this type with caution. 
+
+##### Path
+
+```typ
+(typwire-type: "path", path: "assets/logo.svg")
+```
+
+**Note:** `path` uses `repr()` to recover its text, whose output is unstable and might change any time. Use
+this type with caution.
+
+##### Regex
+
+```typ
+(typwire-type: "regex", pattern: "\d+")
+```
+
+**Note:** `regex` uses `repr()` to recover its pattern, whose output is unstable and might change any time. Use
+this type with caution. Requires the `regex` feature on the Rust side.
+
+##### Decimal
+
+```typ
+(typwire-type: "decimal", decimal: "3.14")
+```
+
+**Note:** Requires the `decimal` feature on the Rust side.
+
+##### Datetime
+
+```typ
+(
+  typwire-type: "datetime",
+  year: 2024,
+  month: 1,
+  day: 1,
+  hour: none,
+  minute: none,
+  second: none,
+)
+```
+
+##### Duration
+
+```typ
+(typwire-type: "duration", seconds: 3600.0)
+```
+
+##### Arguments
+
+```typ
+(typwire-type: "arguments", pos: (1, "two"), named: (flag: true))
+```
+
+##### Bytes
+
+```typ
+(typwire-type: "bytes", data: (1, 2, 3))
+```
+
+**Note:** Only used by JSON/YAML/TOML; CBOR keeps a native byte string.
+
+##### None
+
+```typ
+(typwire-type: "none")
+```
+
+**Note:** Only used by TOML; every other format keeps a native `null`.
+
+#### Layout
+
+##### Angle
+
+```typ
+(typwire-type: "angle", radians: 1.5707963267948966)
+```
+
+##### Length
+
+```typ
+(typwire-type: "length", points: 28.35)
+```
+
+##### Ratio
+
+```typ
+(typwire-type: "ratio", ratio: 0.5)
+```
+
+##### Alignment
+
+```typ
+(typwire-type: "alignment", x: "left", y: none)
+```
+
+#### Visualize
+
+##### Color
+
+```typ
+(typwire-type: "color-luma", lightness: 100%, alpha: 100%)
+```
+
+```typ
+(typwire-type: "color-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0)
+```
+
+```typ
+(typwire-type: "color-linear-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0)
+```
+
+```typ
+(typwire-type: "color-cmyk", cyan: 0%, magenta: 100%, yellow: 100%, key: 0%)
+```
+
+```typ
+(
+  typwire-type: "color-hsl",
+  hue: (typwire-type: "angle", radians: 0.0),
+  saturation: 100%, lightness: 50%, alpha: 100%,
+)
+```
+
+```typ
+(
+  typwire-type: "color-hsv",
+  hue: (typwire-type: "angle", radians: 0.0),
+  saturation: 100%, value: 100%, alpha: 100%,
+)
+```
+
+```typ
+(typwire-type: "color-oklab", lightness: 63%, a: 0.22, b: 0.13, alpha: 100%)
+```
+
+```typ
+(
+  typwire-type: "color-oklch",
+  lightness: 63%, chroma: 0.26,
+  hue: (typwire-type: "angle", radians: 0.72),
+  alpha: 100%,
+)
+```
+
+##### Gradient
+
+```typ
+(
+  typwire-type: "gradient-linear",
+  stops: ((color: (typwire-type: "color-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0), offset: 0%),),
+  angle: (typwire-type: "angle", radians: 0.0),
+  space: "rgb",
+)
+```
+
+```typ
+(
+  typwire-type: "gradient-radial",
+  stops: (/* stop, stop, ... */),
+  center: (x: 50%, y: 50%),
+  radius: 50%,
+  focal-center: (x: 50%, y: 50%),
+  focal-radius: 0%,
+  space: "rgb",
+)
+```
+
+```typ
+(
+  typwire-type: "gradient-conic",
+  stops: (/* stop, stop, ... */),
+  angle: (typwire-type: "angle", radians: 0.0),
+  center: (x: 50%, y: 50%),
+  space: "rgb",
+)
+```
+
+##### Stroke
+
+```typ
+(
+  typwire-type: "stroke",
+  paint: (typwire-type: "color-rgb", r: 0.0, g: 0.0, b: 0.0, alpha: 1.0),
+  thickness: (typwire-type: "length", points: 1.0),
+  cap: "round",
+  join: "round",
+  dash: none,
+  miter-limit: 4.0,
+)
+```
+
+## Format performance
+
+If no specific format is desired, CBOR is the most effiecint option and should be preferred.
+
+| Format | Relative speed |
+| :-: | :-: |
+| CBOR | 1x (baseline) |
+| JSON | ~1.4x – 1.5x |
+| TOML | ~2.1x – 2.2x |
+| YAML | ~4.9x – 6.2x |
+
+## Version compatibility
+
+The Rust crate and the Typst package are versioned together and must be on
+the **exact same version**. There is no compatibility guarantee across a version mismatch.
+
+## License
+
+`typwire` is available under the MIT OR Apache-2.0 license. See [LICENSE-MIT](LICENSE-MIT) and [LICENSE-APACHE](LICENSE-APACHE) for details.
