@@ -27,8 +27,10 @@
 /// it.
 ///
 /// - value (symbol): A symbol.
+/// - format (str): The wire format being encoded for. Unused -- `symbol`
+///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(value) = {
+#let encode(value, format: "cbor") = {
   if is-debug-assert {
     assert(type(value) == symbol, message: "symbol.encode: value must be of type symbol")
   }
@@ -62,8 +64,10 @@
 /// order.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `symbol`
+///   decodes the same way regardless of format.
 /// -> symbol
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

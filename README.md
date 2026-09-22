@@ -47,27 +47,30 @@ Call the plugin function from Typst:
 
 ### `typwire`
 
-Alias for `typwire.cbor` below — CBOR is the default wire format on both
-sides, the same one `#[typwire::export]` picks when no `format` is given.
+Picks a wire format per call via `format:` (default `"cbor"`, the same one
+`#[typwire::export]` picks when no `format` is given) instead of going
+through one of the namespaces below. `typwire.call(f, x, format: "json")`
+and `typwire.json.call(f, x)` run the identical function either way.
 
 ```typ
 /// Calls a plugin function: encodes each positional argument
-/// independently, invokes the export, and decodes its single return value,
-/// using CBOR. Named arguments are not supported.
+/// independently, invokes the export, and decodes its single return
+/// value. Named arguments are not supported.
 /// -> any
-#let call(function, ..args) = { /* .. */ }
+#let call(function, ..args, format: "cbor") = { /* .. */ }
 ```
 
 ```typ
-/// Encodes a value into CBOR bytes.
-/// -> bytes
-#let encode(value) = { /* .. */ }
+/// Encodes a value into the given format's bytes/string.
+/// -> bytes, str
+#let encode(value, format: "cbor") = { /* .. */ }
 ```
 
 ```typ
-/// Decodes CBOR bytes and reconstructs supported native Typst values.
+/// Decodes the given format's bytes/string and reconstructs supported
+/// native Typst values.
 /// -> any
-#let decode(data) = { /* .. */ }
+#let decode(data, format: "cbor") = { /* .. */ }
 ```
 
 ### `typwire.debug`
@@ -77,19 +80,21 @@ primitive tree every other namespace's `encode` would otherwise hand to a
 native format encoder, and `decode` reconstructs from that same tree. No
 `call`: there's no `bytes`/`str` here to hand a plugin. Useful for
 inspecting or testing the wire shape Typwire produces without going through
-an actual format or a plugin round trip.
+an actual format or a plugin round trip. `format:` doesn't pick a
+serialization here (there is none) — it only picks which format's
+`bytes`/`none` tagging rules to preview.
 
 ```typ
-/// Encodes a value into the format-agnostic tree, with no serialization.
+/// Encodes a value into the shared tree, with no serialization.
 /// -> any
-#let encode(value) = { /* .. */ }
+#let encode(value, format: "cbor") = { /* .. */ }
 ```
 
 ```typ
 /// The mirror of `encode`: reconstructs native Typst values from a tree
 /// that was never serialized.
 /// -> any
-#let decode(data) = { /* .. */ }
+#let decode(data, format: "cbor") = { /* .. */ }
 ```
 
 <details>

@@ -2,11 +2,13 @@
 
 #let type-name = "regex"
 
-/// Encode a regular expression into a CBOR-compatible dictionary.
+/// Encode a regular expression into a wire-compatible dictionary.
 ///
 /// - value (regex): A regular expression.
+/// - format (str): The wire format being encoded for. Unused -- `regex`
+///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(value) = {
+#let encode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(value) == regex,
@@ -28,11 +30,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a regular expression.
+/// Decode a wire-compatible dictionary into a regular expression.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `regex`
+///   decodes the same way regardless of format.
 /// -> regex
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

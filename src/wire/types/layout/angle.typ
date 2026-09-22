@@ -2,11 +2,13 @@
 
 #let type-name = "angle"
 
-/// Encode an angle into a CBOR-compatible dictionary.
+/// Encode an angle into a wire-compatible dictionary.
 ///
 /// - angle (angle): A angle.
+/// - format (str): The wire format being encoded for. Unused -- `angle`
+///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(angle) = {
+#let encode(angle, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(angle) == std.angle,
@@ -20,11 +22,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into an angle.
+/// Decode a wire-compatible dictionary into an angle.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `angle`
+///   decodes the same way regardless of format.
 /// -> angle
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

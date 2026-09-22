@@ -1,11 +1,13 @@
 #import "../../../utils.typ": is-debug-assert
 
-/// Encode a center point into a CBOR-compatible dictionary.
+/// Encode a center point into a wire-compatible dictionary.
 ///
 /// - x (ratio): A ratio value between 0% and 100%.
 /// - y (ratio): A ratio value between 0% and 100%.
+/// - format (str): The wire format being encoded for. Unused -- `center`
+///   has the same untagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(x, y) = {
+#let encode(x, y, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(x) == std.ratio,
@@ -23,11 +25,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a center point tuple.
+/// Decode a wire-compatible dictionary into a center point tuple.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `center`
+///   decodes the same way regardless of format.
 /// -> (float, float)
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(value.x) == std.ratio,

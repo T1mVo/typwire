@@ -1,14 +1,14 @@
 #import "../wire/lib.typ" as wire
-#import "../wire/rewrite-bytes.typ": bytes-to-array
 
 /// Encode a value into a JSON string.
 ///
-/// JSON has no native byte-string type, so any `bytes` value is rewritten
-/// into a tagged array first -- see `wire/rewrite-bytes.typ`.
+/// JSON has no native byte-string type, so any `bytes` value is tagged
+/// into an array instead -- handled directly by `wire.encode(value,
+/// "json")`, in the same recursive pass as everything else.
 ///
 /// - value (any): The value to encode.
 /// -> str
-#let encode(value) = json.encode(bytes-to-array(wire.encode(value)))
+#let encode(value) = json.encode(wire.encode(value, format: "json"))
 
 /// Decode a JSON string or bytes and reconstruct supported native Typst
 /// values.
@@ -24,7 +24,7 @@
   if std.type(data) == str {
     data = bytes(data)
   }
-  wire.decode(json(data))
+  wire.decode(json(data), format: "json")
 }
 
 /// Call a typed Typwire plugin function with positional arguments, using

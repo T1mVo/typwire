@@ -4,7 +4,7 @@
 ///
 /// - value (any): The value to encode.
 /// -> bytes
-#let encode(value) = cbor.encode(wire.encode(value))
+#let encode(value) = cbor.encode(wire.encode(value, format: "cbor"))
 
 /// Decode CBOR bytes and reconstruct supported native Typst values.
 ///
@@ -14,7 +14,7 @@
   if std.type(data) != bytes {
     panic("typwire.cbor.decode: data must be bytes")
   }
-  wire.decode(cbor(data))
+  wire.decode(cbor(data), format: "cbor")
 }
 
 /// Call a typed Typwire plugin function with positional arguments, using

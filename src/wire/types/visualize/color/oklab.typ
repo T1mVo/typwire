@@ -2,14 +2,16 @@
 
 #let type-name = "color-oklab"
 
-/// Encode an OKLab color into a CBOR-compatible dictionary.
+/// Encode an OKLab color into a wire-compatible dictionary.
 ///
 /// - lightness (ratio): The lightness component of the color.
 /// - a (float): The 'a' component of the color.
 /// - b (float): The 'b' component of the color.
 /// - alpha (ratio): The alpha (transparency) component of the color.
+/// - format (str): The wire format being encoded for. Unused -- `oklab`
+///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(lightness, a, b, alpha) = {
+#let encode(lightness, a, b, alpha, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(lightness) == std.ratio,
@@ -38,11 +40,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into an OKLab color.
+/// Decode a wire-compatible dictionary into an OKLab color.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `oklab`
+///   decodes the same way regardless of format.
 /// -> color
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
