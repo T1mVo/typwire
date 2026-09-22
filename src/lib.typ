@@ -1,18 +1,20 @@
-#import "wire/lib.typ" as wire
 #import "format/cbor.typ" as cbor
+#import "format/debug.typ" as debug
 #import "format/json.typ" as json
 #import "format/toml.typ" as toml
 #import "format/yaml.typ" as yaml
 
-/// Encode a Typst value into the shared, format-agnostic dictionary/array/
-/// primitive tree every `typwire.<format>.encode` wraps with a native
-/// format encoder. Exposed for advanced/manual use; most callers want
-/// `typwire.call` or one of the format namespaces below instead.
-#let encode = wire.encode
+/// Encode a Typst value into CBOR bytes -- the same default wire format
+/// `#[typwire::export]` picks on the Rust side. Use
+/// `typwire.json.encode`/`typwire.yaml.encode`/`typwire.toml.encode`
+/// instead for a plugin function exported with a different `format`, or
+/// `typwire.debug.encode` to inspect the format-agnostic tree with no
+/// serialization at all.
+#let encode = cbor.encode
 
-/// The mirror of `encode`: reconstruct native Typst values from a tree
-/// already decoded by a native format decoder.
-#let decode = wire.decode
+/// The mirror of `encode`: decode CBOR bytes and reconstruct supported
+/// native Typst values.
+#let decode = cbor.decode
 
 /// Call a typed Typwire plugin function with positional arguments, using
 /// CBOR as the wire format -- the same default `#[typwire::export]` picks
