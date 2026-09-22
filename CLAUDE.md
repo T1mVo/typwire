@@ -54,16 +54,96 @@ covers all four wire formats: `tests/<type>/{cbor,json,yaml,toml}/`, each a
 Tytanic has **no build hook**, so `scripts/test.py` is the entry point: it
 `cargo build`s `typwire-tests-plugin` for wasm, copies the artifact to
 `target/typwire-tests/plugin.wasm` (git-ignored; the path every `test.typ`
-loads), then runs `tt`. With `--release` *and* `wasm-opt` (Binaryen) on
-PATH, that copy is instead `wasm-opt -O4 -Oz <artifact> -o
-target/typwire-tests/plugin.wasm` — `wasm-opt` is optional (checked via
-`shutil.which`, not `require`d like `cargo`/`tt`), so its absence falls
-back to the plain copy rather than erroring. Empirically this made almost
-no difference to the *test-run* phase itself for this suite (`tt run`'s own
-time was unchanged before/after) — the win is a ~24% smaller artifact — but
-it costs a real, one-time ~8s of its own on this codebase's current size,
-on top of the ~7s `cargo build --release` step, so it's opt-in via
-`wasm-opt` being installed rather than always-on.
+loads), then runs `tt`. `--release` layers on a few independent size levers,
+each verified against the real 220-test suite (not just "it builds") before
+being kept, and each measured in isolation by toggling it with the others
+held fixed rather than trusting a single combined before/after:
+
+- **`src/core/.cargo/config.toml`** sets `-C
+  target-feature=+bulk-memory,+simd128` for the `wasm32-unknown-unknown`
+  target only (`[target.<triple>]` tables don't leak into host builds of
+  `typwire`/`typwire-macros` in the same workspace). Confirmed safe first:
+  Typst's plugin runtime is `wasmi` (a pure-Rust interpreter,
+  `typst-library`'s dependency), whose `Config` has both proposals on by
+  default — only *relaxed* SIMD is explicitly turned off in Typst's own
+  `Plugin::new` — so a wasm module using them loads and runs there, unlike
+  most other wasm hosts where this would need checking first. Cargo
+  discovers `.cargo/config.toml` by walking up from the process's *current
+  working directory*, not from `--manifest-path` — confirmed the hard way,
+  the flag silently wasn't applied (identical artifact, unchanged mtime)
+  until `build_plugin` passed `cwd=CARGO_MANIFEST.parent` to
+  `subprocess.run`. Effect: raw artifact 2,939 KiB → 2,875 KiB (−2.2%), no
+  change to `tt run`'s own time.
+- **`[profile.release]`** in `src/core/Cargo.toml` is `lto = true,
+  codegen-units = 1, strip = true` — raw artifact 2,875 KiB → 2,622 KiB
+  (−8.8% more), `tt run` unchanged (~5.8s). `opt-level = "z"` and
+  `panic = "abort"` were both tried here too and then removed:
+  `opt-level = "z"` was by far the biggest single lever in this whole list
+  (2,622 KiB → 1,464 KiB, another −44.2%) but was also the *only* setting in
+  the entire chain that measurably slowed down actual test *execution*, not
+  just build output size — `tt run --no-fail-fast` went from ~5.8s to ~7.8s
+  (+34%), confirmed by toggling that one line alone with everything else held
+  fixed. `panic = "abort"` made no measurable difference either way for this
+  wasm target, which can't unwind regardless of this setting. Both are still
+  workspace-wide settings if reintroduced (Cargo cannot scope `lto`/`panic`
+  to one package), so a `--release` build of `typwire`/`typwire-macros` for
+  the host would inherit them too; the documented commands (`cargo test`,
+  `cargo build`) use the untouched `dev` profile and are unaffected either
+  way.
+- **`talc` as the global allocator** (`typwire-tests-plugin/src/lib.rs`,
+  `#[global_allocator] static ALLOCATOR: talc::wasm::WasmDynamicTalc =
+  talc::wasm::new_wasm_dynamic_allocator();`, guarded by the same
+  `#[cfg(all(not(target_feature = "atomics"), target_family = "wasm"))]`
+  talc's own docs use) replaces the default wasm32-unknown-unknown allocator
+  (`dlmalloc`, via `std`) — this crate is single-threaded and wasm-only, so
+  none of `dlmalloc`'s general-purpose/multi-target design is earning its
+  keep here. At the settled profile (no `opt-level = "z"`): raw artifact
+  2,622 KiB → 2,321 KiB (**−11.5%**), no measurable change to `tt run`'s time
+  in either direction (~5.5–5.8s throughout, run-to-run noise). With
+  `opt-level = "z"` reintroduced, the gap nearly vanishes (1,464 KiB → 1,456
+  KiB, −0.5%) — aggressive size optimization already squeezes `dlmalloc` down
+  close to `talc`'s size, so there's less room left for the allocator choice
+  to matter; `opt-level = "z"`'s own +34% slowdown is also unchanged by
+  `talc`, confirmed per-format the same way as before (CBOR/JSON/YAML/TOML
+  all landed within a few percent of their pre-`talc` numbers). The one real
+  cost: **`talc` measurably slows down the plain debug build** specifically
+  (~27s → ~31s for the full suite, +~17%) — `talc`'s own code is compiled
+  unoptimized like the rest of a `dev`-profile build, while `std`'s
+  `dlmalloc` ships pre-built and optimized regardless of the *consuming*
+  crate's profile, so swapping it out trades away that free optimization in
+  exactly the one profile where nothing here otherwise costs anything.
+
+On top of that, `wasm-opt -O4 --enable-bulk-memory-opt --enable-simd`
+(Binaryen, checked via `shutil.which`, not `require`d like `cargo`/`tt` — its
+absence falls back to a plain copy rather than erroring) still runs, taking
+the final artifact 2,622 KiB → 2,253 KiB (−14.1%). **`--enable-bulk-memory-opt
+--enable-simd` are load-bearing, not optional, here** — once
+`.cargo/config.toml` makes `+bulk-memory,+simd128` genuinely reach rustc, the
+input `.wasm` contains real `memory.copy`/`memory.fill`/`v128.load`/
+`v128.store` instructions, and plain `wasm-opt -O4` *without* those two flags
+fails validation outright (`unexpected false: memory.copy operations require
+bulk memory operations [--enable-bulk-memory-opt]`, `...SIMD operations
+require SIMD [--enable-simd]`, dozens of times, no output file written) —
+confirmed by actually running it that way, not inferred. (The first time
+these two flags were measured, before `.cargo/config.toml` existed, the
+artifact genuinely contained neither feature and they really were near-inert
+then — that number does not carry over once the build flags are in the mix,
+which is exactly why isolating one change at a time instead of trusting a
+single combined before/after matters.) `-Oz` instead of plain `-O4` was also
+tried and dropped: ~2 more percentage points of size for ~1.4s more
+`wasm-opt` time, no change to `tt run`.
+
+Current state (`.cargo/config.toml` + `lto`/`codegen-units`/`strip` + `talc`,
+without `opt-level = "z"`/`panic = "abort"`, + `wasm-opt`): 220/220 tests
+pass, final artifact **29.9% smaller** than the unoptimized `--release`
+baseline this investigation started from (2,939 KiB → 2,059 KiB), `tt run`
+unchanged at ~5.5–5.8s throughout in release mode — i.e. all of the size win
+above and none of the release-mode speed cost, since `opt-level = "z"` (the
+only lever that trades speed for size, and the only one `talc` doesn't
+meaningfully help with) isn't in the mix. Re-add `opt-level = "z"` for a
+1,305 KiB artifact (55.6% smaller than baseline) at the cost of the known
++34%-slower `tt run`, or accept plain debug builds running ~17% slower for
+`talc`'s size win even when nothing else here is in play.
 
 ```sh
 python3 scripts/test.py               # build plugin + tt run --no-fail-fast (all tests)
@@ -118,6 +198,20 @@ millisecond-fast throughout) runs in ~27s under a plain `cargo build`
 (`scripts/test.py`'s default) but ~6s with `scripts/test.py --release` —
 these tests are the reason that gap exists at all, so reach for `--release`
 when iterating near them specifically.
+
+`opt-level = "z"`'s +34%-suite-wide slowdown (see *Testing* above) is not
+spread evenly across formats — measured per-format by re-running each
+format's 55 tests in isolation (`tt run` given just that format's test IDs),
+`opt-level = "z"` on vs. off: CBOR ~828ms → ~835ms (+0.8%, noise), JSON
+~1,049ms → ~1,209ms (+15.3%), TOML ~1,494ms → ~1,780ms (+19.1%), YAML
+~3,242ms → ~4,846ms (**+49.5%**, ~1.6s of the ~2s total regression by
+itself). This tracks the same format ordering as everything else in this
+file: CBOR is one direct `cbor4ii` pass with no extra allocation; JSON/YAML/
+TOML all route through the `value_from_owned`/tree-rewrite round trip (see
+*Wire formats*), and YAML additionally hops through `serde_json::Value`
+first (the Norway-problem fix) — the more allocation-heavy/branch-heavy a
+format's path already is, the more `opt-level = "z"`'s speed-for-size trade
+costs it specifically.
 
 ## Repository layout note (mid-refactor)
 
@@ -727,22 +821,31 @@ The derive macro (`derive_typwire`) just emits `impl Typwire for T {}` with a
 
 ### Typst entrypoint
 
-`src/lib.typ` re-exports `wire.encode`/`wire.decode` (the format-agnostic
-tree layer — see *Wire formats* above) as `typwire.encode`/`typwire.decode`,
-and each format namespace (`typwire.cbor`/`json`/`yaml`/`toml`,
-`src/format/*.typ`) as itself — importing a file `as <name>` inside a
-module Typst re-exports it from is enough to expose it under that name on
-the outer module too, confirmed empirically, no extra re-export syntax
-needed. `typwire.call = typwire.cbor.call`, matching the Rust side's CBOR
-default. Every namespace's `call(function, ..args)` has the same shape:
-rejects named args, encodes each positional arg **independently**, calls
-the plugin function with the resulting byte strings (wrapped in `bytes(..)`
-first for the three formats whose own `.encode` returns `str`, not
-`bytes` — confirmed empirically that a Typst plugin call rejects a bare
-`str` argument outright), and decodes the single returned byte string. This
-positional, separately-encoded calling convention is what
-`#[typwire::export]`'s `&[u8]`-per-parameter wrapper expects, for every
-format.
+`src/lib.typ` re-exports each format namespace (`typwire.cbor`/`json`/
+`yaml`/`toml`/`debug`, `src/format/*.typ`) as itself — importing a file
+`as <name>` inside a module Typst re-exports it from is enough to expose it
+under that name on the outer module too, confirmed empirically, no extra
+re-export syntax needed. `typwire.encode`/`typwire.decode`/`typwire.call`
+(no namespace) are aliases for `typwire.cbor`'s, matching the Rust side's
+CBOR default: `#let encode = cbor.encode`, and likewise for `decode`/`call`.
+`cbor`/`json`/`yaml`/`toml` each have the same `encode`/`decode`/`call`
+shape: `call(function, ..args)` rejects named args, encodes each positional
+arg **independently**, calls the plugin function with the resulting byte
+strings (wrapped in `bytes(..)` first for the three formats whose own
+`.encode` returns `str`, not `bytes` — confirmed empirically that a Typst
+plugin call rejects a bare `str` argument outright), and decodes the single
+returned byte string. This positional, separately-encoded calling
+convention is what `#[typwire::export]`'s `&[u8]`-per-parameter wrapper
+expects, for every format.
+
+`src/format/debug.typ` is the odd one out: `debug.encode`/`debug.decode`
+are `wire.encode`/`wire.decode` themselves — the shared, format-agnostic
+dictionary/array/primitive tree layer every other namespace's `encode`
+hands to a native serializer (`cbor.encode`, `json.encode`, ...) — exposed
+directly, with no serialization step and therefore no `call` (there is no
+`bytes`/`str` to hand a plugin). It exists for inspecting or testing the
+tree Typwire produces without going through an actual format or a plugin
+round trip.
 
 ## Explicitly unsupported (by design)
 
