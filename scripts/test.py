@@ -7,9 +7,9 @@ where the tests load it from (`<repo>/target/typwire-tests/plugin.wasm`, which
 is git-ignored), then invokes `tt`.
 
 With `--release` and `wasm-opt` (from Binaryen) on PATH, the release artifact
-is additionally optimized with `wasm-opt -O4 -Oz` before being placed at that
-path; without `wasm-opt` installed, the plain `cargo build --release` output
-is used as-is instead.
+is additionally optimized with `wasm-opt -O4 --enable-bulk-memory-opt
+--enable-simd` before being placed at that path; without `wasm-opt`
+installed, the plain `cargo build --release` output is used as-is instead.
 
 Usage:
     scripts/test.py [--release] [--no-build] [TT_ARG ...]
@@ -65,7 +65,13 @@ def build_plugin(release: bool) -> Path:
         cmd.append("--release")
 
     print(f"$ {' '.join(cmd)}")
-    result = subprocess.run(cmd)
+    # Cargo discovers `.cargo/config.toml` by walking up from the *current
+    # working directory*, not from `--manifest-path` -- so this must run
+    # with `cwd` inside `src/core` for `src/core/.cargo/config.toml` (the
+    # wasm target-feature flags) to actually be picked up. Confirmed
+    # empirically: without this, the same command from the repo root
+    # silently built without those flags, no error either way.
+    result = subprocess.run(cmd, cwd=CARGO_MANIFEST.parent)
     if result.returncode != 0:
         die(
             "plugin build failed. If the target is missing, run "
@@ -88,7 +94,8 @@ def build_plugin(release: bool) -> Path:
 
 
 def optimize_with_wasm_opt(source: Path, dest: Path) -> bool:
-    """Run `wasm-opt -O4 -Oz` from `source` into `dest`.
+    """Run `wasm-opt -O4 --enable-bulk-memory-opt --enable-simd` from
+    `source` into `dest`.
 
     Returns whether `wasm-opt` was found and used; the caller falls back to
     a plain copy of `source` otherwise, since `wasm-opt` is an optional,
@@ -99,7 +106,15 @@ def optimize_with_wasm_opt(source: Path, dest: Path) -> bool:
     if wasm_opt is None:
         return False
 
-    cmd = [wasm_opt, "-O4", "-Oz", str(source), "-o", str(dest)]
+    cmd = [
+        wasm_opt,
+        "-O4",
+        "--enable-bulk-memory-opt",
+        "--enable-simd",
+        str(source),
+        "-o",
+        str(dest),
+    ]
     print(f"$ {' '.join(cmd)}")
     result = subprocess.run(cmd)
     if result.returncode != 0:
@@ -132,7 +147,8 @@ def main() -> int:
         if args.release and optimize_with_wasm_opt(artifact, PLUGIN_DEST):
             print(
                 f"optimized {artifact.relative_to(ROOT)} -> "
-                f"{PLUGIN_DEST.relative_to(ROOT)} (wasm-opt -O4 -Oz)"
+                f"{PLUGIN_DEST.relative_to(ROOT)} "
+                "(wasm-opt -O4 --enable-bulk-memory-opt --enable-simd)"
             )
         else:
             shutil.copy2(artifact, PLUGIN_DEST)
