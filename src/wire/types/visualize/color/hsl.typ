@@ -2,14 +2,16 @@
 
 #let type-name = "color-hsl"
 
-/// Encode an HSL color into a CBOR-compatible dictionary.
+/// Encode an HSL color into a wire-compatible dictionary.
 ///
 /// - hue (angle): The hue component of the color.
 /// - saturation (ratio): The saturation component of the color.
 /// - lightness (ratio): The lightness component of the color.
 /// - alpha (ratio): The alpha (transparency) component of the color.
+/// - format (str): The wire format being encoded for. Unused -- `hsl` has
+///   the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(hue, saturation, lightness, alpha) = {
+#let encode(hue, saturation, lightness, alpha, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(hue) == std.angle,
@@ -38,11 +40,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into an HSL color.
+/// Decode a wire-compatible dictionary into an HSL color.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `hsl`
+///   decodes the same way regardless of format.
 /// -> color
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

@@ -343,10 +343,25 @@ type and threads it as a generic parameter into `__private::decode_argument`/
 format function (`json.encode`, ...) around the shared `wire.encode`/
 `wire.decode` tree layer (`src/wire/encode.typ`/`decode.typ` — the
 `encode-inner`/`decode-inner` from before this feature existed, promoted to
-public and renamed since they're no longer CBOR-specific); `typwire.cbor`
-is the same shape, and `typwire.call`/`typwire.encode`/`typwire.decode`
-(top-level) are aliases for `typwire.cbor.call`/`.encode`/`.decode`, so
-existing callers see no behavior change.
+public and renamed since they're no longer CBOR-specific). Unlike the Rust
+side's generic-parameter dispatch, the Typst tree layer takes `format` as
+an ordinary named string argument, `format: "cbor"` (default `"cbor"`
+throughout, not just at the public entrypoints), threaded through every
+recursive call, all the way down into every `wire/types/**` module's own
+`encode`/`decode` — almost none of which actually branch on it (see
+*Format threading* below for why it's there anyway and which two do use
+it). `src/lib.typ` builds a `formats` dictionary mapping each
+name to its module and exposes generic `encode(value, format: "cbor")`/
+`decode(data, format: "cbor")`/`call(function, ..args, format: "cbor")` on
+top of it; `typwire.cbor`/`.json`/`.yaml`/`.toml` are the same four
+modules re-exported directly (not wrapped in a plain dictionary — Typst
+allows `module.field(..)` dot-call sugar but not `dict.field(..)` when
+`field` merely holds a function, confirmed the hard way when an earlier
+version of this wrapping broke every `typwire.<format>.call` call site),
+so `typwire.<format>.encode(value)` and `typwire.encode(value, format:
+"<format>")` run the identical function either way. `typwire.debug` (no
+serialization, see below) takes the same `format:` argument too, purely to
+pick which format's `bytes`/`none` tagging rules to preview.
 
 Two problems anticipated from the start, solved without touching almost any
 of the type system described elsewhere in this document — plus a third one
@@ -376,18 +391,43 @@ found only once the multi-format test suite existed to catch it (below):
   (empirically) to silently produce the useless placeholder string
   `"bytes(3)"` rather than actual content. `Cbor` is untouched — it keeps
   encoding `Bytes`/`bytes` natively on both sides, exactly as described
-  above. The other three formats rewrite `Bytes`/`bytes` into a tagged
-  array *around* the shared core, not inside it: Typst's
-  `src/wire/rewrite-bytes.typ::bytes-to-array` walks the tree
-  `wire.encode` produced and turns any `bytes` leaf into `(typwire-type:
-  "bytes", data: (...))` before `format/json.typ`/etc. hand it to
-  `json.encode`; decode is simpler and fully shared — `decode-tagged`
-  (`wire/decode.typ`) just gained one more tag arm (`"bytes"` →
-  `bytes(value.data)`), harmless for `Cbor` since its own `cbor.encode`
-  never produces that tag. `data` is a plain array of byte integers, not
-  base64 — confirmed empirically Typst has no built-in base64 codec to
-  match a base64 string against, so the array form needs no new dependency
-  on either side. On the Rust side, `Format::Cbor` and `Bytes`'s
+  above. The other three formats turn a `bytes` leaf into a tagged array
+  *inside* the shared core now, not around it, and — unlike every other
+  format-sensitive case in this section — `bytes` gets a real
+  `wire/types/foundations/bytes.typ` module of its own, the same
+  `encode(value, format: "cbor")`/`decode(value, format: "cbor")` shape
+  every other native type file has: `format == "cbor"` returns `value`
+  unchanged, anything else returns `(typwire-type: "bytes", data:
+  array(value))`. `wire/encode.typ::encode` dispatches to it from a
+  dedicated `std.type(content) == std.bytes` branch — deliberately **not**
+  wrapped in a recursive `encode(...)` call the way every other tagged
+  type's dispatch line is (`result = encode(alignment.encode(...), ...)`,
+  etc.): `bytes-type.encode` returns the *same* `bytes` value unchanged
+  under `"cbor"`, so recursing into `encode` on that result would hit the
+  `std.bytes` branch again and loop forever — confirmed by writing it the
+  "consistent" way first and watching it hang. Every other type's `encode`
+  always returns a *new* dictionary shape instead, which is what makes
+  recursing into it both safe and necessary there (to walk that
+  dictionary's own fields) but wrong here. `is-primitive` (see below) no
+  longer knows anything about `bytes` at all as a result — it used to be
+  the one place bytes' format-sensitivity lived, before `bytes.typ` existed
+  to own that decision itself. There is no separate tree-walk over the
+  already-built tree the way an earlier version of this feature had
+  (`wire/rewrite-bytes.typ`, since deleted; `format/json.typ`/`yaml.typ`/
+  `toml.typ` used to call it on `wire.encode`'s output before handing the
+  tree to their native encoder). Decode is simpler and fully shared,
+  unchanged by this refactor — `decode-tagged` (`wire/decode.typ`) has one
+  tag arm, `tag == bytes-type.type-name` → `bytes-type.decode(value,
+  format: format)` (`type-name` and a real `decode` function now that
+  `bytes.typ` exists, rather than a bare `"bytes"` string literal and an
+  inline `bytes(value.data)`), harmless for `Cbor` since its own
+  `cbor.encode` never produces that tag — its `bytes` values are caught by
+  `decode`'s primitive fallback before ever reaching tag dispatch. `data`
+  is a plain array of byte integers, not base64 — confirmed empirically
+  Typst has no built-in base64 codec to match a base64 string against, so
+  the array form needs no new dependency on either side. On the Rust side
+  (a separate mechanism — see *Format threading* below for why the two
+  sides diverge here), `Format::Cbor` and `Bytes`'s
   `Serialize`/`Deserialize` (`serialize_bytes`/`deserialize_byte_buf`) are
   untouched; `Json`/`Yaml`/`Toml::encode` instead round-trip the value
   through a `cbor4ii::core::Value` tree first (`value_from_owned`, a new
@@ -439,22 +479,84 @@ handling":
 - **Top-level table.** Every encode wraps the whole tree under one fixed
   key (`"value"`) before it ever reaches `toml.encode`/`toml::to_string`;
   decode unwraps the same key first. Typst: `format/toml.typ::encode` is
-  `toml.encode((value: ...))`, `decode` is `wire.decode(toml(data).value)`.
-  Rust: `Toml::encode` builds `Value::Map(vec![(Value::Text("value"),
-  tree)])` before serializing; `decode` finds and extracts that key from
-  the parsed envelope, erroring clearly if it's missing or the parse wasn't
-  even a table.
+  `toml.encode((value: wire.encode(value, format: "toml")))`, `decode` is
+  `wire.decode(toml(data).value, format: "toml")`. Rust: `Toml::encode` builds
+  `Value::Map(vec![(Value::Text("value"), tree)])` before serializing;
+  `decode` finds and extracts that key from the parsed envelope, erroring
+  clearly if it's missing or the parse wasn't even a table.
 - **`none`/null.** Rewritten into the tagged dictionary `{typwire-type:
-  "none"}`, the same pattern as `Bytes` below, and — also the same as
-  `Bytes` — decode is fully shared: `decode-tagged` (`wire/decode.typ`)
-  gained a `"none"` arm (`bytes` got `"bytes"`) that just returns `none`,
-  harmless for the three formats that never produce that tag. Encode is
-  format-specific: `wire/rewrite-none.typ::none-to-tagged` (Typst) /
-  `rewrite_none_to_tagged` (`format/toml.rs`, Rust) walk the tree the same
-  shape `rewrite_bytes_to_array`/`rewrite_array_to_bytes` do.
+  "none"}`, the same pattern as `Bytes` above, and — also the same as
+  `Bytes` — decode is fully shared: `decode-tagged` (`wire/decode.typ`) has
+  a `"none"` arm that just returns `none`, harmless for the three formats
+  that never produce that tag. Encode is format-specific on both sides, but
+  the two sides differ in *where*: on the Rust side,
+  `rewrite_none_to_tagged` (`format/toml.rs`) is still its own separate
+  tree-walk over an already-built `Value`, the same shape
+  `rewrite_bytes_to_array`/`rewrite_array_to_bytes` use (see *Format
+  threading* below for why Rust keeps this as a separate pass while Typst
+  doesn't); on the Typst side, it's folded into the same single
+  `wire/encode.typ::encode` pass as `bytes` — a `content == none` branch,
+  reached only when `format == "toml"` (every other format's `none` is
+  already primitive), builds the tagged dictionary directly. The
+  once-separate `wire/rewrite-none.typ::none-to-tagged` this replaced has
+  been deleted.
 
-Between the envelope and the two rewrites, there is no longer any value
-shape `typwire.toml`/`Toml` can't round-trip.
+Between the envelope and the `bytes`/`none` handling above, there is no
+longer any value shape `typwire.toml`/`Toml` can't round-trip.
+
+#### Format threading (Typst side)
+
+`wire/encode.typ::encode(content, format: "cbor")` and
+`wire/decode.typ::decode`/`decode-tagged` take `format` as a **named**
+argument with a default of `"cbor"`, and every single `wire/types/**`
+module's `encode`/`decode` does too — including the 31 of them (`path`,
+`symbol`, `length`, every color space, every gradient kind, ...) that
+never branch on it and just ignore it. `format` started out positional and
+required (an earlier version of this threading had it that way), then was
+changed to named with a default of `"cbor"` everywhere, not just at the
+public entrypoints in `src/lib.typ` — matching `src/lib.typ`'s own
+generic `encode(value, format: "cbor")` shape all the way down, and
+meaning a bare `xxx.encode(value)` (no `format:` at all) is valid
+everywhere in this layer and means exactly `"cbor"`, the same as what
+every one of these functions did before `format` existed at all. This is
+deliberately more uniform than strictly necessary, since only two things
+in the whole tree walk are actually format-sensitive (`bytes`, its own
+dedicated `wire/types/foundations/bytes.typ` module now, and — on TOML
+specifically — `none`, still handled directly in `encode.typ::encode`, see
+above), but every `encode`/`decode` pair takes `format` anyway, so a
+future type that *does* need to branch on it never requires a signature
+change, and every function in this layer reads the same way at a glance.
+The one thing this threading replaced: `wire/rewrite-bytes.typ`/
+`rewrite-none.typ`, two
+now-deleted files that used to walk the *already-built* tree a second
+(and, for TOML, third) time after `encode.typ::encode` finished, rewriting
+`bytes`/`none` leaves in place. Folding that into the single recursive
+`encode` pass means JSON/YAML save a full extra tree-walk and TOML saves
+two, at the cost of `format` appearing in every signature in this layer.
+
+`is-primitive` (`wire/encode.typ`) is the function this generalizes most
+directly: it used to be an unparameterized "is this one of the primitive
+Typst types CBOR can carry as-is" check (with `bytes` unconditionally
+`true`, since that was only ever called from the CBOR-only encoder this
+crate started with). It's now `is-primitive(content, format: "cbor")` —
+`int`/`float`/`str`/`bool` are primitive in every format as before, and
+`none` is primitive in every format *except* `"toml"`; `bytes` isn't part
+of this check at all anymore (see the *Bytes* bullet above for where its
+format-sensitivity lives instead, now that it has its own module). Content
+`is-primitive` says `false` for falls through to `encode`'s `bytes`/`none`
+handling instead of passing through untouched.
+
+The Rust side does **not** get the equivalent treatment, and deliberately
+so: it has no per-native-type file that would need a `format` parameter
+threaded through in the first place (`Length`, `Path`, etc. each derive
+their wire shape from a single shadow struct via Serde, format-agnostic by
+construction), and `Format::Json`/`Yaml`/`Toml::encode` already dispatch
+per-format at compile time through the generic `T: Typwire` + marker-type
+mechanism described above — there's no analogous "one recursive function
+walks every value" chokepoint to thread a runtime `format` string through.
+Its `rewrite_bytes_to_array`/`rewrite_none_to_tagged` therefore remain
+separate tree-walks over a `cbor4ii::core::Value`, exactly as described in
+the *Bytes*/TOML sections above.
 
 ### Native Typst value representation
 
@@ -821,13 +923,35 @@ The derive macro (`derive_typwire`) just emits `impl Typwire for T {}` with a
 
 ### Typst entrypoint
 
-`src/lib.typ` re-exports each format namespace (`typwire.cbor`/`json`/
-`yaml`/`toml`/`debug`, `src/format/*.typ`) as itself — importing a file
-`as <name>` inside a module Typst re-exports it from is enough to expose it
-under that name on the outer module too, confirmed empirically, no extra
-re-export syntax needed. `typwire.encode`/`typwire.decode`/`typwire.call`
-(no namespace) are aliases for `typwire.cbor`'s, matching the Rust side's
-CBOR default: `#let encode = cbor.encode`, and likewise for `decode`/`call`.
+`src/lib.typ` imports each format module (`format/{cbor,json,yaml,toml,
+debug}.typ`) under a private `-format` suffix (`cbor-format`, ...), builds
+a `formats` dictionary mapping each name to its module, and defines the
+public API on top of that in two layers:
+
+- **Generic, `format:`-argument functions** — `encode(value, format:
+  "cbor")`, `decode(data, format: "cbor")`, `call(function, ..args, format:
+  "cbor")` — each just `resolve-format(format).<fn>(...)`, where
+  `resolve-format` is `formats.at(format, default: none)` plus a clear
+  panic (naming the bad string and the four valid ones) instead of Typst's
+  generic "dictionary does not contain key" error on a typo.
+- **Per-format namespaces** — `#let cbor = cbor-format` (and likewise
+  `json`/`yaml`/`toml`) — each namespace is the real module re-exported
+  directly under its public name, **not** wrapped in a plain dictionary of
+  closures. That distinction matters and was confirmed the hard way: Typst
+  allows `module.field(..)` dot-call sugar (`typwire.cbor.call(f, x)`) but
+  refuses the identical syntax when the receiver is a plain dictionary
+  whose value happens to be a function (`"cannot directly call dictionary
+  keys as functions"`) — an earlier version of this layer built `cbor`/
+  `json`/`yaml`/`toml` as `(encode: ..., decode: ..., call: ...)` dicts
+  wrapping the generic functions, which compiled fine but broke every
+  `typwire.<format>.call(...)` call site across the whole Tytanic suite the
+  moment it ran. Re-exporting the modules directly sidesteps this
+  entirely, and — since `formats` points at those same modules — the
+  generic functions and the namespaces run the exact same code either way;
+  `typwire.<format>.encode(value)` and `typwire.encode(value, format:
+  "<format>")` are interchangeable, never two implementations to keep in
+  sync.
+
 `cbor`/`json`/`yaml`/`toml` each have the same `encode`/`decode`/`call`
 shape: `call(function, ..args)` rejects named args, encodes each positional
 arg **independently**, calls the plugin function with the resulting byte
@@ -836,16 +960,23 @@ strings (wrapped in `bytes(..)` first for the three formats whose own
 plugin call rejects a bare `str` argument outright), and decodes the single
 returned byte string. This positional, separately-encoded calling
 convention is what `#[typwire::export]`'s `&[u8]`-per-parameter wrapper
-expects, for every format.
+expects, for every format. Each format's own `encode`/`decode` is a thin
+wrapper around `wire.encode(value, format: "<format>")`/`wire.decode(data,
+format: "<format>")` — see *Format threading* above for what that argument
+actually does.
 
-`src/format/debug.typ` is the odd one out: `debug.encode`/`debug.decode`
-are `wire.encode`/`wire.decode` themselves — the shared, format-agnostic
-dictionary/array/primitive tree layer every other namespace's `encode`
-hands to a native serializer (`cbor.encode`, `json.encode`, ...) — exposed
-directly, with no serialization step and therefore no `call` (there is no
-`bytes`/`str` to hand a plugin). It exists for inspecting or testing the
-tree Typwire produces without going through an actual format or a plugin
-round trip.
+`src/format/debug.typ` is the odd one out: `debug.encode(value, format:
+"cbor")`/`debug.decode(data, format: "cbor")` are `wire.encode`/
+`wire.decode` themselves, exposed directly with no serialization step and
+therefore no `call` (there is no `bytes`/`str` to hand a plugin) — useful
+for inspecting or testing the tree Typwire produces without going through
+an actual format or a plugin round trip. Its own `format:` argument isn't
+about serialization (there is none here) — it only picks which format's
+`bytes`/`none` tagging rules the returned tree previews, since that's the
+one part of the tree that's still format-sensitive after *Format
+threading* above. Default `"cbor"` means `debug.encode`'s default output
+keeps `bytes`/`none` fully native, matching how the tree looked before
+per-format tagging existed at all.
 
 ## Explicitly unsupported (by design)
 

@@ -46,11 +46,13 @@
   )
 }
 
-/// Encode a datetime into a CBOR-compatible dictionary.
+/// Encode a datetime into a wire-compatible dictionary.
 ///
 /// - datetime (datetime): A datetime.
+/// - format (str): The wire format being encoded for. Unused --
+///   `datetime` has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(datetime) = {
+#let encode(datetime, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(datetime) == std.datetime,
@@ -68,11 +70,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a datetime.
+/// Decode a wire-compatible dictionary into a datetime.
 ///
 /// - value (dictionary): A dictionary representing the `encode`d value.
+/// - format (str): The wire format being decoded from. Unused --
+///   `datetime` decodes the same way regardless of format.
 /// -> datetime
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

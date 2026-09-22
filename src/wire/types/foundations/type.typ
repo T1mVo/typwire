@@ -2,11 +2,13 @@
 
 #let type-name = "type"
 
-/// Encode a type into a CBOR-compatible string.
+/// Encode a type into a wire-compatible string.
 ///
 /// - type (type): A type.
+/// - format (str): The wire format being encoded for. Unused -- `type` has
+///   the same tagged-dictionary shape in every format.
 /// -> str
-#let encode(type) = {
+#let encode(type, format: "cbor") = {
   if is-debug-assert {
     assert(
       std.type(type) == std.type,
@@ -20,11 +22,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a type.
+/// Decode a wire-compatible dictionary into a type.
 ///
 /// - value (dictionary): A dictionary representing the `encode`d value.
+/// - format (str): The wire format being decoded from. Unused -- `type`
+///   decodes the same way regardless of format.
 /// -> type
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

@@ -5,7 +5,7 @@
 
 #let type-name = "gradient-radial"
 
-/// Encode a radial gradient into a CBOR-compatible dictionary.
+/// Encode a radial gradient into a wire-compatible dictionary.
 ///
 /// - stops (array): An array of encoded stops.
 /// - center (dictionary): An encoded center.
@@ -13,8 +13,11 @@
 /// - focal-center (dictionary): An encoded focal center.
 /// - focal-radius (ratio): The focal radius of the gradient.
 /// - space (str): The name of the color space.
+/// - format (str): The wire format being encoded for. Unused -- every
+///   nested value here is already encoded by the caller, and the rest of
+///   this shape is the same in every format.
 /// -> dictionary
-#let encode(stops, center, radius, focal-center, focal-radius, space) = {
+#let encode(stops, center, radius, focal-center, focal-radius, space, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(stops) == std.array,
@@ -53,11 +56,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a radial gradient.
+/// Decode a wire-compatible dictionary into a radial gradient.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Forwarded to each
+///   stop's/center's `decode`, though none of them use it either.
 /// -> gradient
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
@@ -98,14 +103,14 @@
     )
   }
 
-  let stops = value.stops.map(stop.decode)
+  let stops = value.stops.map(s => stop.decode(s, format: format))
   let space = color.color-space(value.space)
 
   gradient.radial(
     ..stops,
-    center: center.decode(value.center),
+    center: center.decode(value.center, format: format),
     radius: value.radius,
-    focal-center: center.decode(value.focal-center),
+    focal-center: center.decode(value.focal-center, format: format),
     focal-radius: value.focal-radius,
     space: space,
   )

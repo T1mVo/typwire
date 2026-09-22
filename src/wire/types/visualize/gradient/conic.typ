@@ -5,14 +5,17 @@
 
 #let type-name = "gradient-conic"
 
-/// Encode a conic gradient into a CBOR-compatible dictionary.
+/// Encode a conic gradient into a wire-compatible dictionary.
 ///
 /// - stops (array): An array of encoded stops.
 /// - angle (angle): The angle of the gradient.
 /// - center (dictionary): An encoded center.
 /// - space (str): The name of the color space.
+/// - format (str): The wire format being encoded for. Unused -- every
+///   nested value here is already encoded by the caller, and the rest of
+///   this shape is the same in every format.
 /// -> dictionary
-#let encode(stops, angle, center, space) = {
+#let encode(stops, angle, center, space, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(stops) == std.array,
@@ -41,11 +44,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a conic gradient.
+/// Decode a wire-compatible dictionary into a conic gradient.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Forwarded to each
+///   stop's/center's `decode`, though neither uses it either.
 /// -> gradient
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
@@ -76,13 +81,13 @@
     )
   }
 
-  let stops = value.stops.map(stop.decode)
+  let stops = value.stops.map(s => stop.decode(s, format: format))
   let space = color.color-space(value.space)
 
   gradient.conic(
     ..stops,
     angle: value.angle,
-    center: center.decode(value.center),
+    center: center.decode(value.center, format: format),
     space: space,
   )
 }

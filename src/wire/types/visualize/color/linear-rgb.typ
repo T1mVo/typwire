@@ -2,14 +2,16 @@
 
 #let type-name = "color-linear-rgb"
 
-/// Encode a linear RGB color into a CBOR-compatible dictionary.
+/// Encode a linear RGB color into a wire-compatible dictionary.
 ///
 /// - r (ratio): The red component of the color.
 /// - g (ratio): The green component of the color.
 /// - b (ratio): The blue component of the color.
 /// - alpha (ratio): The alpha (transparency) component of the color.
+/// - format (str): The wire format being encoded for. Unused --
+///   `linear-rgb` has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(r, g, b, alpha) = {
+#let encode(r, g, b, alpha, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(r) == std.ratio,
@@ -38,11 +40,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a linear RGB color.
+/// Decode a wire-compatible dictionary into a linear RGB color.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused --
+///   `linear-rgb` decodes the same way regardless of format.
 /// -> color
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

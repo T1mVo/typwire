@@ -2,11 +2,13 @@
 
 #let type-name = "path"
 
-/// Encode a path into a CBOR-compatible dictionary.
+/// Encode a path into a wire-compatible dictionary.
 ///
 /// - value (path): A path.
+/// - format (str): The wire format being encoded for. Unused -- `path` has
+///   the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(value) = {
+#let encode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(value) == path,
@@ -29,11 +31,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a path.
+/// Decode a wire-compatible dictionary into a path.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `path`
+///   decodes the same way regardless of format.
 /// -> path
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

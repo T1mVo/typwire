@@ -2,14 +2,16 @@
 
 #let type-name = "color-cmyk"
 
-/// Encode a CMYK color into a CBOR-compatible dictionary.
+/// Encode a CMYK color into a wire-compatible dictionary.
 ///
 /// - cyan (ratio): The cyan component of the color.
 /// - magenta (ratio): The magenta component of the color.
 /// - yellow (ratio): The yellow component of the color.
 /// - key (ratio): The key (black) component of the color.
+/// - format (str): The wire format being encoded for. Unused -- `cmyk`
+///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(cyan, magenta, yellow, key) = {
+#let encode(cyan, magenta, yellow, key, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(cyan) == std.ratio,
@@ -38,11 +40,13 @@
   )
 }
 
-/// Decode a CBOR-compatible dictionary into a CMYK color.
+/// Decode a wire-compatible dictionary into a CMYK color.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused -- `cmyk`
+///   decodes the same way regardless of format.
 /// -> color
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

@@ -5,8 +5,10 @@
 /// Encode captured arguments into a CBOR-compatible dictionary.
 ///
 /// - value (arguments): Captured arguments.
+/// - format (str): The wire format being encoded for. Unused --
+///   `arguments` has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(value) = {
+#let encode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       type(value) == arguments,
@@ -24,8 +26,10 @@
 /// Decode a CBOR-compatible dictionary into captured arguments.
 ///
 /// - value (dictionary): A dictionary produced by `encode`.
+/// - format (str): The wire format being decoded from. Unused --
+///   `arguments` decodes the same way regardless of format.
 /// -> arguments
-#let decode(value) = {
+#let decode(value, format: "cbor") = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
