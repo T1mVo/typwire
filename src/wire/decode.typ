@@ -107,19 +107,21 @@
 ///   them actually need it.
 /// -> any
 #let decode(value, format: "cbor") = {
-  if std.type(value) == array {
+  let value-type = std.type(value)
+
+  if value-type == array {
     value.map(v => decode(v, format: format))
-  } else if std.type(value) == dictionary {
+  } else if value-type == dictionary {
     let decoded = (:)
     for (key, field) in value.pairs() {
       decoded.insert(key, decode(field, format: format))
     }
 
-    if decoded.keys().contains("typwire-type") {
-      let tag = decoded.at("typwire-type")
-      if std.type(tag) != str {
-        panic("typwire.decode: typwire-type must be a string")
-      }
+    if "typwire-type" in decoded {
+      let tag = decoded.typwire-type
+
+      assert(std.type(tag) == str, message: "typwire.decode: typwire-type must be a string")
+
       decode-tagged(tag, decoded, format: format)
     } else {
       decoded

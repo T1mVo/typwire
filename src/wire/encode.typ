@@ -40,16 +40,19 @@
 /// decides its own shape per format directly, the same way every other
 /// tagged type's own `encode` does.
 ///
+/// - content-type (type): `std.type(content)`, already computed by the
+///   caller -- accepted rather than recomputed here since `encode` (this
+///   function's only call site) always already has it.
 /// - content (any): The content to check.
 /// - format (str): The wire format being encoded for -- one of `"cbor"`,
 ///   `"json"`, `"yaml"`, `"toml"`.
 /// -> bool
-#let is-primitive(content, format: "cbor") = {
+#let is-primitive(content-type, content, format: "cbor") = {
   (
-    std.type(content) == std.int
-      or std.type(content) == std.float
-      or std.type(content) == std.str
-      or std.type(content) == std.bool
+    content-type == std.int
+      or content-type == std.float
+      or content-type == std.str
+      or content-type == std.bool
       or (content == none and format != "toml")
   )
 }
@@ -68,11 +71,12 @@
 ///   `"json"`, `"yaml"`, `"toml"`.
 /// -> any
 #let encode(content, format: "cbor") = {
+  let content-type = std.type(content)
   let result
 
-  if is-primitive(content, format: format) {
+  if is-primitive(content-type, content, format: format) {
     result = content
-  } else if std.type(content) == std.bytes {
+  } else if content-type == std.bytes {
     // Not wrapped in a recursive `encode(...)` call like every other
     // branch below -- `bytes-type.encode` returns the *same* `bytes` value
     // unchanged under `"cbor"`, so recursing into `encode` on that result
@@ -85,9 +89,9 @@
     // Only reached when `format == "toml"` -- every other format's `none`
     // is already primitive above.
     result = (typwire-type: "none")
-  } else if std.type(content) == std.array {
+  } else if content-type == std.array {
     result = content.map(i => encode(i, format: format))
-  } else if std.type(content) == std.dictionary {
+  } else if content-type == std.dictionary {
     result = (:)
     for (key, value) in content.pairs() {
       result.insert(key, encode(value, format: format))
@@ -97,44 +101,44 @@
     // Typst's own reliable CBOR subset, so it needs a tagged dict like the
     // other native types below, distinguishing it on the wire from `none`.
     result = encode(auto-value.encode(format: format), format: format)
-  } else if std.type(content) == std.alignment {
+  } else if content-type == std.alignment {
     result = encode(alignment.encode(content, format: format), format: format)
-  } else if std.type(content) == std.angle {
+  } else if content-type == std.angle {
     result = encode(angle.encode(content, format: format), format: format)
-  } else if std.type(content) == std.length {
+  } else if content-type == std.length {
     result = encode(length.encode(content, format: format), format: format)
-  } else if std.type(content) == std.ratio {
+  } else if content-type == std.ratio {
     result = encode(ratio.encode(content, format: format), format: format)
-  } else if std.type(content) == std.color {
+  } else if content-type == std.color {
     result = encode(color.encode(content, format: format), format: format)
-  } else if std.type(content) == std.gradient {
+  } else if content-type == std.gradient {
     result = encode(gradient.encode(content, format: format), format: format)
-  } else if std.type(content) == std.stroke {
+  } else if content-type == std.stroke {
     result = encode(stroke.encode(content, format: format), format: format)
-  } else if std.type(content) == std.datetime {
+  } else if content-type == std.datetime {
     result = encode(datetime.encode(content, format: format), format: format)
-  } else if std.type(content) == std.decimal {
+  } else if content-type == std.decimal {
     result = encode(decimal.encode(content, format: format), format: format)
-  } else if std.type(content) == std.duration {
+  } else if content-type == std.duration {
     result = encode(duration.encode(content, format: format), format: format)
-  } else if std.type(content) == std.label {
+  } else if content-type == std.label {
     result = encode(label.encode(content, format: format), format: format)
-  } else if std.type(content) == std.version {
+  } else if content-type == std.version {
     result = encode(version.encode(content, format: format), format: format)
-  } else if std.type(content) == std.type {
+  } else if content-type == std.type {
     result = encode(type.encode(content, format: format), format: format)
-  } else if std.type(content) == std.path {
+  } else if content-type == std.path {
     result = encode(path.encode(content, format: format), format: format)
-  } else if std.type(content) == std.symbol {
+  } else if content-type == std.symbol {
     result = encode(symbol.encode(content, format: format), format: format)
-  } else if std.type(content) == std.regex {
+  } else if content-type == std.regex {
     result = encode(regex.encode(content, format: format), format: format)
-  } else if std.type(content) == std.arguments {
+  } else if content-type == std.arguments {
     result = encode(arguments.encode(content, format: format), format: format)
-  } else if std.type(content) == std.content {
+  } else if content-type == std.content {
     panic("typwire.encode: content values are not supported")
   } else {
-    panic("typwire.encode: unsupported value type " + str(std.type(content)))
+    panic("typwire.encode: unsupported value type " + str(content-type))
   }
 
   result

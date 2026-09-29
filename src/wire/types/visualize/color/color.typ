@@ -27,22 +27,23 @@
   }
 
   let c = color.components(alpha: true)
+  let space = color.space()
 
-  if color.space() == std.color.luma {
+  if space == std.color.luma {
     luma.encode(c.at(0), c.at(1), format: format)
-  } else if color.space() == std.color.oklab {
+  } else if space == std.color.oklab {
     oklab.encode(c.at(0), c.at(1), c.at(2), c.at(3), format: format)
-  } else if color.space() == std.color.oklch {
+  } else if space == std.color.oklch {
     oklch.encode(c.at(0), c.at(1), c.at(2), c.at(3), format: format)
-  } else if color.space() == std.color.linear-rgb {
+  } else if space == std.color.linear-rgb {
     linear-rgb.encode(c.at(0), c.at(1), c.at(2), c.at(3), format: format)
-  } else if color.space() == std.color.rgb {
+  } else if space == std.color.rgb {
     rgb.encode(c.at(0), c.at(1), c.at(2), c.at(3), format: format)
-  } else if color.space() == std.color.cmyk {
+  } else if space == std.color.cmyk {
     cmyk.encode(c.at(0), c.at(1), c.at(2), c.at(3), format: format)
-  } else if color.space() == std.color.hsl {
+  } else if space == std.color.hsl {
     hsl.encode(c.at(0), c.at(1), c.at(2), c.at(3), format: format)
-  } else if color.space() == std.color.hsv {
+  } else if space == std.color.hsv {
     hsv.encode(c.at(0), c.at(1), c.at(2), c.at(3), format: format)
   } else {
     panic("color.encode: Unsupported color type")
