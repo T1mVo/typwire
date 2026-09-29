@@ -495,9 +495,21 @@ this type with caution. Requires the `regex` feature on the Rust side.
 )
 ```
 
-## Format performance
+## Performance
 
-If no specific format is desired, CBOR is the most effiecint option and should be preferred.
+If you're considering moving a pure-Typst implementation to a WASM plugin
+via typwire, be aware of the performance overhead that comes with it:
+
+These measurements were taken with medium-sized data, like a gradient with 9 stops. Performance scales directly with the size of the data.
+
+- **~13 ms** to load the plugin. Paid once per compilation, no matter how
+  many times it's called afterward.
+- **~2–4 ms** extra for the first call specifically, before per-call cost
+  settles.
+- **~200–400 μs** per call after that.
+
+If no specific format is desired, or performance matters, use CBOR. The
+other three formats are measurably slower:
 
 | Format | Relative speed |
 | :-: | :-: |
