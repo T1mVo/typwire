@@ -179,3 +179,10 @@ case!("visualize/stop");
 case!("stress/bytes");
 case!("stress/multi-arg");
 case!("stress/many-objects");
+
+// Not heavy in the same sense as the three above (a single gradient is a
+// small payload) -- this one exercises the wire protocol under *repetition*
+// instead: many calls, each with a different value, exists so that
+// `typst compile --timings` shows the call-overhead curve (see *Testing*'s
+// warm-up note below) instead of a single flat number.
+case!("stress/warmup");
