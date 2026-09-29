@@ -179,22 +179,25 @@ tuple_impls!(
     (A, B, C, D, E, F, G, H, I, J, K, L),
 );
 
+/// Reconstruct any `Typwire` value directly from a generic [`Value`] tree,
+/// with no CBOR bytes in between -- see `format/value.rs::from_value`.
+/// Called both by `Any` (`any.rs`, to reconstruct a native type nested
+/// inside it, needed in every build, `Cbor`-only included) and by
+/// `Json`/`Yaml`/`Toml::decode` (`value_from_owned`'s mirror, below).
 pub(crate) fn value_to_owned<T: DeserializeOwned>(value: Value) -> Result<T, String> {
-    let bytes = cbor4ii::serde::to_vec(Vec::new(), &value).map_err(|error| error.to_string())?;
-    cbor4ii::serde::from_slice(&bytes).map_err(|error| error.to_string())
+    crate::format::from_value(value).map_err(|error| error.to_string())
 }
 
 /// The mirror of [`value_to_owned`]: turn any `Typwire` value into a generic
-/// [`Value`] tree, round-tripping through real CBOR bytes the same way
-/// `value_to_owned` does in the other direction. Used by the text formats
-/// (`Json`/`Yaml`/`Toml`) to get a tree they can rewrite [`Bytes`] nodes in
-/// before handing it to a format that has no native byte-string concept --
-/// see `rewrite_bytes_to_array`. `Cbor` never needs this: it serializes
-/// `T` directly in one pass, `Bytes` included, exactly as today.
+/// [`Value`] tree directly, with no CBOR bytes in between -- see
+/// `format/value.rs::to_value`. Used by the text formats (`Json`/`Yaml`/
+/// `Toml`) to get a tree they can rewrite [`Bytes`] nodes in before handing
+/// it to a format that has no native byte-string concept -- see
+/// `rewrite_bytes_to_array`. `Cbor` never needs this: it serializes `T`
+/// directly in one pass, `Bytes` included, exactly as today.
 #[cfg(any(feature = "json", feature = "yaml", feature = "toml"))]
 pub(crate) fn value_from_owned<T: Serialize>(value: &T) -> Result<Value, String> {
-    let bytes = cbor4ii::serde::to_vec(Vec::new(), value).map_err(|error| error.to_string())?;
-    cbor4ii::serde::from_slice(&bytes).map_err(|error| error.to_string())
+    crate::format::to_value(value).map_err(|error| error.to_string())
 }
 
 /// Replace every [`Value::Bytes`] node in `value` with the same tagged

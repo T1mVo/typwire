@@ -437,17 +437,39 @@ found only once the multi-format test suite existed to catch it (below):
   (a separate mechanism — see *Format threading* below for why the two
   sides diverge here), `Format::Cbor` and `Bytes`'s
   `Serialize`/`Deserialize` (`serialize_bytes`/`deserialize_byte_buf`) are
-  untouched; `Json`/`Yaml`/`Toml::encode` instead round-trip the value
-  through a `cbor4ii::core::Value` tree first (`value_from_owned`, a new
-  sibling to the existing `value_to_owned` `any.rs` already relies on —
-  same "round-trip through real CBOR bytes to change representation"
-  idiom, just in the other direction), rewrite `Value::Bytes` nodes into
-  the same tagged-array shape with `rewrite_bytes_to_array`, then serialize
-  *that* tree; `decode` mirrors it with `rewrite_array_to_bytes` before
-  `value_to_owned`. This tree round-trip is the one real, non-mechanical
-  piece of new logic anywhere in the type system, and it's confined to the
-  three non-default formats — `Cbor` stays a single direct pass, exactly as
-  fast as before this feature existed.
+  untouched; `Json`/`Yaml`/`Toml::encode` instead build a `cbor4ii::core::
+  Value` tree first (`value_from_owned`, a sibling to the existing
+  `value_to_owned` `any.rs` already relies on), rewrite `Value::Bytes`
+  nodes into the same tagged-array shape with `rewrite_bytes_to_array`,
+  then serialize *that* tree; `decode` mirrors it with
+  `rewrite_array_to_bytes` before `value_to_owned`. Both `value_from_owned`/
+  `value_to_owned` go straight from `T`/`Value` to `Value`/`T` — a
+  hand-written `Serializer`/`Deserializer` pair over `Value` directly
+  (`format/value.rs`), not (an earlier version of this) a round trip
+  through real CBOR bytes (`cbor4ii::serde::to_vec` then `from_slice`,
+  chosen originally only because `cbor4ii`'s public `serde` module exposes
+  no direct T-to-Value/Value-to-T conversion — confirmed by reading its
+  source, `cbor4ii-1.2.3/src/serde.rs` — so building the tree without a
+  custom (de)serializer meant paying for a real CBOR encode/decode pass
+  just to get one). The custom pair needed one orphan-rule workaround
+  (`struct ValueDeserializer(Value)`, since neither `Deserializer` nor
+  `Value` are local to this crate) and was verified to preserve every wire
+  edge case the byte round trip used to get for free, especially `()`
+  encoding as an empty array rather than `null` (matching `cbor4ii`'s own
+  `serialize_unit`) — checked with a byte-for-byte before/after diff across
+  unit, `Option`, `Bytes`, `Vec<u8>`, negative/max `i64`, a struct, `Any`,
+  and a native type, not assumed. This tree round-trip (still one, just no
+  longer through real bytes) is the one real, non-mechanical piece of new
+  logic anywhere in the type system, and it's confined to the three
+  non-default formats — `Cbor` stays a single direct `cbor4ii::serde` pass,
+  exactly as fast as before this feature existed. Measured impact (`tests/
+  stress/warmup/`, per-call gap between `--timings`' `call plugin` spans —
+  see *Performance* in `README.md` for the methodology): JSON ~924μs →
+  ~717μs (−22%), TOML ~2,034μs → ~1,904μs (−6%), YAML unchanged
+  (~7,500μs either way) — YAML's own `serde-saphyr` pass so dominates its
+  total cost that removing one CBOR-byte pass doesn't register above
+  run-to-run noise, even though `Yaml::encode`/`decode` go through the same
+  `value_from_owned`/`value_to_owned` pair as `Json`/`Toml`.
 
 A third problem surfaced only once the test suite below started exercising
 every native type through every format: **`Yaml::decode` mis-resolved a
