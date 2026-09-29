@@ -1,5 +1,4 @@
 #import "../../../common.typ": plugin, typwire
-#let exports = dictionary(plugin)
 
 // Multiple arguments, each individually heavy: a long string, a gradient
 // with many stops, and a large numeric array -- stressing `typwire.call`'s
@@ -11,7 +10,7 @@
 #let numbers = range(6000)
 
 #let (out-text, out-stops, out-numbers) = typwire.json.call(
-  exports.at("stress-multi-arg-json"),
+  plugin.stress-multi-arg-json,
   text,
   stops,
   numbers,

@@ -1,5 +1,4 @@
 #import "../../../common.typ": plugin, typwire
-#let exports = dictionary(plugin)
 
 // A single huge byte payload, tested on its own (separate from the
 // multi-argument stress test below it in this same category) since bytes
@@ -10,6 +9,6 @@
 #let count = 40000
 #let payload = bytes(range(count).map(i => calc.rem(i, 256)))
 
-#let result = typwire.cbor.call(exports.at("stress-bytes-cbor"), payload)
+#let result = typwire.cbor.call(plugin.stress-bytes-cbor, payload)
 #assert.eq(result.len(), count)
 #assert.eq(result, payload)

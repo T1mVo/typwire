@@ -1,5 +1,4 @@
 #import "../../../common.typ": plugin, typwire
-#let exports = dictionary(plugin)
 
 // Many small objects rather than one huge value -- stresses the recursive
 // tree-walking side of encode/decode (many `Serialize`/`Deserialize` calls
@@ -8,6 +7,6 @@
 #let count = 6000
 #let values = range(count).map(i => (x: i, y: i * 2, label: "item-" + str(i)))
 
-#let result = typwire.toml.call(exports.at("stress-many-objects-toml"), values)
+#let result = typwire.toml.call(plugin.stress-many-objects-toml, values)
 #assert.eq(result.len(), count)
 #assert.eq(result, values)

@@ -1,4 +1,3 @@
 #import "../../../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
-#roundtrip-format(typwire.toml, exports.at("roundtrip-vec-deque-toml"), (1, 2, 3))
+#roundtrip-format(typwire.toml, plugin.roundtrip-vec-deque-toml, (1, 2, 3))
