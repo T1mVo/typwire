@@ -1,16 +1,15 @@
 #import "../../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
-#roundtrip-format(typwire.json, exports.at("roundtrip-version-json"), version(1, 2, 3))
-#roundtrip-format(typwire.json, exports.at("roundtrip-version-json"), version(0, 15, 0))
-#roundtrip-format(typwire.json, exports.at("roundtrip-version-json"), version(2, 0, 1, 4, 7))
+#roundtrip-format(typwire.json, plugin.roundtrip-version-json, version(1, 2, 3))
+#roundtrip-format(typwire.json, plugin.roundtrip-version-json, version(0, 15, 0))
+#roundtrip-format(typwire.json, plugin.roundtrip-version-json, version(2, 0, 1, 4, 7))
 
 // `version` accepts any number of components -- zero, one, or more than
 // the traditional major/minor/patch/revision/build five -- so all of these
 // must round-trip too, not just the 3- and 5-component cases above.
-#roundtrip-format(typwire.json, exports.at("roundtrip-version-json"), version())
-#roundtrip-format(typwire.json, exports.at("roundtrip-version-json"), version(1))
-#roundtrip-format(typwire.json, exports.at("roundtrip-version-json"), version(1, 2, 3, 4, 5, 6, 7))
+#roundtrip-format(typwire.json, plugin.roundtrip-version-json, version())
+#roundtrip-format(typwire.json, plugin.roundtrip-version-json, version(1))
+#roundtrip-format(typwire.json, plugin.roundtrip-version-json, version(1, 2, 3, 4, 5, 6, 7))
 
 // `roundtrip-format` accepts `==`-equality as a pass, but `version`
 // equality pads the shorter side with trailing zeros
@@ -20,5 +19,5 @@
 // neither 0 nor 5 components, where a regression back to a fixed-width
 // encoding would silently pass the `==` check above but fail this one.
 #let original = version(1, 2)
-#let decoded = typwire.json.call(exports.at("roundtrip-version-json"), original)
+#let decoded = typwire.json.call(plugin.roundtrip-version-json, original)
 #assert.eq(repr(decoded), repr(original))

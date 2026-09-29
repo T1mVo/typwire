@@ -1,11 +1,10 @@
 #import "../../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
 // All fields auto (the default stroke).
-#roundtrip-format(typwire.json, exports.at("roundtrip-stroke-json"), stroke())
+#roundtrip-format(typwire.json, plugin.roundtrip-stroke-json, stroke())
 
 // A fully specified stroke: solid paint, explicit cap/join/dash/miter-limit.
-#roundtrip-format(typwire.json, exports.at("roundtrip-stroke-json"),
+#roundtrip-format(typwire.json, plugin.roundtrip-stroke-json,
   stroke(
     paint: red,
     thickness: 2pt,
@@ -17,15 +16,15 @@
 )
 
 // Gradient paint.
-#roundtrip-format(typwire.json, exports.at("roundtrip-stroke-json"), 2pt + gradient.linear(red, blue))
+#roundtrip-format(typwire.json, plugin.roundtrip-stroke-json, 2pt + gradient.linear(red, blue))
 
 // `dash: none` (explicitly no dash, distinct from `auto`).
-#roundtrip-format(typwire.json, exports.at("roundtrip-stroke-json"), stroke(dash: none))
+#roundtrip-format(typwire.json, plugin.roundtrip-stroke-json, stroke(dash: none))
 
 // A custom dash array mixing lengths and the `"dot"` marker, plus a phase.
-#roundtrip-format(typwire.json, exports.at("roundtrip-stroke-json"),
+#roundtrip-format(typwire.json, plugin.roundtrip-stroke-json,
   stroke(dash: (array: (10pt, 5pt, "dot", 5pt), phase: 3pt)),
 )
 
 // The `2pt + red` shorthand.
-#roundtrip-format(typwire.json, exports.at("roundtrip-stroke-json"), 2pt + red)
+#roundtrip-format(typwire.json, plugin.roundtrip-stroke-json, 2pt + red)

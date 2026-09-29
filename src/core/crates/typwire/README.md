@@ -82,8 +82,10 @@ errors and result-encoding errors are surfaced by Typst as plugin panics.
 
 By default the wasm export takes the Rust function's name. Pass
 `#[typwire::export(rename = "other-name")]` to choose a different one; the name
-need not be a valid Rust identifier. A non-identifier export is reached from
-Typst through `dictionary(plugin).at("other-name")`.
+need not be a valid Rust identifier. A kebab-case name is reached from Typst
+directly as `plugin.other-name`; a name that isn't identifier-shaped at all
+(spaces, a leading digit, ...) needs `dictionary(plugin).at("other-name")`
+instead.
 
 ## Wire formats
 

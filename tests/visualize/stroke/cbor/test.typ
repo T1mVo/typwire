@@ -1,11 +1,10 @@
 #import "../../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
 // All fields auto (the default stroke).
-#roundtrip-format(typwire.cbor, exports.at("roundtrip-stroke-cbor"), stroke())
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, stroke())
 
 // A fully specified stroke: solid paint, explicit cap/join/dash/miter-limit.
-#roundtrip-format(typwire.cbor, exports.at("roundtrip-stroke-cbor"),
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor,
   stroke(
     paint: red,
     thickness: 2pt,
@@ -17,15 +16,15 @@
 )
 
 // Gradient paint.
-#roundtrip-format(typwire.cbor, exports.at("roundtrip-stroke-cbor"), 2pt + gradient.linear(red, blue))
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, 2pt + gradient.linear(red, blue))
 
 // `dash: none` (explicitly no dash, distinct from `auto`).
-#roundtrip-format(typwire.cbor, exports.at("roundtrip-stroke-cbor"), stroke(dash: none))
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, stroke(dash: none))
 
 // A custom dash array mixing lengths and the `"dot"` marker, plus a phase.
-#roundtrip-format(typwire.cbor, exports.at("roundtrip-stroke-cbor"),
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor,
   stroke(dash: (array: (10pt, 5pt, "dot", 5pt), phase: 3pt)),
 )
 
 // The `2pt + red` shorthand.
-#roundtrip-format(typwire.cbor, exports.at("roundtrip-stroke-cbor"), 2pt + red)
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, 2pt + red)

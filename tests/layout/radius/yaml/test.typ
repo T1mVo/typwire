@@ -1,5 +1,4 @@
 #import "../../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
 // `Radius` decodes `left`/`top`/`right`/`bottom`/`rest` shorthands into the
 // four canonical per-corner fields, but always re-encodes just those four
@@ -17,16 +16,16 @@
   rest: none,
 )
 
-#roundtrip-format(typwire.yaml, exports.at("roundtrip-radius-yaml"), corners(top-left: 5pt, bottom-right: 3pt))
-#roundtrip-format(typwire.yaml, exports.at("roundtrip-radius-yaml"), corners())
+#roundtrip-format(typwire.yaml, plugin.roundtrip-radius-yaml, corners(top-left: 5pt, bottom-right: 3pt))
+#roundtrip-format(typwire.yaml, plugin.roundtrip-radius-yaml, corners())
 
 // The shorthands themselves are exercised directly against the resolved
 // canonical shape, since they are not fixed points of the round trip.
 #assert.eq(
-  typwire.yaml.call(exports.at("roundtrip-radius-yaml"), (left: 5pt, top: 3pt)),
+  typwire.yaml.call(plugin.roundtrip-radius-yaml, (left: 5pt, top: 3pt)),
   corners(top-left: 5pt, top-right: 3pt, bottom-left: 5pt),
 )
 #assert.eq(
-  typwire.yaml.call(exports.at("roundtrip-radius-yaml"), (rest: 2pt)),
+  typwire.yaml.call(plugin.roundtrip-radius-yaml, (rest: 2pt)),
   corners(top-left: 2pt, top-right: 2pt, bottom-left: 2pt, bottom-right: 2pt),
 )

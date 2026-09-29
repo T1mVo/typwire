@@ -1,5 +1,4 @@
 #import "../../../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
-#roundtrip-format(typwire.toml, exports.at("roundtrip-u8-toml"), 0)
-#roundtrip-format(typwire.toml, exports.at("roundtrip-u8-toml"), 255)
+#roundtrip-format(typwire.toml, plugin.roundtrip-u8-toml, 0)
+#roundtrip-format(typwire.toml, plugin.roundtrip-u8-toml, 255)

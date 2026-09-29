@@ -1,5 +1,4 @@
 #import "../../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
 // `Radius` decodes `left`/`top`/`right`/`bottom`/`rest` shorthands into the
 // four canonical per-corner fields, but always re-encodes just those four
@@ -17,16 +16,16 @@
   rest: none,
 )
 
-#roundtrip-format(typwire.toml, exports.at("roundtrip-radius-toml"), corners(top-left: 5pt, bottom-right: 3pt))
-#roundtrip-format(typwire.toml, exports.at("roundtrip-radius-toml"), corners())
+#roundtrip-format(typwire.toml, plugin.roundtrip-radius-toml, corners(top-left: 5pt, bottom-right: 3pt))
+#roundtrip-format(typwire.toml, plugin.roundtrip-radius-toml, corners())
 
 // The shorthands themselves are exercised directly against the resolved
 // canonical shape, since they are not fixed points of the round trip.
 #assert.eq(
-  typwire.toml.call(exports.at("roundtrip-radius-toml"), (left: 5pt, top: 3pt)),
+  typwire.toml.call(plugin.roundtrip-radius-toml, (left: 5pt, top: 3pt)),
   corners(top-left: 5pt, top-right: 3pt, bottom-left: 5pt),
 )
 #assert.eq(
-  typwire.toml.call(exports.at("roundtrip-radius-toml"), (rest: 2pt)),
+  typwire.toml.call(plugin.roundtrip-radius-toml, (rest: 2pt)),
   corners(top-left: 2pt, top-right: 2pt, bottom-left: 2pt, bottom-right: 2pt),
 )

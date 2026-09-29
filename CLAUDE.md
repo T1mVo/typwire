@@ -35,11 +35,19 @@ covers all four wire formats: `tests/<type>/{cbor,json,yaml,toml}/`, each a
 - `test.typ` — imports `../../common.typ` (shared `roundtrip-format` helper
   + the `plugin(...)` handle) and asserts that Typst values survive a
   Typst→Rust→Typst round trip via `typwire.<format>.call`. Every export is
-  reached through `#let exports = dictionary(plugin)` +
-  `exports.at("roundtrip-<type>-<format>")`, never a bare `plugin.foo` field
-  access — the kebab-case rename (below) makes that syntactically required,
-  not just a style choice (`plugin.roundtrip-i64-json` would parse as
-  subtraction).
+  reached through direct kebab-case field access,
+  `plugin.roundtrip-<type>-<format>` — confirmed empirically that this
+  works even though `-` is the subtraction operator elsewhere: Typst's
+  tokenizer only treats a bare `-` as subtraction when it's set off by
+  whitespace (`a - b`); directly against identifier characters with no
+  space (`a-b`, and so `plugin.roundtrip-i64-json`), it continues the same
+  identifier/field-name token instead. An earlier version of this suite
+  assumed otherwise and routed every export through
+  `dictionary(plugin).at("...")`, which is only actually required for a
+  `rename` string that isn't identifier-shaped at all (contains a space,
+  starts with a digit, ...) — `tests/rename/` is the one place that still
+  uses it, and only for a dictionary membership check (`name not in
+  exports`), not to look up a function.
 - `plugin.rs` — usually one function per format,
   `#[typwire::export(format = "<format>", rename = "roundtrip-<type>-<format>")]
   fn roundtrip_<type>_<format>(v: T) -> Result<T, String>` (`format`/the Rust
@@ -906,8 +914,11 @@ wrapper's *identifier*, the rename path skips `#[wasm_func]` entirely: it emits
 an `extern "C"` fn with `#[unsafe(export_name = "wire-name")]` that re-declares
 the two `typst_env` protocol imports, reads/splits the argument buffer itself,
 and calls the same decode/encode body. So `rename` accepts arbitrary strings
-(kebab-case included); the no-rename path is byte-for-byte unchanged. Typst
-reaches a non-identifier export via `dictionary(plugin).at("wire-name")`.
+(kebab-case included); the no-rename path is byte-for-byte unchanged. A
+kebab-case `wire-name` is reachable directly as `plugin.wire-name` (see
+*Testing* above); only a `rename` string that isn't identifier-shaped at
+all (a space, a leading digit, ...) genuinely needs
+`dictionary(plugin).at("wire-name")` instead.
 
 `validate_signature` rejects `const`/`async`/`unsafe`/`extern`/variadic/generic
 functions, receivers/methods, non-identifier or `ref` argument patterns, and

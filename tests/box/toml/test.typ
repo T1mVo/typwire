@@ -2,7 +2,6 @@
 // `T`, so it doesn't belong under `tests/foundations/` alongside the types
 // that actually have a Typst-side identity.
 #import "../../common.typ": roundtrip-format, plugin, typwire
-#let exports = dictionary(plugin)
 
-#roundtrip-format(typwire.toml, exports.at("roundtrip-box-toml"), 42)
-#roundtrip-format(typwire.toml, exports.at("roundtrip-box-toml"), -1)
+#roundtrip-format(typwire.toml, plugin.roundtrip-box-toml, 42)
+#roundtrip-format(typwire.toml, plugin.roundtrip-box-toml, -1)
