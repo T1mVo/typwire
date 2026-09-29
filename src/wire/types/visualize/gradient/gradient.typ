@@ -23,29 +23,31 @@
   }
 
   let stops = gradient.stops().map(s => stop.encode(s.at(0), s.at(1), format: format))
-  let space = if gradient.space() == std.color.luma {
+  let gradient-space = gradient.space()
+  let space = if gradient-space == std.color.luma {
     "luma"
-  } else if gradient.space() == std.color.oklab {
+  } else if gradient-space == std.color.oklab {
     "oklab"
-  } else if gradient.space() == std.color.oklch {
+  } else if gradient-space == std.color.oklch {
     "oklch"
-  } else if gradient.space() == std.color.linear-rgb {
+  } else if gradient-space == std.color.linear-rgb {
     "linear-rgb"
-  } else if gradient.space() == std.color.rgb {
+  } else if gradient-space == std.color.rgb {
     "rgb"
-  } else if gradient.space() == std.color.cmyk {
+  } else if gradient-space == std.color.cmyk {
     "cmyk"
-  } else if gradient.space() == std.color.hsl {
+  } else if gradient-space == std.color.hsl {
     "hsl"
-  } else if gradient.space() == std.color.hsv {
+  } else if gradient-space == std.color.hsv {
     "hsv"
   } else {
     panic("gradient.encode: Invalid gradient color space")
   }
 
-  if gradient.kind() == std.gradient.linear {
+  let kind = gradient.kind()
+  if kind == std.gradient.linear {
     linear.encode(stops, gradient.angle(), space, format: format)
-  } else if gradient.kind() == std.gradient.radial {
+  } else if kind == std.gradient.radial {
     radial.encode(
       stops,
       center.encode(..gradient.center(), format: format),
@@ -55,7 +57,7 @@
       space,
       format: format,
     )
-  } else if gradient.kind() == std.gradient.conic {
+  } else if kind == std.gradient.conic {
     conic.encode(
       stops,
       gradient.angle(),
