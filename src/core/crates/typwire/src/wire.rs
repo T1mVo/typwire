@@ -183,97 +183,13 @@ tuple_impls!(
 /// with no CBOR bytes in between -- see `format/value.rs::from_value`.
 /// Called both by `Any` (`any.rs`, to reconstruct a native type nested
 /// inside it, needed in every build, `Cbor`-only included) and by
-/// `Json::decode` (`value_from_owned`'s mirror, below).
+/// `Json::decode` (`format/json.rs`). The mirror direction (`T` -> `Value`)
+/// and the `Bytes`-tagging tree-walk around it live in `format/json.rs`
+/// now instead of here, since `Json` is the only caller left -- this one
+/// stays here because `Any` needs it independent of which format (if any)
+/// is even enabled.
 pub(crate) fn value_to_owned<T: DeserializeOwned>(value: Value) -> Result<T, String> {
     crate::format::from_value(value).map_err(|error| error.to_string())
-}
-
-/// The mirror of [`value_to_owned`]: turn any `Typwire` value into a generic
-/// [`Value`] tree directly, with no CBOR bytes in between -- see
-/// `format/value.rs::to_value`. Used by `Json` to get a tree it can rewrite
-/// [`Bytes`] nodes in before handing it to a format that has no native
-/// byte-string concept -- see `rewrite_bytes_to_array`. `Cbor` never needs
-/// this: it serializes `T` directly in one pass, `Bytes` included, exactly
-/// as today.
-#[cfg(feature = "json")]
-pub(crate) fn value_from_owned<T: Serialize>(value: &T) -> Result<Value, String> {
-    crate::format::to_value(value).map_err(|error| error.to_string())
-}
-
-/// Replace every [`Value::Bytes`] node in `value` with the same tagged
-/// dictionary shape the Typst side uses for a format with no native
-/// byte-string type (`src/wire/types/foundations/bytes.typ`): `{typwire-type:
-/// "bytes", data: [...]}`, `data` a plain array of byte integers -- not
-/// base64, since Typst has no built-in base64 codec to match it against.
-#[cfg(feature = "json")]
-pub(crate) fn rewrite_bytes_to_array(value: &mut Value) {
-    match value {
-        Value::Bytes(data) => {
-            let entries = vec![
-                (
-                    Value::Text("typwire-type".to_owned()),
-                    Value::Text("bytes".to_owned()),
-                ),
-                (
-                    Value::Text("data".to_owned()),
-                    Value::Array(
-                        data.iter()
-                            .map(|byte| Value::Integer(*byte as i128))
-                            .collect(),
-                    ),
-                ),
-            ];
-            *value = Value::Map(entries);
-        }
-        Value::Array(items) => items.iter_mut().for_each(rewrite_bytes_to_array),
-        Value::Map(entries) => entries
-            .iter_mut()
-            .for_each(|(_, entry)| rewrite_bytes_to_array(entry)),
-        _ => {}
-    }
-}
-
-/// The inverse of [`rewrite_bytes_to_array`]: replace every `{typwire-type:
-/// "bytes", data: [...]}` tagged dictionary with a real [`Value::Bytes`].
-#[cfg(feature = "json")]
-pub(crate) fn rewrite_array_to_bytes(value: &mut Value) {
-    match value {
-        Value::Map(entries) => {
-            let is_tagged_bytes = entries.iter().any(|(key, entry)| {
-                matches!(
-                    (key, entry),
-                    (Value::Text(key), Value::Text(tag))
-                        if key == "typwire-type" && tag == "bytes"
-                )
-            });
-
-            if is_tagged_bytes {
-                let data = entries
-                    .iter()
-                    .find_map(|(key, entry)| match (key, entry) {
-                        (Value::Text(key), Value::Array(items)) if key == "data" => {
-                            Some(items.clone())
-                        }
-                        _ => None,
-                    })
-                    .unwrap_or_default();
-                let bytes = data
-                    .into_iter()
-                    .filter_map(|item| match item {
-                        Value::Integer(byte) => u8::try_from(byte).ok(),
-                        _ => None,
-                    })
-                    .collect();
-                *value = Value::Bytes(bytes);
-            } else {
-                entries
-                    .iter_mut()
-                    .for_each(|(_, entry)| rewrite_array_to_bytes(entry));
-            }
-        }
-        Value::Array(items) => items.iter_mut().for_each(rewrite_array_to_bytes),
-        _ => {}
-    }
 }
 
 pub(crate) fn invalid_value<E: serde::de::Error>(message: impl std::fmt::Display) -> E {

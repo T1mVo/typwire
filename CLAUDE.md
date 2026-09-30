@@ -417,14 +417,20 @@ of the type system described elsewhere in this document:
   built-in base64 codec to match a base64 string against, so the array
   form needs no new dependency on either side. On the Rust side, `Cbor`
   and `Bytes`'s `Serialize`/`Deserialize` (`serialize_bytes`/
-  `deserialize_byte_buf`) are untouched; `Json::encode` instead builds a
-  `cbor4ii::core::Value` tree first (`value_from_owned`, a sibling to the
-  existing `value_to_owned` `any.rs` already relies on), rewrites
-  `Value::Bytes` nodes into the same tagged-array shape with
+  `deserialize_byte_buf`) are untouched; `Json::encode` (`format/json.rs`)
+  instead builds a `cbor4ii::core::Value` tree first (`value_from_owned`,
+  a sibling to the `value_to_owned` `wire.rs` exposes for `any.rs`),
+  rewrites `Value::Bytes` nodes into the same tagged-array shape with
   `rewrite_bytes_to_array`, then serializes *that* tree; `decode` mirrors
-  it with `rewrite_array_to_bytes` before `value_to_owned`. Both
-  `value_from_owned`/`value_to_owned` go straight from `T`/`Value` to
-  `Value`/`T` — a hand-written `Serializer`/`Deserializer` pair over
+  it with `rewrite_array_to_bytes` before `value_to_owned`. All three of
+  `value_from_owned`/`rewrite_bytes_to_array`/`rewrite_array_to_bytes` live
+  in `format/json.rs` itself, not `wire.rs` — they used to be shared
+  `wire.rs` helpers back when JSON/YAML/TOML all needed them, but `Json` is
+  their only caller now, so they moved to where they're used (`value_to_
+  owned` is the one piece that stayed in `wire.rs`, since `any.rs` calls it
+  directly too, in every build, `Cbor`-only included). `value_from_owned`/
+  `value_to_owned` both go straight from `T`/`Value` to `Value`/`T` — a
+  hand-written `Serializer`/`Deserializer` pair over
   `Value` directly (`format/value.rs`), not (an earlier version of this) a
   round trip through real CBOR bytes (`cbor4ii::serde::to_vec` then
   `from_slice`, chosen originally only because `cbor4ii`'s public `serde`
@@ -511,9 +517,9 @@ construction), and `Format::Json::encode` already dispatches at compile
 time through the generic `T: Typwire` + marker-type mechanism described
 above — there's no analogous "one recursive function walks every value"
 chokepoint to thread a runtime `format` string through. Its
-`rewrite_bytes_to_array`/`rewrite_array_to_bytes` therefore remain
-separate tree-walks over a `cbor4ii::core::Value`, exactly as described in
-the *Bytes* section above.
+`rewrite_bytes_to_array`/`rewrite_array_to_bytes` (`format/json.rs`)
+therefore remain separate tree-walks over a `cbor4ii::core::Value`,
+exactly as described in the *Bytes* section above.
 
 ### Native Typst value representation
 
