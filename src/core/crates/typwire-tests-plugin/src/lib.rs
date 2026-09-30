@@ -1,9 +1,9 @@
 //! Wasm plugin for the Typst roundtrip test suite.
 //!
 //! Every test in `<repo>/tests/<name>/` (`<name>` may nest, e.g.
-//! `foundations/bool`) ships **four** sibling cases, one per wire format --
-//! `tests/<name>/{cbor,json,yaml,toml}/`, each its own `plugin.rs` next to
-//! its `test.typ`. `plugin.rs` usually has one exported function
+//! `foundations/bool`) ships **two** sibling cases, one per wire format --
+//! `tests/<name>/{cbor,json}/`, each its own `plugin.rs` next to its
+//! `test.typ`. `plugin.rs` usually has one exported function
 //!
 //! ```ignore
 //! #[typwire::export(rename = "roundtrip-<name>-<format>")]
@@ -13,9 +13,9 @@
 //! (`format`/`rename` omitted for the `cbor` case, since `cbor` is
 //! `#[typwire::export]`'s own default -- though `rename` is still given, for
 //! a uniform `dictionary(plugin).at("roundtrip-<name>-<format>")` access
-//! pattern across all four), though a case is free to define several
+//! pattern across both), though a case is free to define several
 //! functions when they're closely related (see `tests/rename/*/plugin.rs`).
-//! Every group of four is pulled in here with one `case!` call.
+//! Every pair is pulled in here with one `case!` call.
 //! `#[typwire::export]` expands to a `#[wasm_func]` wrapper that needs the
 //! `initiate_protocol!()` items in scope, which only holds at the crate
 //! root, so the case files are `include!`d here rather than mounted as
@@ -30,9 +30,9 @@
 //!   needs a local struct, a `<Name><Format>` naming pattern (see
 //!   `tests/foundations/dictionary/struct/*/plugin.rs`).
 //!
-//! To add a test: `mkdir -p tests/<name>/{cbor,json,yaml,toml}`, add a
+//! To add a test: `mkdir -p tests/<name>/{cbor,json}`, add a
 //! `test.typ` + `plugin.rs` pair to each, then add one `case!("<name>");`
-//! line below -- it expands to all four `include!`s.
+//! line below -- it expands to both `include!`s.
 
 #![allow(unused_imports)]
 
@@ -52,8 +52,7 @@ typwire::initiate_protocol!();
 use serde::{Deserialize, Serialize};
 use typwire::*;
 
-/// Pulls in all four format variants of one test: `tests/<name>/{cbor,json,
-/// yaml,toml}/plugin.rs`.
+/// Pulls in both format variants of one test: `tests/<name>/{cbor,json}/plugin.rs`.
 macro_rules! case {
     ($name:literal) => {
         include!(concat!(
@@ -67,18 +66,6 @@ macro_rules! case {
             "/../../../../tests/",
             $name,
             "/json/plugin.rs"
-        ));
-        include!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../../tests/",
-            $name,
-            "/yaml/plugin.rs"
-        ));
-        include!(concat!(
-            env!("CARGO_MANIFEST_DIR"),
-            "/../../../../tests/",
-            $name,
-            "/toml/plugin.rs"
         ));
     };
 }
@@ -173,9 +160,9 @@ case!("visualize/stop");
 // Stress tests: no matching reference category either (like the mechanism
 // tests above), exercising the wire protocol under a heavy workload rather
 // than a single value shape. `bytes` is its own case, separate from
-// `multi-arg`, because JSON/YAML/TOML's tagged-array `Bytes` rewrite (see
-// *Wire formats* in CLAUDE.md) makes a large byte payload's wire *size*,
-// not just its shape, format-sensitive in a way nothing else here is.
+// `multi-arg`, because JSON's tagged-array `Bytes` rewrite (see *Wire
+// formats* in CLAUDE.md) makes a large byte payload's wire *size*, not
+// just its shape, format-sensitive in a way nothing else here is.
 case!("stress/bytes");
 case!("stress/multi-arg");
 case!("stress/many-objects");

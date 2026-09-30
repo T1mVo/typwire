@@ -29,11 +29,11 @@ pub fn derive_typwire(input: TokenStream) -> TokenStream {
 ///   function name. The name need not be a valid identifier; reach a
 ///   non-identifier export from Typst via `dictionary(plugin).at("wire-name")`.
 /// - `format = "json"` — decode/encode arguments and the result through this
-///   wire format instead of the default `"cbor"`. One of `"cbor"`, `"json"`,
-///   `"yaml"`, `"toml"`. Picking a format whose crate feature isn't enabled
-///   on the `typwire` dependency is a compile error (the marker type doesn't
-///   exist), not a runtime one — the same property `Regex`/`Decimal` already
-///   have when their feature is off.
+///   wire format instead of the default `"cbor"`. One of `"cbor"`, `"json"`.
+///   Picking a format whose crate feature isn't enabled on the `typwire`
+///   dependency is a compile error (the marker type doesn't exist), not a
+///   runtime one — the same property `Regex`/`Decimal` already have when
+///   their feature is off.
 #[proc_macro_attribute]
 pub fn export(arguments: TokenStream, input: TokenStream) -> TokenStream {
     let mut rename = None;
@@ -49,9 +49,8 @@ pub fn export(arguments: TokenStream, input: TokenStream) -> TokenStream {
                 Ok(())
             } else if meta.path.is_ident("format") {
                 let value: syn::LitStr = meta.value()?.parse()?;
-                if !matches!(value.value().as_str(), "cbor" | "json" | "yaml" | "toml") {
-                    return Err(meta
-                        .error("`format` must be one of \"cbor\", \"json\", \"yaml\", \"toml\""));
+                if !matches!(value.value().as_str(), "cbor" | "json") {
+                    return Err(meta.error("`format` must be one of \"cbor\", \"json\""));
                 }
                 format = Some(value);
                 Ok(())
@@ -495,13 +494,11 @@ fn implementation_name(function: &ItemFn) -> syn::Ident {
 /// Resolve the `format = "..."` option to the marker type it names
 /// (`typwire::Cbor` by default), each an ordinary path under the `typwire`
 /// crate root -- `syn::meta`'s own validation already rejected anything
-/// besides the four recognized names before this runs.
+/// besides the two recognized names before this runs.
 fn format_marker(typwire: &TokenStream2, format: Option<&syn::LitStr>) -> TokenStream2 {
     let marker = match format.map(syn::LitStr::value).as_deref() {
         None | Some("cbor") => format_ident!("Cbor"),
         Some("json") => format_ident!("Json"),
-        Some("yaml") => format_ident!("Yaml"),
-        Some("toml") => format_ident!("Toml"),
         Some(_) => unreachable!("validated in `export`'s option parser"),
     };
     quote! { #typwire::#marker }

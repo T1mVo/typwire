@@ -30,30 +30,24 @@
 #import "types/visualize/stroke.typ"
 
 /// Whether `content` is representable as itself on the wire, with no
-/// `typwire-type` tagging, under `format`.
-///
-/// Generalizes what used to be an implicitly CBOR-only check: `int`/
-/// `float`/`str`/`bool` are primitive in every format, but `none` is not in
-/// every format -- only TOML has no `none`/null at all (every other format
-/// needs it tagged, see the `content == none` branch below). `bytes` isn't
-/// primitive-or-not here at all anymore -- `bytes-type.encode` below
-/// decides its own shape per format directly, the same way every other
-/// tagged type's own `encode` does.
+/// `typwire-type` tagging: `int`/`float`/`str`/`bool`/`none` are primitive
+/// in both `"cbor"` and `"json"`, the only two formats this crate
+/// supports. `bytes` isn't primitive-or-not here at all -- `bytes-type.
+/// encode` below decides its own shape per format directly, the same way
+/// every other tagged type's own `encode` does.
 ///
 /// - content-type (type): `std.type(content)`, already computed by the
 ///   caller -- accepted rather than recomputed here since `encode` (this
 ///   function's only call site) always already has it.
 /// - content (any): The content to check.
-/// - format (str): The wire format being encoded for -- one of `"cbor"`,
-///   `"json"`, `"yaml"`, `"toml"`.
 /// -> bool
-#let is-primitive(content-type, content, format: "cbor") = {
+#let is-primitive(content-type, content) = {
   (
     content-type == std.int
       or content-type == std.float
       or content-type == std.str
       or content-type == std.bool
-      or (content == none and format != "toml")
+      or content == none
   )
 }
 
@@ -61,20 +55,19 @@
 /// tree: native types become `typwire-type`-tagged dictionaries, everything
 /// else passes through unchanged. This is the shared layer every
 /// `typwire.<format>.encode` wraps with a native format encoder
-/// (`cbor.encode`, `json.encode`, ...) -- `format` is threaded through so
-/// the one format-sensitive case (`bytes`, and TOML's `none`) can be
-/// resolved in this single pass, rather than a separate tree-rewrite pass
-/// afterward.
+/// (`cbor.encode`, `json.encode`) -- `format` is threaded through so the
+/// one format-sensitive case (`bytes`) can be resolved in this single
+/// pass, rather than a separate tree-rewrite pass afterward.
 ///
 /// - content (any): The content to encode.
 /// - format (str): The wire format being encoded for -- one of `"cbor"`,
-///   `"json"`, `"yaml"`, `"toml"`.
+///   `"json"`.
 /// -> any
 #let encode(content, format: "cbor") = {
   let content-type = std.type(content)
   let result
 
-  if is-primitive(content-type, content, format: format) {
+  if is-primitive(content-type, content) {
     result = content
   } else if content-type == std.bytes {
     // Not wrapped in a recursive `encode(...)` call like every other
@@ -85,10 +78,6 @@
     // which is what makes recursing into it there safe and necessary (to
     // walk that dictionary's own fields).
     result = bytes-type.encode(content, format: format)
-  } else if content == none {
-    // Only reached when `format == "toml"` -- every other format's `none`
-    // is already primitive above.
-    result = (typwire-type: "none")
   } else if content-type == std.array {
     result = content.map(i => encode(i, format: format))
   } else if content-type == std.dictionary {

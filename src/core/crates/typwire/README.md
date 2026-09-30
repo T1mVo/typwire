@@ -3,8 +3,8 @@
 Typed, Serde-backed data exchange for [Typst](https://typst.app/) WASM
 plugins. Typwire preserves native Typst values across the plugin boundary and
 generates protocol wrappers for ordinary Rust functions. CBOR is the default
-wire format on both sides; JSON, YAML, and TOML are available per export/call
-(see *Wire formats* below).
+wire format on both sides; JSON is available per export/call (see *Wire
+formats* below).
 
 The Typst and Rust package versions must match exactly.
 
@@ -90,9 +90,9 @@ instead.
 ## Wire formats
 
 CBOR is the default everywhere. Pass `#[typwire::export(format = "json")]`
-(also `"yaml"`/`"toml"`) to decode/encode that export's arguments and result
-through a different format instead — each behind its own crate feature
-(`json`/`yaml`/`toml`, off by default, `cargo add typwire --features json`):
+to decode/encode that export's arguments and result through JSON instead —
+behind its own crate feature (`json`, off by default, `cargo add typwire
+--features json`):
 
 ```rust
 #[typwire::export(format = "json")]
@@ -107,21 +107,19 @@ Call it from Typst through the matching namespace instead of `typwire.call`:
 #let report = typwire.json.call(plugin.measure_json, (label: "Value: ", scale: 1.5))
 ```
 
-`typwire.cbor`/`typwire.json`/`typwire.yaml`/`typwire.toml` each expose the
-same `call`/`encode`/`decode` shape; `typwire.call`/`typwire.encode`/
-`typwire.decode` (no namespace) are aliases for the `cbor` ones. A plugin
-export and the Typst call site must agree on the same format — nothing
-checks this for you, the same way argument types on either side already
-have to agree.
+`typwire.cbor`/`typwire.json` each expose the same `call`/`encode`/`decode`
+shape; `typwire.call`/`typwire.encode`/`typwire.decode` (no namespace) are
+aliases for the `cbor` ones. A plugin export and the Typst call site must
+agree on the same format — nothing checks this for you, the same way
+argument types on either side already have to agree.
 
-JSON/YAML have no native way to tell an integer apart from a float the way
-CBOR/TOML can, and none of JSON/YAML/TOML have a native byte-string type or
-(TOML specifically) a `none`/null; TOML also can't have anything but a
-table at the top level. All of this is handled transparently — nothing to
-think about, no exceptions, every value shape round-trips through every
-format (see the [project repository](https://github.com/T1mVo/typwire) if
-you're curious how). The one real gap is a stroke's tiling-pattern paint,
-which isn't representable in any format (see *Wire contract* below).
+JSON has no native way to tell an integer apart from a float the way CBOR
+can, and no native byte-string type either. Both are handled transparently
+— nothing to think about, no exceptions, every value shape round-trips
+through both formats (see the [project repository](https://github.com/T1mVo/typwire)
+if you're curious how). The one real gap is a stroke's tiling-pattern
+paint, which isn't representable in either format (see *Wire contract*
+below).
 
 ## Wire contract
 

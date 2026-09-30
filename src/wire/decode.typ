@@ -30,12 +30,11 @@
 /// - value (dictionary): The dictionary itself (already recursively
 ///   decoded), with `tag` still present under its `typwire-type` key.
 /// - format (str): The wire format being decoded from -- one of `"cbor"`,
-///   `"json"`, `"yaml"`, `"toml"`. Forwarded to every per-type `decode`,
-///   though only the `"bytes"`/`"none"` arms below actually depend on the
-///   tag having been produced by a specific format in the first place --
-///   every per-type `decode` ignores it, since a tag alone already fully
-///   determines how to decode it, independent of which format the bytes
-///   originally came from.
+///   `"json"`. Forwarded to every per-type `decode`, though only the
+///   `"bytes"` arm below actually depends on the tag having been produced
+///   by a specific format in the first place -- every per-type `decode`
+///   ignores it, since a tag alone already fully determines how to decode
+///   it, independent of which format the bytes originally came from.
 /// -> any
 #let decode-tagged(tag, value, format: "cbor") = {
   if tag == alignment.type-name {
@@ -75,20 +74,14 @@
   } else if tag == arguments.type-name {
     arguments.decode(value, format: format)
   } else if tag == bytes-type.type-name {
-    // Formats with no native byte-string type (everything but CBOR) tag a
-    // `bytes` leaf with this exact shape while `encode.typ::encode` builds
-    // the tree, in the same pass as everything else; `Cbor` never produces
-    // this tag (its own `bytes` values pass straight through untagged and
-    // are caught by `decode`'s own primitive fallback below, never
-    // reaching this dispatch at all), so this arm simply never triggers on
-    // the CBOR path.
+    // `Json` has no native byte-string type, so it tags a `bytes` leaf
+    // with this exact shape while `encode.typ::encode` builds the tree, in
+    // the same pass as everything else; `Cbor` never produces this tag
+    // (its own `bytes` values pass straight through untagged and are
+    // caught by `decode`'s own primitive fallback below, never reaching
+    // this dispatch at all), so this arm simply never triggers on the
+    // CBOR path.
     bytes-type.decode(value, format: format)
-  } else if tag == "none" {
-    // Same situation as `"bytes"` above, but for `none`/null: only TOML
-    // needs this -- `Cbor`/`json`/`yaml` never produce this tag, since
-    // they all represent `none` natively. Not its own `types/**` module,
-    // unlike `bytes` -- there's nothing to decode beyond the literal.
-    none
   } else {
     panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
   }
@@ -102,9 +95,8 @@
 /// - value (any): A tree produced by `encode`, after a native format
 ///   decoder has parsed it back out of the wire bytes.
 /// - format (str): The wire format being decoded from -- one of `"cbor"`,
-///   `"json"`, `"yaml"`, `"toml"`. Forwarded to `decode-tagged` and every
-///   per-type `decode`; see its own doc comment for why almost none of
-///   them actually need it.
+///   `"json"`. Forwarded to `decode-tagged` and every per-type `decode`;
+///   see its own doc comment for why almost none of them actually need it.
 /// -> any
 #let decode(value, format: "cbor") = {
   let value-type = std.type(value)

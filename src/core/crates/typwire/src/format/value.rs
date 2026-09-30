@@ -8,9 +8,9 @@
 //! has `to_vec`/`from_slice`/`to_writer`/`from_reader`, all byte-level), so
 //! this crate writes its own, the same "custom (de)serializer wrapping a
 //! generic tree type" idiom `LenientDeserializer` (`format/cbor.rs`) already
-//! uses for a different problem. `Json`/`Yaml`/`Toml` are the only callers
-//! (`format/mod.rs`); `Cbor` never needs this, since it serializes `T`
-//! directly in one real pass.
+//! uses for a different problem. `Json` is the only caller (`format/mod.rs`);
+//! `Cbor` never needs this, since it serializes `T` directly in one real
+//! pass.
 //!
 //! Every wire-shape decision documented for the byte-round-trip version
 //! this replaces is preserved exactly -- confirmed empirically by capturing
@@ -76,14 +76,11 @@ impl serde::de::Error for ValueError {
 /// Build a [`Value`] tree directly from `value`, with no CBOR bytes in
 /// between.
 ///
-/// Only `Json`/`Yaml`/`Toml::encode` call this (`from_value` below, unlike
-/// this function, is also needed in a CBOR-only build -- see this crate's
-/// `format/mod.rs`), so a build with none of those three features enabled
-/// never calls it; `allow(dead_code)` covers exactly that build.
-#[cfg_attr(
-    not(any(feature = "json", feature = "yaml", feature = "toml")),
-    allow(dead_code)
-)]
+/// Only `Json::encode` calls this (`from_value` below, unlike this
+/// function, is also needed in a CBOR-only build -- see this crate's
+/// `format/mod.rs`), so a build without the `json` feature never calls it;
+/// `allow(dead_code)` covers exactly that build.
+#[cfg_attr(not(feature = "json"), allow(dead_code))]
 pub(crate) fn to_value<T: Serialize + ?Sized>(value: &T) -> Result<Value, ValueError> {
     value.serialize(ValueSerializer)
 }
