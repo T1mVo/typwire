@@ -6,15 +6,14 @@
 /// Typst value, not `bytes`/`str`. Useful for inspecting or testing the
 /// wire shape Typwire produces without a plugin round trip.
 ///
-/// `bytes`/`none` are the one part of this tree that's still
-/// format-sensitive (only CBOR keeps them native; every other format tags
-/// them), so `format` picks which format's tagging rules to preview --
-/// it's otherwise unrelated to serialization, which this namespace never
-/// does.
+/// `bytes` is the one part of this tree that's still format-sensitive
+/// (CBOR keeps it native; JSON tags it), so `format` picks which format's
+/// tagging rules to preview -- it's otherwise unrelated to serialization,
+/// which this namespace never does.
 ///
 /// - value (any): The value to encode.
-/// - format (str): Which format's tagging rules to preview for `bytes`/
-///   `none`. One of `"cbor"`, `"json"`, `"yaml"`, `"toml"`.
+/// - format (str): Which format's tagging rules to preview for `bytes`.
+///   One of `"cbor"`, `"json"`.
 /// -> any
 #let encode(value, format: "cbor") = wire.encode(value, format: format)
 
@@ -24,6 +23,6 @@
 /// - data (any): A dictionary/array/primitive tree, as produced by `encode`.
 /// - format (str): The format `data`'s tree was produced for -- must match
 ///   whatever `encode` (or a real `typwire.<format>.encode`) used to build
-///   it, so `bytes`/`none` tags are resolved the same way they were tagged.
+///   it, so `bytes` tags are resolved the same way they were tagged.
 /// -> any
 #let decode(data, format: "cbor") = wire.decode(data, format: format)

@@ -183,29 +183,29 @@ tuple_impls!(
 /// with no CBOR bytes in between -- see `format/value.rs::from_value`.
 /// Called both by `Any` (`any.rs`, to reconstruct a native type nested
 /// inside it, needed in every build, `Cbor`-only included) and by
-/// `Json`/`Yaml`/`Toml::decode` (`value_from_owned`'s mirror, below).
+/// `Json::decode` (`value_from_owned`'s mirror, below).
 pub(crate) fn value_to_owned<T: DeserializeOwned>(value: Value) -> Result<T, String> {
     crate::format::from_value(value).map_err(|error| error.to_string())
 }
 
 /// The mirror of [`value_to_owned`]: turn any `Typwire` value into a generic
 /// [`Value`] tree directly, with no CBOR bytes in between -- see
-/// `format/value.rs::to_value`. Used by the text formats (`Json`/`Yaml`/
-/// `Toml`) to get a tree they can rewrite [`Bytes`] nodes in before handing
-/// it to a format that has no native byte-string concept -- see
-/// `rewrite_bytes_to_array`. `Cbor` never needs this: it serializes `T`
-/// directly in one pass, `Bytes` included, exactly as today.
-#[cfg(any(feature = "json", feature = "yaml", feature = "toml"))]
+/// `format/value.rs::to_value`. Used by `Json` to get a tree it can rewrite
+/// [`Bytes`] nodes in before handing it to a format that has no native
+/// byte-string concept -- see `rewrite_bytes_to_array`. `Cbor` never needs
+/// this: it serializes `T` directly in one pass, `Bytes` included, exactly
+/// as today.
+#[cfg(feature = "json")]
 pub(crate) fn value_from_owned<T: Serialize>(value: &T) -> Result<Value, String> {
     crate::format::to_value(value).map_err(|error| error.to_string())
 }
 
 /// Replace every [`Value::Bytes`] node in `value` with the same tagged
 /// dictionary shape the Typst side uses for a format with no native
-/// byte-string type (`src/wire/rewrite-bytes.typ`): `{typwire-type:
+/// byte-string type (`src/wire/types/foundations/bytes.typ`): `{typwire-type:
 /// "bytes", data: [...]}`, `data` a plain array of byte integers -- not
 /// base64, since Typst has no built-in base64 codec to match it against.
-#[cfg(any(feature = "json", feature = "yaml", feature = "toml"))]
+#[cfg(feature = "json")]
 pub(crate) fn rewrite_bytes_to_array(value: &mut Value) {
     match value {
         Value::Bytes(data) => {
@@ -235,7 +235,7 @@ pub(crate) fn rewrite_bytes_to_array(value: &mut Value) {
 
 /// The inverse of [`rewrite_bytes_to_array`]: replace every `{typwire-type:
 /// "bytes", data: [...]}` tagged dictionary with a real [`Value::Bytes`].
-#[cfg(any(feature = "json", feature = "yaml", feature = "toml"))]
+#[cfg(feature = "json")]
 pub(crate) fn rewrite_array_to_bytes(value: &mut Value) {
     match value {
         Value::Map(entries) => {

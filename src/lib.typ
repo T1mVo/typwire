@@ -1,8 +1,6 @@
 #import "format/cbor.typ" as cbor-format
 #import "format/debug.typ" as debug
 #import "format/json.typ" as json-format
-#import "format/toml.typ" as toml-format
-#import "format/yaml.typ" as yaml-format
 
 // Maps a format name to the module that implements it. `encode`/`decode`/
 // `call` below are the single place that actually dispatches on `format`;
@@ -11,8 +9,6 @@
 #let formats = (
   cbor: cbor-format,
   json: json-format,
-  yaml: yaml-format,
-  toml: toml-format,
 )
 
 #let resolve-format(format) = {
@@ -20,7 +16,7 @@
   if module == none {
     panic(
       "typwire: unknown format \"" + format + "\" "
-        + "(expected one of \"cbor\", \"json\", \"yaml\", \"toml\")",
+        + "(expected one of \"cbor\", \"json\")",
     )
   }
   module
@@ -30,9 +26,9 @@
 ///
 /// - value (any): The value to encode.
 /// - format (str): The wire format to encode into -- one of `"cbor"` (the
-///   default, matching `#[typwire::export]`'s own default), `"json"`,
-///   `"yaml"`, `"toml"`. Use `typwire.debug.encode` instead to inspect the
-///   shared tree with no serialization at all.
+///   default, matching `#[typwire::export]`'s own default), `"json"`. Use
+///   `typwire.debug.encode` instead to inspect the shared tree with no
+///   serialization at all.
 /// -> bytes, str
 #let encode(value, format: "cbor") = resolve-format(format).encode(value)
 
@@ -54,8 +50,7 @@
 /// - function (function): The plugin function to call.
 /// - ..args (arguments): Positional arguments to encode and pass.
 /// - format (str): The wire format to call with -- one of `"cbor"` (the
-///   default, matching `#[typwire::export]`'s own default), `"json"`,
-///   `"yaml"`, `"toml"`.
+///   default, matching `#[typwire::export]`'s own default), `"json"`.
 /// -> any
 #let call(function, ..args, format: "cbor") = resolve-format(format).call(function, ..args)
 
@@ -69,5 +64,3 @@
 // function.
 #let cbor = cbor-format
 #let json = json-format
-#let yaml = yaml-format
-#let toml = toml-format

@@ -5,10 +5,9 @@
 /// Encode a `bytes` value for the wire.
 ///
 /// CBOR has a native byte-string type, so `bytes` passes straight through
-/// unchanged there. None of JSON/YAML/TOML do -- Typst's own
-/// `json.encode(bytes(..))`/`yaml.encode`/`toml.encode` all confirmed
-/// empirically to silently produce the useless placeholder string
-/// `"bytes(3)"` rather than actual content -- so those three get a tagged
+/// unchanged there. JSON doesn't -- Typst's own `json.encode(bytes(..))`
+/// confirmed empirically to silently produce the useless placeholder
+/// string `"bytes(3)"` rather than actual content -- so it gets a tagged
 /// array of byte integers instead. Not base64: Typst has no built-in
 /// base64 codec to match a base64 string against, so the array form needs
 /// no new dependency on either side.
@@ -36,7 +35,7 @@
 
 /// Decode a tagged bytes dictionary back into `bytes`.
 ///
-/// Only ever reached for the three formats with no native byte-string
+/// Only ever reached for JSON, the one format with no native byte-string
 /// type: CBOR's own `bytes` values pass straight through
 /// `wire/decode.typ::decode`'s catch-all primitive case before ever
 /// reaching `decode-tagged`'s tag dispatch, so this never runs with

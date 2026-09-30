@@ -81,8 +81,8 @@ native format encoder, and `decode` reconstructs from that same tree. No
 `call`: there's no `bytes`/`str` here to hand a plugin. Useful for
 inspecting or testing the wire shape Typwire produces without going through
 an actual format or a plugin round trip. `format:` doesn't pick a
-serialization here (there is none) — it only picks which format's
-`bytes`/`none` tagging rules to preview.
+serialization here (there is none) — it only picks which format's `bytes`
+tagging rules to preview.
 
 ```typ
 /// Encodes a value into the shared tree, with no serialization.
@@ -145,58 +145,6 @@ serialization here (there is none) — it only picks which format's
 
 </details>
 
-<details>
-<summary><code>typwire.yaml</code></summary>
-
-```typ
-/// Encodes a value into a YAML string. YAML has no native byte-string
-/// type, so any `bytes` value is rewritten into a tagged array first.
-/// -> str
-#let encode(value) = { /* .. */ }
-```
-
-```typ
-/// Decodes a YAML string or bytes and reconstructs supported native Typst
-/// values.
-/// -> any
-#let decode(data) = { /* .. */ }
-```
-
-```typ
-/// Calls a plugin function with positional arguments, using YAML.
-/// -> any
-#let call(function, ..args) = { /* .. */ }
-```
-
-</details>
-
-<details>
-<summary><code>typwire.toml</code></summary>
-
-```typ
-/// Encodes a value into a TOML string. TOML has no native byte-string type
-/// and no `none`/null, and its grammar requires a top-level table -- all
-/// handled transparently by wrapping and rewriting the tree before it
-/// reaches TOML's own encoder.
-/// -> str
-#let encode(value) = { /* .. */ }
-```
-
-```typ
-/// Decodes a TOML string or bytes and reconstructs supported native Typst
-/// values.
-/// -> any
-#let decode(data) = { /* .. */ }
-```
-
-```typ
-/// Calls a plugin function with positional arguments, using TOML.
-/// -> any
-#let call(function, ..args) = { /* .. */ }
-```
-
-</details>
-
 ## Supported types
 
 Every Typst value with a native CBOR/JSON primitive (`int`, `float`, `bool`,
@@ -213,10 +161,10 @@ instead of calling an accessor — marked below.
 | `float` | `f64`, `Float` | native | |
 | `bool` | `bool`, `Bool` | native | |
 | `str` | `String`, `Str` | native | |
-| `none` | `Option::None` | native¹ | |
+| `none` | `Option::None` | native | |
 | `array` | `Vec<T>`, `VecDeque<T>`, `LinkedList<T>`, `BTreeSet<T>`, `HashSet<T>`, `[T; N]`, tuples, `Array<T>` | native | |
 | `dictionary` | `BTreeMap<String, T>`, `HashMap<String, T>`, derived structs, `Dictionary<T>` | native | |
-| `bytes` | `Bytes` (`Vec<u8>` stays a plain array) | native (CBOR); tagged array² (JSON/YAML/TOML) | |
+| `bytes` | `Bytes` (`Vec<u8>` stays a plain array) | native (CBOR); tagged array¹ (JSON) | |
 | `auto` | `Auto` | tagged | |
 | `type` | `Type` | tagged | |
 | `label` | `Label` | tagged | |
@@ -232,18 +180,14 @@ instead of calling an accessor — marked below.
 | `length` | `Length` | tagged | |
 | `ratio` | `Ratio` | tagged | |
 | `alignment` | `Alignment` | tagged | |
-| corner radius dictionary | `Radius` | plain dictionary³ | |
+| corner radius dictionary | `Radius` | plain dictionary² | |
 | `color` (and its 8 color spaces) | `Color` | tagged | |
 | `gradient` (linear/radial/conic, stops) | `Gradient` | tagged | |
 | `stroke` | `Stroke` | tagged, built from the wire shapes above | |
 
-¹ TOML has no `none`/null of its own, so its format layer alone rewrites
-`none` into a tagged dictionary behind the scenes; every other format keeps
-it native.
-² JSON/YAML/TOML have no byte-string type, so their format layer rewrites
-`bytes` into a tagged array of byte integers; CBOR keeps its native byte
-string.
-³ Typst represents a corner-radius dictionary as an ordinary dictionary too,
+¹ JSON has no byte-string type, so its format layer rewrites `bytes` into a
+tagged array of byte integers; CBOR keeps its native byte string.
+² Typst represents a corner-radius dictionary as an ordinary dictionary too,
 not a distinct runtime type, so this is the one type with no `typwire-type`
 tag at all.
 
@@ -363,15 +307,7 @@ this type with caution. Requires the `regex` feature on the Rust side.
 (typwire-type: "bytes", data: (1, 2, 3))
 ```
 
-**Note:** Only used by JSON/YAML/TOML; CBOR keeps a native byte string.
-
-##### None
-
-```typ
-(typwire-type: "none")
-```
-
-**Note:** Only used by TOML; every other format keeps a native `null`.
+**Note:** Only used by JSON; CBOR keeps a native byte string.
 
 #### Layout
 
@@ -508,15 +444,13 @@ These measurements were taken with medium-sized data, like a gradient with 9 sto
   settles.
 - **~200–400 μs** per call after that.
 
-If no specific format is desired, or performance matters, use CBOR. The
-other three formats are measurably slower:
+If no specific format is desired, or performance matters, use CBOR. JSON is
+measurably slower:
 
 | Format | Relative speed |
 | :-: | :-: |
 | CBOR | 1x (baseline) |
 | JSON | ~1.4x – 1.5x |
-| TOML | ~2.1x – 2.2x |
-| YAML | ~4.9x – 6.2x |
 
 ## Version compatibility
 

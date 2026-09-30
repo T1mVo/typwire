@@ -22,9 +22,8 @@
 }
 
 /// Like `roundtrip`, but through a specific format namespace's `call`
-/// (`typwire.json`, `typwire.yaml`, `typwire.toml`, ...) instead of the
-/// default `typwire.call` (CBOR) -- for `#[typwire::export(format =
-/// "...")]` cases under `tests/format/`.
+/// (`typwire.json`, ...) instead of the default `typwire.call` (CBOR) --
+/// for `#[typwire::export(format = "...")]` cases under `tests/format/`.
 #let roundtrip-format(namespace, func, value) = {
   let got = namespace.call(func, value)
   assert(
