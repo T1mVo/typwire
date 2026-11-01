@@ -8,13 +8,17 @@
 #let common-type-name = "gradient-"
 
 /// Encode a gradient into a wire-compatible dictionary.
-///
-/// - gradient (gradient): A gradient.
-/// - format (str): The wire format being encoded for. Forwarded to every
-///   nested `encode` call (stops, center(s), and the kind-specific
-///   encoder), though none of them currently use it either.
 /// -> dictionary
-#let encode(gradient, format: "cbor") = {
+#let encode(
+  /// A gradient.
+  /// -> gradient
+  gradient,
+  /// The wire format being encoded for. Forwarded to every nested `encode`
+  /// call (stops, center(s), and the kind-specific encoder), though none
+  /// of them currently use it either.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(gradient) == std.gradient,
@@ -71,13 +75,19 @@
 }
 
 /// Decode a wire-compatible dictionary into a gradient.
-///
-/// - tag (string): The typwire-type tag of the encoded gradient.
-/// - value (dictionary): A dictionary representing the `encode`d value.
-/// - format (str): The wire format being decoded from. Forwarded to the
-///   kind-specific `decode`.
 /// -> gradient
-#let decode(tag, value, format: "cbor") = {
+#let decode(
+  /// The typwire-type tag of the encoded gradient.
+  /// -> str
+  tag,
+  /// A dictionary representing the `encode`d value.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Forwarded to the kind-specific
+  /// `decode`.
+  /// -> str
+  format: "cbor",
+) = {
   if tag == linear.type-name {
     linear.decode(value, format: format)
   } else if tag == radial.type-name {

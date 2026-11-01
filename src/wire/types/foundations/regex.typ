@@ -4,11 +4,22 @@
 
 /// Encode a regular expression into a wire-compatible dictionary.
 ///
-/// - value (regex): A regular expression.
-/// - format (str): The wire format being encoded for. Unused -- `regex`
-///   has the same tagged-dictionary shape in every format.
+/// Same situation as `path`: no built-in string conversion, only
+/// `repr()`, which wraps the pattern as the Typst source expression
+/// `regex("...")`. Unlike a path, a regex pattern routinely contains
+/// literal backslashes (`\d`, `\s`, `\.`, ...), which is exactly the case
+/// `unescape-repr-string` had to be fixed to handle correctly (see its own
+/// comment in `utils.typ`).
 /// -> dictionary
-#let encode(value, format: "cbor") = {
+#let encode(
+  /// A regular expression.
+  /// -> regex
+  value,
+  /// The wire format being encoded for. Unused -- `regex` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value) == regex,
@@ -16,12 +27,6 @@
     )
   }
 
-  // Same situation as `path`: no built-in string conversion, only `repr()`,
-  // which wraps the pattern as the Typst source expression `regex("...")`.
-  // Unlike a path, a regex pattern routinely contains literal backslashes
-  // (`\d`, `\s`, `\.`, ...), which is exactly the case
-  // `unescape-repr-string` had to be fixed to handle correctly (see its own
-  // comment in `utils.typ`).
   let inner = unescape-repr-string(repr(value).slice(6, -1))
 
   (
@@ -31,12 +36,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a regular expression.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- `regex`
-///   decodes the same way regardless of format.
 /// -> regex
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `regex` decodes the
+  /// same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

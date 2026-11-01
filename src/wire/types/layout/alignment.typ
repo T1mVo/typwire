@@ -69,12 +69,16 @@
 }
 
 /// Encode a 1D or 2D alignment into a wire-compatible dictionary.
-///
-/// - value (alignment): The alignment to encode.
-/// - format (str): The wire format being encoded for. Unused --
-///   `alignment` has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(value, format: "cbor") = {
+#let encode(
+  /// The alignment to encode.
+  /// -> alignment
+  value,
+  /// The wire format being encoded for. Unused -- `alignment` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value) == alignment,
@@ -90,12 +94,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a 1D or 2D alignment.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused --
-///   `alignment` decodes the same way regardless of format.
 /// -> alignment
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `alignment` decodes the
+  /// same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

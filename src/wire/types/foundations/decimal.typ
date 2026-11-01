@@ -3,12 +3,16 @@
 #let type-name = "decimal"
 
 /// Encode a decimal into a wire-compatible dictionary.
-///
-/// - value (decimal): A decimal.
-/// - format (str): The wire format being encoded for. Unused -- `decimal`
-///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(value, format: "cbor") = {
+#let encode(
+  /// A decimal.
+  /// -> decimal
+  value,
+  /// The wire format being encoded for. Unused -- `decimal` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value) == decimal,
@@ -29,12 +33,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a decimal.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused --
-///   `decimal` decodes the same way regardless of format.
 /// -> decimal
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `decimal` decodes the
+  /// same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

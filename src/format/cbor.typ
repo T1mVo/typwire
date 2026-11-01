@@ -1,19 +1,25 @@
 #import "../wire/lib.typ" as wire
 
 /// Encode a value into CBOR bytes.
-///
-/// - value (any): The value to encode.
 /// -> bytes
-#let encode(value) = cbor.encode(wire.encode(value, format: "cbor"))
+#let encode(
+  /// The value to encode.
+  /// -> any
+  value,
+) = cbor.encode(wire.encode(value, format: "cbor"))
 
 /// Decode CBOR bytes and reconstruct supported native Typst values.
-///
-/// - data (bytes): The encoded Typwire value.
 /// -> any
-#let decode(data) = {
-  if std.type(data) != bytes {
-    panic("typwire.cbor.decode: data must be bytes")
-  }
+#let decode(
+  /// The encoded Typwire value.
+  /// -> bytes
+  data,
+) = {
+  assert(
+    type(data) == bytes,
+    message: "typwire.cbor.decode: data must be bytes",
+  )
+
   wire.decode(cbor(data), format: "cbor")
 }
 
@@ -21,11 +27,27 @@
 /// CBOR as the wire format.
 ///
 /// Each argument is encoded independently and the returned bytes are decoded.
-#let call(function, ..args) = {
-  if args.named().len() != 0 {
-    panic("typwire.cbor.call: named arguments are not supported")
-  }
+/// -> any
+#let call(
+  /// The plugin function to call.
+  /// -> function
+  function,
+  /// The positional arguments to pass to the function.
+  /// -> any
+  ..args,
+) = {
+  assert(
+    type(function) == std.function,
+    message: "typwire.cbor.call: function must be a plugin function",
+  )
+  assert(
+    args.named().len() == 0,
+    message: "typwire.cbor.call: named arguments are not supported",
+  )
 
   let encoded = args.pos().map(encode)
-  decode(function(..encoded))
+  let called = function(..encoded)
+  let decoded = decode(called)
+
+  decoded
 }

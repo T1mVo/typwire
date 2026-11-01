@@ -1,8 +1,3 @@
-#import "types/layout/alignment.typ"
-#import "types/layout/angle.typ"
-#import "types/layout/length.typ"
-#import "types/layout/ratio.typ"
-
 #import "types/foundations/arguments.typ"
 
 // `auto` is a Typst keyword/literal, not an ordinary identifier -- a bare
@@ -24,7 +19,10 @@
 #import "types/foundations/symbol.typ"
 #import "types/foundations/type.typ"
 #import "types/foundations/version.typ"
-
+#import "types/layout/alignment.typ"
+#import "types/layout/angle.typ"
+#import "types/layout/length.typ"
+#import "types/layout/ratio.typ"
 #import "types/visualize/color/color.typ"
 #import "types/visualize/gradient/gradient.typ"
 #import "types/visualize/stroke.typ"
@@ -35,13 +33,17 @@
 /// supports. `bytes` isn't primitive-or-not here at all -- `bytes-type.
 /// encode` below decides its own shape per format directly, the same way
 /// every other tagged type's own `encode` does.
-///
-/// - content-type (type): `std.type(content)`, already computed by the
-///   caller -- accepted rather than recomputed here since `encode` (this
-///   function's only call site) always already has it.
-/// - content (any): The content to check.
 /// -> bool
-#let is-primitive(content-type, content) = {
+#let is-primitive(
+  /// `std.type(content)`, already computed by the caller -- accepted
+  /// rather than recomputed here since `encode` (this function's only
+  /// call site) always already has it.
+  /// -> type
+  content-type,
+  /// The content to check.
+  /// -> any
+  content,
+) = {
   (
     content-type == std.int
       or content-type == std.float
@@ -58,12 +60,15 @@
 /// (`cbor.encode`, `json.encode`) -- `format` is threaded through so the
 /// one format-sensitive case (`bytes`) can be resolved in this single
 /// pass, rather than a separate tree-rewrite pass afterward.
-///
-/// - content (any): The content to encode.
-/// - format (str): The wire format being encoded for -- one of `"cbor"`,
-///   `"json"`.
 /// -> any
-#let encode(content, format: "cbor") = {
+#let encode(
+  /// The content to encode.
+  /// -> any
+  content,
+  /// The wire format being encoded for -- one of `"cbor"`, `"json"`.
+  /// -> str
+  format: "cbor",
+) = {
   let content-type = std.type(content)
   let result
 

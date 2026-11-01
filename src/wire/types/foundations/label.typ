@@ -3,12 +3,16 @@
 #let type-name = "label"
 
 /// Encode a label into a wire-compatible dictionary.
-///
-/// - value (label): The label to encode.
-/// - format (str): The wire format being encoded for. Unused -- `label`
-///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(value, format: "cbor") = {
+#let encode(
+  /// The label to encode.
+  /// -> label
+  value,
+  /// The wire format being encoded for. Unused -- `label` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value) == label,
@@ -23,12 +27,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a label.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- `label`
-///   decodes the same way regardless of format.
 /// -> label
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `label` decodes the
+  /// same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

@@ -10,19 +10,27 @@
 /// (CBOR keeps it native; JSON tags it), so `format` picks which format's
 /// tagging rules to preview -- it's otherwise unrelated to serialization,
 /// which this namespace never does.
-///
-/// - value (any): The value to encode.
-/// - format (str): Which format's tagging rules to preview for `bytes`.
-///   One of `"cbor"`, `"json"`.
 /// -> any
-#let encode(value, format: "cbor") = wire.encode(value, format: format)
+#let encode(
+  /// The value to encode.
+  /// -> any
+  value,
+  /// Which format's tagging rules to preview for `bytes`. One of `"cbor"`,
+  /// `"json"`.
+  /// -> str
+  format: "cbor",
+) = wire.encode(value, format: format)
 
 /// The mirror of `encode`: reconstruct native Typst values from a tree that
 /// was never serialized, such as one produced by `encode` above.
-///
-/// - data (any): A dictionary/array/primitive tree, as produced by `encode`.
-/// - format (str): The format `data`'s tree was produced for -- must match
-///   whatever `encode` (or a real `typwire.<format>.encode`) used to build
-///   it, so `bytes` tags are resolved the same way they were tagged.
 /// -> any
-#let decode(data, format: "cbor") = wire.decode(data, format: format)
+#let decode(
+  /// A dictionary/array/primitive tree, as produced by `encode`.
+  /// -> any
+  data,
+  /// The format `data`'s tree was produced for -- must match whatever
+  /// `encode` (or a real `typwire.<format>.encode`) used to build it, so
+  /// `bytes` tags are resolved the same way they were tagged.
+  /// -> str
+  format: "cbor",
+) = wire.decode(data, format: format)

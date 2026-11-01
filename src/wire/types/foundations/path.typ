@@ -4,11 +4,23 @@
 
 /// Encode a path into a wire-compatible dictionary.
 ///
-/// - value (path): A path.
-/// - format (str): The wire format being encoded for. Unused -- `path` has
-///   the same tagged-dictionary shape in every format.
+/// `path` has no built-in string conversion (`str(path(...))` errors, and
+/// it exposes no method to read its segments back out) -- the only
+/// textual form available at all is `repr()`, which always wraps it as
+/// the Typst source expression `path("...")`. Stripping that wrapper
+/// leaves the quoted, escaped string literal for the path text, which
+/// `unescape-repr-string` then decodes by hand (no `eval`, so this can
+/// never run arbitrary code).
 /// -> dictionary
-#let encode(value, format: "cbor") = {
+#let encode(
+  /// A path.
+  /// -> path
+  value,
+  /// The wire format being encoded for. Unused -- `path` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value) == path,
@@ -16,13 +28,6 @@
     )
   }
 
-  // `path` has no built-in string conversion (`str(path(...))` errors, and
-  // it exposes no method to read its segments back out) -- the only textual
-  // form available at all is `repr()`, which always wraps it as the Typst
-  // source expression `path("...")`. Stripping that wrapper leaves the
-  // quoted, escaped string literal for the path text, which
-  // `unescape-repr-string` then decodes by hand (no `eval`, so this can
-  // never run arbitrary code).
   let inner = unescape-repr-string(repr(value).slice(5, -1))
 
   (
@@ -32,12 +37,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a path.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- `path`
-///   decodes the same way regardless of format.
 /// -> path
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `path` decodes the same
+  /// way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

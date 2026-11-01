@@ -11,11 +11,15 @@
 /// array of byte integers instead. Not base64: Typst has no built-in
 /// base64 codec to match a base64 string against, so the array form needs
 /// no new dependency on either side.
-///
-/// - value (bytes): The bytes to encode.
-/// - format (str): The wire format being encoded for.
-/// -> bytes, dictionary
-#let encode(value, format: "cbor") = {
+/// -> bytes | dictionary
+#let encode(
+  /// The bytes to encode.
+  /// -> bytes
+  value,
+  /// The wire format being encoded for.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value) == bytes,
@@ -40,12 +44,16 @@
 /// `wire/decode.typ::decode`'s catch-all primitive case before ever
 /// reaching `decode-tagged`'s tag dispatch, so this never runs with
 /// `format == "cbor"`.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- the tag
-///   alone already fully determines how to decode it.
 /// -> bytes
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- the tag alone already
+  /// fully determines how to decode it.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

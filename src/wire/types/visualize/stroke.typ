@@ -2,19 +2,22 @@
 
 #let type-name = "stroke"
 
-/// Encode a stroke into a wire-compatible dictionary.
-///
-/// Every field is already one of the wire's other supported shapes (`auto`,
-/// a color or gradient, a length, a plain string, `none`, or a plain
-/// dictionary of lengths/strings for `dash`) -- so, like `arguments`, this
-/// just reads the fields back and leaves recursing into them to the caller.
-///
-/// - value (stroke): The stroke to encode.
-/// - format (str): The wire format being encoded for. Unused -- every
-///   field's own recursive encode (done by the caller, not here) is what
-///   actually varies by format.
+/// Encode a stroke into a wire-compatible dictionary. Every field is
+/// already one of the wire's other supported shapes (`auto`, a color or
+/// gradient, a length, a plain string, `none`, or a plain dictionary of
+/// lengths/strings for `dash`) -- so, like `arguments`, this just reads
+/// the fields back and leaves recursing into them to the caller.
 /// -> dictionary
-#let encode(value, format: "cbor") = {
+#let encode(
+  /// The stroke to encode.
+  /// -> stroke
+  value,
+  /// The wire format being encoded for. Unused -- every field's own
+  /// recursive encode (done by the caller, not here) is what actually
+  /// varies by format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value) == stroke,
@@ -34,13 +37,17 @@
 }
 
 /// Decode a wire-compatible dictionary into a stroke.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- every
-///   field's own recursive decode (done by the caller, not here) is what
-///   actually varies by format.
 /// -> stroke
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- every field's own
+  /// recursive decode (done by the caller, not here) is what actually
+  /// varies by format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
