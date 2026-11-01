@@ -508,7 +508,7 @@ impl<'de> Deserializer<'de> for ValueDeserializer {
                 value: None,
             }),
             // A tag never legitimately reaches this module -- decode's tag
-            // dispatch (`decode-tagged`) already turns every
+            // dispatch (`decoders`) already turns every
             // `typwire-type`-carrying dictionary into either a plain
             // `Value::Map` (for real native types, handled recursively
             // above `value_to_owned`'s call site) or a `Value::Bytes`/

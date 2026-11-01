@@ -94,7 +94,9 @@
         + value.typwire-type,
     )
     assert(
-      value.fields().all(field => type(field) == std.int or field == none),
+      ("year", "month", "day", "hour", "minute", "second").all(field => (
+        type(value.at(field)) == std.int or value.at(field) == none
+      )),
       message: "datetime.decode: all fields must be of type int or none",
     )
   }

@@ -12,7 +12,7 @@
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `luma` has the same
-  /// tagged-dictionary shape in every format.
+  /// shape in every format.
   /// -> str
   format: "cbor",
 ) = {
@@ -29,8 +29,8 @@
 
   (
     typwire-type: type-name,
-    lightness: lightness,
-    alpha: alpha,
+    lightness: lightness / 100%,
+    alpha: alpha / 100%,
   )
 }
 
@@ -54,16 +54,16 @@
         + value.typwire-type,
     )
     assert(
-      type(value.lightness) == std.ratio,
-      message: "luma.decode: value.lightness must be of type ratio, Found "
+      type(value.lightness) == std.float,
+      message: "luma.decode: value.lightness must be of type float, Found "
         + str(type(value.lightness)),
     )
     assert(
-      type(value.alpha) == std.ratio,
-      message: "luma.decode: value.alpha must be of type ratio, Found "
+      type(value.alpha) == std.float,
+      message: "luma.decode: value.alpha must be of type float, Found "
         + str(type(value.alpha)),
     )
   }
 
-  color.luma(value.lightness, value.alpha)
+  color.luma(value.lightness * 100%, value.alpha * 100%)
 }

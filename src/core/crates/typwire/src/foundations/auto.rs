@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "auto";
 
 /// Typst's `auto`: a value that indicates a smart default.
@@ -15,36 +17,31 @@ const TYPE_NAME: &str = "auto";
 /// let value = Auto;
 /// ```
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
-#[serde(try_from = "AutoTypst", into = "AutoTypst")]
+#[serde(from = "AutoTypst", into = "AutoTypst")]
 pub struct Auto;
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct AutoTypst {
-    typwire_type: String,
+    typwire_type: Tag<Auto>,
+}
+
+impl Tagged for Auto {
+    const TYPE_NAME: &'static str = TYPE_NAME;
 }
 
 // Serialize into AutoTypst
 impl From<Auto> for AutoTypst {
     fn from(_: Auto) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
         }
     }
 }
 
 // Deserialize from AutoTypst
-impl TryFrom<AutoTypst> for Auto {
-    type Error = String;
-
-    fn try_from(value: AutoTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Auto: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Auto)
+impl From<AutoTypst> for Auto {
+    fn from(_: AutoTypst) -> Self {
+        Auto
     }
 }

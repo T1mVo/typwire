@@ -206,6 +206,11 @@ The actual Typst dictionary each tagged type above round-trips as — the
 same shape `typwire.debug.encode` returns. Every one carries a
 `typwire-type` string tag except the corner radius dictionary (the one
 exception — Typst itself has no distinct runtime type for it either).
+The tag is always the dictionary's **first** key — the Rust side relies on
+that to dispatch on it in a single pass. Inside a color or gradient, the
+enclosing tag already says what each field is, so nested ratios and angles
+are bare floats there (a fraction, and radians) rather than tagged
+dictionaries of their own.
 Native primitives (`int`, `float`, `bool`, `str`, `none`, `array`,
 `dictionary`) aren't repeated here; they pass through untagged.
 
@@ -214,25 +219,25 @@ Native primitives (`int`, `float`, `bool`, `str`, `none`, `array`,
 ##### Auto
 
 ```typ
-(typwire-type: "auto")
+#let shape = (typwire-type: "auto")
 ```
 
 ##### Type
 
 ```typ
-(typwire-type: "type", ty: "int")
+#let shape = (typwire-type: "type", ty: "int")
 ```
 
 ##### Label
 
 ```typ
-(typwire-type: "label", name: "intro")
+#let shape = (typwire-type: "label", name: "intro")
 ```
 
 ##### Version
 
 ```typ
-(typwire-type: "version", components: (1, 2, 3))
+#let shape = (typwire-type: "version", components: (1, 2, 3))
 ```
 
 **Note:** `version` uses `repr()` to determine the component count, whose output is unstable and might change any time. Use this type with caution.
@@ -240,7 +245,7 @@ Native primitives (`int`, `float`, `bool`, `str`, `none`, `array`,
 ##### Symbol
 
 ```typ
-(
+#let shape = (
   typwire-type: "symbol",
   default: "→",
   variants: ((modifiers: "double", glyph: "⇒"),),
@@ -252,7 +257,7 @@ Native primitives (`int`, `float`, `bool`, `str`, `none`, `array`,
 ##### Path
 
 ```typ
-(typwire-type: "path", path: "assets/logo.svg")
+#let shape = (typwire-type: "path", path: "assets/logo.svg")
 ```
 
 **Note:** `path` uses `repr()` to recover its text, whose output is unstable and might change any time. Use
@@ -261,7 +266,7 @@ this type with caution.
 ##### Regex
 
 ```typ
-(typwire-type: "regex", pattern: "\d+")
+#let shape = (typwire-type: "regex", pattern: "\d+")
 ```
 
 **Note:** `regex` uses `repr()` to recover its pattern, whose output is unstable and might change any time. Use
@@ -270,7 +275,7 @@ this type with caution. Requires the `regex` feature on the Rust side.
 ##### Decimal
 
 ```typ
-(typwire-type: "decimal", decimal: "3.14")
+#let shape = (typwire-type: "decimal", decimal: "3.14")
 ```
 
 **Note:** Requires the `decimal` feature on the Rust side.
@@ -278,7 +283,7 @@ this type with caution. Requires the `regex` feature on the Rust side.
 ##### Datetime
 
 ```typ
-(
+#let shape = (
   typwire-type: "datetime",
   year: 2024,
   month: 1,
@@ -292,19 +297,19 @@ this type with caution. Requires the `regex` feature on the Rust side.
 ##### Duration
 
 ```typ
-(typwire-type: "duration", seconds: 3600.0)
+#let shape = (typwire-type: "duration", seconds: 3600.0)
 ```
 
 ##### Arguments
 
 ```typ
-(typwire-type: "arguments", pos: (1, "two"), named: (flag: true))
+#let shape = (typwire-type: "arguments", pos: (1, "two"), named: (flag: true))
 ```
 
 ##### Bytes
 
 ```typ
-(typwire-type: "bytes", data: (1, 2, 3))
+#let shape = (typwire-type: "bytes", data: (1, 2, 3))
 ```
 
 **Note:** Only used by JSON; CBOR keeps a native byte string.
@@ -314,25 +319,25 @@ this type with caution. Requires the `regex` feature on the Rust side.
 ##### Angle
 
 ```typ
-(typwire-type: "angle", radians: 1.5707963267948966)
+#let shape = (typwire-type: "angle", radians: 1.5707963267948966)
 ```
 
 ##### Length
 
 ```typ
-(typwire-type: "length", points: 28.35)
+#let shape = (typwire-type: "length", points: 28.35)
 ```
 
 ##### Ratio
 
 ```typ
-(typwire-type: "ratio", ratio: 0.5)
+#let shape = (typwire-type: "ratio", ratio: 0.5)
 ```
 
 ##### Alignment
 
 ```typ
-(typwire-type: "alignment", x: "left", y: none)
+#let shape = (typwire-type: "alignment", x: "left", y: none)
 ```
 
 #### Visualize
@@ -340,79 +345,79 @@ this type with caution. Requires the `regex` feature on the Rust side.
 ##### Color
 
 ```typ
-(typwire-type: "color-luma", lightness: 100%, alpha: 100%)
+#let shape = (typwire-type: "color-luma", lightness: 1.0, alpha: 1.0)
 ```
 
 ```typ
-(typwire-type: "color-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0)
+#let shape = (typwire-type: "color-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0)
 ```
 
 ```typ
-(typwire-type: "color-linear-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0)
+#let shape = (typwire-type: "color-linear-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0)
 ```
 
 ```typ
-(typwire-type: "color-cmyk", cyan: 0%, magenta: 100%, yellow: 100%, key: 0%)
+#let shape = (typwire-type: "color-cmyk", cyan: 0.0, magenta: 1.0, yellow: 1.0, key: 0.0)
 ```
 
 ```typ
-(
+#let shape = (
   typwire-type: "color-hsl",
-  hue: (typwire-type: "angle", radians: 0.0),
-  saturation: 100%, lightness: 50%, alpha: 100%,
+  hue: 0.0,
+  saturation: 1.0, lightness: 0.5, alpha: 1.0,
 )
 ```
 
 ```typ
-(
+#let shape = (
   typwire-type: "color-hsv",
-  hue: (typwire-type: "angle", radians: 0.0),
-  saturation: 100%, value: 100%, alpha: 100%,
+  hue: 0.0,
+  saturation: 1.0, value: 1.0, alpha: 1.0,
 )
 ```
 
 ```typ
-(typwire-type: "color-oklab", lightness: 63%, a: 0.22, b: 0.13, alpha: 100%)
+#let shape = (typwire-type: "color-oklab", lightness: 0.63, a: 0.22, b: 0.13, alpha: 1.0)
 ```
 
 ```typ
-(
+#let shape = (
   typwire-type: "color-oklch",
-  lightness: 63%, chroma: 0.26,
-  hue: (typwire-type: "angle", radians: 0.72),
-  alpha: 100%,
+  lightness: 0.63, chroma: 0.26,
+  hue: 0.72,
+  alpha: 1.0,
 )
 ```
 
 ##### Gradient
 
 ```typ
-(
+#let shape = (
   typwire-type: "gradient-linear",
-  stops: ((color: (typwire-type: "color-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0), offset: 0%),),
-  angle: (typwire-type: "angle", radians: 0.0),
+  stops: ((color: (typwire-type: "color-rgb", r: 1.0, g: 0.0, b: 0.0, alpha: 1.0), offset: 0.0),),
+  angle: 0.0,
   space: "rgb",
 )
 ```
 
 ```typ
-(
+#let shape = (
   typwire-type: "gradient-radial",
   stops: (/* stop, stop, ... */),
-  center: (x: 50%, y: 50%),
-  radius: 50%,
-  focal-center: (x: 50%, y: 50%),
-  focal-radius: 0%,
+  center: (x: 0.5, y: 0.5),
+  radius: 0.5,
+  focal-center: (x: 0.5, y: 0.5),
+  focal-radius: 0.0,
   space: "rgb",
 )
 ```
 
 ```typ
-(
+#let shape = (
   typwire-type: "gradient-conic",
   stops: (/* stop, stop, ... */),
-  angle: (typwire-type: "angle", radians: 0.0),
-  center: (x: 50%, y: 50%),
+  angle: 0.0,
+  center: (x: 0.5, y: 0.5),
   space: "rgb",
 )
 ```
@@ -420,7 +425,7 @@ this type with caution. Requires the `regex` feature on the Rust side.
 ##### Stroke
 
 ```typ
-(
+#let shape = (
   typwire-type: "stroke",
   paint: (typwire-type: "color-rgb", r: 0.0, g: 0.0, b: 0.0, alpha: 1.0),
   thickness: (typwire-type: "length", points: 1.0),

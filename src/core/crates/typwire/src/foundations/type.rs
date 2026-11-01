@@ -1,10 +1,14 @@
-use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+
+use serde::{Deserialize, Serialize, Serializer};
+
+use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "type";
 
 /// A structure representing a type defined by a string.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-#[serde(try_from = "TypeTypst", into = "TypeTypst")]
+#[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[serde(from = "TypeTypst<'static>")]
 pub struct Type {
     pub ty: String,
 }
@@ -31,33 +35,35 @@ impl Type {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct TypeTypst {
-    typwire_type: String,
-    ty: String,
+struct TypeTypst<'a> {
+    typwire_type: Tag<Type>,
+    ty: Cow<'a, str>,
 }
 
-// Serialize into TypeTypst
-impl From<Type> for TypeTypst {
-    fn from(value: Type) -> Self {
+impl Tagged for Type {
+    const TYPE_NAME: &'static str = TYPE_NAME;
+}
+
+// Serialize through a borrowing TypeTypst -- `#[serde(into = ...)]`
+// would clone the whole value first.
+impl Serialize for Type {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        TypeTypst::from(self).serialize(serializer)
+    }
+}
+
+impl<'a> From<&'a Type> for TypeTypst<'a> {
+    fn from(value: &'a Type) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
-            ty: value.ty,
+            typwire_type: Tag::new(),
+            ty: Cow::Borrowed(&value.ty),
         }
     }
 }
 
 // Deserialize from TypeTypst
-impl TryFrom<TypeTypst> for Type {
-    type Error = String;
-
-    fn try_from(value: TypeTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Type: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Self::new(value.ty))
+impl From<TypeTypst<'_>> for Type {
+    fn from(value: TypeTypst<'_>) -> Self {
+        Self::new(value.ty.into_owned())
     }
 }

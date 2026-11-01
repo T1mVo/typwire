@@ -1,5 +1,10 @@
-use serde::{Deserialize, Serialize};
+use std::fmt;
 
+use serde::de::value::MapAccessDeserializer;
+use serde::de::{MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
+
+use crate::tag::next_tag;
 use crate::{Angle, Gradient, Ratio};
 
 pub const BLACK: Color = Color::Luma(Luma::new(Ratio::new(0.0), Ratio::new(1.0)));
@@ -96,8 +101,10 @@ pub const LIME: Color = Color::Rgb(Rgb::new(
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Luma {
     /// The lightness component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub lightness: Ratio,
     /// The alpha (transparency) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub alpha: Ratio,
 }
 
@@ -122,12 +129,14 @@ impl Luma {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Oklab {
     /// The lightness component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub lightness: Ratio,
     /// The 'a' component of the color.
     pub a: f64,
     /// The 'b' component of the color.
     pub b: f64,
     /// The alpha (transparency) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub alpha: Ratio,
 }
 
@@ -161,12 +170,15 @@ impl Oklab {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Oklch {
     /// The lightness component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub lightness: Ratio,
     /// The chroma component of the color.
     pub chroma: f64,
     /// The hue component of the color.
+    #[serde(with = "crate::layout::radians")]
     pub hue: Angle,
     /// The alpha (transparency) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub alpha: Ratio,
 }
 
@@ -200,12 +212,16 @@ impl Oklch {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LinearRgb {
     /// The red component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub r: Ratio,
     /// The green component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub g: Ratio,
     /// The blue component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub b: Ratio,
     /// The alpha (transparency) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub alpha: Ratio,
 }
 
@@ -234,12 +250,16 @@ impl LinearRgb {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Rgb {
     /// The red component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub r: Ratio,
     /// The green component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub g: Ratio,
     /// The blue component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub b: Ratio,
     /// The alpha (transparency) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub alpha: Ratio,
 }
 
@@ -268,12 +288,16 @@ impl Rgb {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Cmyk {
     /// The cyan component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub cyan: Ratio,
     /// The magenta component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub magenta: Ratio,
     /// The yellow component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub yellow: Ratio,
     /// The key (black) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub key: Ratio,
 }
 
@@ -307,12 +331,16 @@ impl Cmyk {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Hsl {
     /// The hue component of the color.
+    #[serde(with = "crate::layout::radians")]
     pub hue: Angle,
     /// The saturation component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub saturation: Ratio,
     /// The lightness component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub lightness: Ratio,
     /// The alpha (transparency) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub alpha: Ratio,
 }
 
@@ -346,12 +374,16 @@ impl Hsl {
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Hsv {
     /// The hue component of the color.
+    #[serde(with = "crate::layout::radians")]
     pub hue: Angle,
     /// The saturation component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub saturation: Ratio,
     /// The value (brightness) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub value: Ratio,
     /// The alpha (transparency) component of the color.
+    #[serde(with = "crate::layout::fraction")]
     pub alpha: Ratio,
 }
 
@@ -382,7 +414,11 @@ impl Hsv {
 }
 
 /// Represents a color in various color spaces.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
+///
+/// `Serialize` is derived (serde writes an internally tagged enum's tag
+/// first, with no buffering); `Deserialize` is hand-written below, since
+/// the derived one would buffer the whole color before reading its tag.
+#[derive(Serialize, Clone, PartialEq, Debug)]
 #[serde(tag = "typwire-type")]
 pub enum Color {
     /// A grayscale color with lightness and alpha (transparency).
@@ -409,6 +445,52 @@ pub enum Color {
     /// A color in the HSV (Hue, Saturation, Value) color space.
     #[serde(rename = "color-hsv")]
     Hsv(Hsv),
+}
+
+/// Every `typwire-type` tag a `Color` can carry -- the same names as the
+/// `#[serde(rename = ...)]`s on `Color`'s variants.
+const COLOR_TAGS: &[&str] = &[
+    "color-luma",
+    "color-oklab",
+    "color-oklch",
+    "color-linear-rgb",
+    "color-rgb",
+    "color-cmyk",
+    "color-hsl",
+    "color-hsv",
+];
+
+impl<'de> Deserialize<'de> for Color {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct ColorVisitor;
+
+        impl<'de> Visitor<'de> for ColorVisitor {
+            type Value = Color;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a tagged color dictionary")
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let tag = next_tag(&mut map, COLOR_TAGS)?;
+                let fields = MapAccessDeserializer::new(map);
+
+                match tag {
+                    "color-luma" => Luma::deserialize(fields).map(Color::Luma),
+                    "color-oklab" => Oklab::deserialize(fields).map(Color::Oklab),
+                    "color-oklch" => Oklch::deserialize(fields).map(Color::Oklch),
+                    "color-linear-rgb" => LinearRgb::deserialize(fields).map(Color::LinearRgb),
+                    "color-rgb" => Rgb::deserialize(fields).map(Color::Rgb),
+                    "color-cmyk" => Cmyk::deserialize(fields).map(Color::Cmyk),
+                    "color-hsl" => Hsl::deserialize(fields).map(Color::Hsl),
+                    "color-hsv" => Hsv::deserialize(fields).map(Color::Hsv),
+                    _ => unreachable!("`next_tag` only returns one of `COLOR_TAGS`"),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(ColorVisitor)
+    }
 }
 
 // Conversions from structs to Color enum

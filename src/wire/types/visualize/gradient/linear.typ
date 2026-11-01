@@ -40,7 +40,7 @@
   (
     typwire-type: type-name,
     stops: stops,
-    angle: angle,
+    angle: angle.rad(),
     space: space,
   )
 }
@@ -70,8 +70,8 @@
         + str(type(value.stops)),
     )
     assert(
-      type(value.angle) == std.angle,
-      message: "linear.decode: value.angle must be of type angle, Found "
+      type(value.angle) == std.float,
+      message: "linear.decode: value.angle must be of type float, Found "
         + str(type(value.angle)),
     )
     assert(
@@ -81,8 +81,11 @@
     )
   }
 
-  let stops = value.stops.map(s => stop.decode(s, format: format))
+  let stops = ()
+  for s in value.stops {
+    stops.push(stop.decode(s, format: format))
+  }
   let space = color.color-space(value.space)
 
-  gradient.linear(..stops, angle: value.angle, space: space)
+  gradient.linear(..stops, angle: value.angle * 1rad, space: space)
 }

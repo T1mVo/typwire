@@ -18,7 +18,7 @@
   /// -> ratio
   key,
   /// The wire format being encoded for. Unused -- `cmyk` has the same
-  /// tagged-dictionary shape in every format.
+  /// shape in every format.
   /// -> str
   format: "cbor",
 ) = {
@@ -43,10 +43,10 @@
 
   (
     typwire-type: type-name,
-    cyan: cyan,
-    magenta: magenta,
-    yellow: yellow,
-    key: key,
+    cyan: cyan / 100%,
+    magenta: magenta / 100%,
+    yellow: yellow / 100%,
+    key: key / 100%,
   )
 }
 
@@ -70,26 +70,26 @@
         + value.typwire-type,
     )
     assert(
-      type(value.cyan) == std.ratio,
-      message: "cmyk.decode: value.cyan must be of type ratio, Found "
+      type(value.cyan) == std.float,
+      message: "cmyk.decode: value.cyan must be of type float, Found "
         + str(type(value.cyan)),
     )
     assert(
-      type(value.magenta) == std.ratio,
-      message: "cmyk.decode: value.magenta must be of type ratio, Found "
+      type(value.magenta) == std.float,
+      message: "cmyk.decode: value.magenta must be of type float, Found "
         + str(type(value.magenta)),
     )
     assert(
-      type(value.yellow) == std.ratio,
-      message: "cmyk.decode: value.yellow must be of type ratio, Found "
+      type(value.yellow) == std.float,
+      message: "cmyk.decode: value.yellow must be of type float, Found "
         + str(type(value.yellow)),
     )
     assert(
-      type(value.key) == std.ratio,
-      message: "cmyk.decode: value.key must be of type ratio, Found "
+      type(value.key) == std.float,
+      message: "cmyk.decode: value.key must be of type float, Found "
         + str(type(value.key)),
     )
   }
 
-  color.cmyk(value.cyan, value.magenta, value.yellow, value.key)
+  color.cmyk(value.cyan * 100%, value.magenta * 100%, value.yellow * 100%, value.key * 100%)
 }

@@ -18,7 +18,7 @@
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `hsl` has the same
-  /// tagged-dictionary shape in every format.
+  /// shape in every format.
   /// -> str
   format: "cbor",
 ) = {
@@ -43,10 +43,10 @@
 
   (
     typwire-type: type-name,
-    hue: hue,
-    saturation: saturation,
-    lightness: lightness,
-    alpha: alpha,
+    hue: hue.rad(),
+    saturation: saturation / 100%,
+    lightness: lightness / 100%,
+    alpha: alpha / 100%,
   )
 }
 
@@ -70,26 +70,26 @@
         + value.typwire-type,
     )
     assert(
-      type(value.hue) == std.angle,
-      message: "hsl.decode: value.hue must be of type angle, Found "
+      type(value.hue) == std.float,
+      message: "hsl.decode: value.hue must be of type float, Found "
         + str(type(value.hue)),
     )
     assert(
-      type(value.saturation) == std.ratio,
-      message: "hsl.decode: value.saturation must be of type ratio, Found "
+      type(value.saturation) == std.float,
+      message: "hsl.decode: value.saturation must be of type float, Found "
         + str(type(value.saturation)),
     )
     assert(
-      type(value.lightness) == std.ratio,
-      message: "hsl.decode: value.lightness must be of type ratio, Found "
+      type(value.lightness) == std.float,
+      message: "hsl.decode: value.lightness must be of type float, Found "
         + str(type(value.lightness)),
     )
     assert(
-      type(value.alpha) == std.ratio,
-      message: "hsl.decode: value.alpha must be of type ratio, Found "
+      type(value.alpha) == std.float,
+      message: "hsl.decode: value.alpha must be of type float, Found "
         + str(type(value.alpha)),
     )
   }
 
-  color.hsl(value.hue, value.saturation, value.lightness, value.alpha)
+  color.hsl(value.hue * 1rad, value.saturation * 100%, value.lightness * 100%, value.alpha * 100%)
 }

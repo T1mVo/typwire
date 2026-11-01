@@ -48,7 +48,7 @@
     assert(
       type(value.radians) == std.float,
       message: "angle.decode: value.radians must be a float. Found "
-        + type(value.radians),
+        + str(type(value.radians)),
     )
   }
 

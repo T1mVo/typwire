@@ -1,4 +1,4 @@
-#import "../../utils.typ": float-to-ratio, is-debug-assert, ratio-to-float
+#import "../../utils.typ": is-debug-assert
 
 #let type-name = "ratio"
 
@@ -22,7 +22,7 @@
 
   (
     typwire-type: type-name,
-    ratio: ratio-to-float(ratio),
+    ratio: ratio / 100%,
   )
 }
 
@@ -48,9 +48,9 @@
     assert(
       type(value.ratio) == std.float,
       message: "ratio.decode: value.ratio must be of type float, Found "
-        + type(value.ratio),
+        + str(type(value.ratio)),
     )
   }
 
-  float-to-ratio(value.ratio)
+  value.ratio * 100%
 }

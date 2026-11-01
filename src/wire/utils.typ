@@ -38,6 +38,27 @@
   float * 1pt
 }
 
+/// Whether every type in `types` is one of `allowed`. Meant for a small,
+/// already-deduplicated list (`values.map(std.type).dedup()`) -- see
+/// `encode.typ::encode` for why this is checked natively per container
+/// rather than with a closure per element.
+/// -> bool
+#let all-in(
+  /// The types to check.
+  /// -> array
+  types,
+  /// The types allowed.
+  /// -> array
+  allowed,
+) = {
+  for t in types {
+    if t not in allowed {
+      return false
+    }
+  }
+  true
+}
+
 /// Whether debug assertions are enabled.
 /// -> bool
 #let is-debug-assert = sys.inputs.at("debug-assert", default: false) == "true"

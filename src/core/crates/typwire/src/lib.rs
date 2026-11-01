@@ -26,6 +26,7 @@ mod format;
 mod foundations;
 mod layout;
 mod one_of;
+mod tag;
 mod visualize;
 mod wire;
 

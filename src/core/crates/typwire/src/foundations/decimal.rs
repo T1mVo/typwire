@@ -2,6 +2,8 @@
 
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "decimal";
 
 /// A structure representing a Typst fixed-point decimal number.
@@ -55,15 +57,19 @@ impl std::ops::Deref for Decimal {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct DecimalTypst {
-    typwire_type: String,
+    typwire_type: Tag<Decimal>,
     decimal: String,
+}
+
+impl Tagged for Decimal {
+    const TYPE_NAME: &'static str = TYPE_NAME;
 }
 
 // Serialize into DecimalTypst
 impl From<Decimal> for DecimalTypst {
     fn from(value: Decimal) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
             decimal: value.0.to_string(),
         }
     }
@@ -74,13 +80,6 @@ impl TryFrom<DecimalTypst> for Decimal {
     type Error = String;
 
     fn try_from(value: DecimalTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Decimal: {}",
-                value.typwire_type
-            ));
-        }
-
         Decimal::new(&value.decimal).map_err(|error| format!("invalid decimal: {error}"))
     }
 }
@@ -98,7 +97,7 @@ mod tests {
         let bytes = cbor4ii::serde::to_vec(
             Vec::new(),
             &DecimalTypst {
-                typwire_type: TYPE_NAME.to_string(),
+                typwire_type: Tag::new(),
                 decimal: "not-a-number".to_string(),
             },
         )

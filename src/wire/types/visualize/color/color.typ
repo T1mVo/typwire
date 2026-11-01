@@ -8,8 +8,6 @@
 #import "hsv.typ"
 #import "../../../utils.typ": is-debug-assert
 
-#let common-type-name = "color-"
-
 /// Encode a color into a wire-compatible dictionary.
 /// -> dictionary
 #let encode(
@@ -81,38 +79,17 @@
   }
 }
 
-/// Decode a wire-compatible dictionary into a color.
-/// -> color
-#let decode(
-  /// The typwire-type tag of the encoded color.
-  /// -> str
-  tag,
-  /// A dictionary representing the `encode`d value.
-  /// -> dictionary
-  value,
-  /// The wire format being decoded from. Forwarded to the per-color-space
-  /// `decode`, though none of them currently use it either -- every color
-  /// space decodes the same way regardless of format.
-  /// -> str
-  format: "cbor",
-) = {
-  if tag == luma.type-name {
-    luma.decode(value, format: format)
-  } else if tag == oklab.type-name {
-    oklab.decode(value, format: format)
-  } else if tag == oklch.type-name {
-    oklch.decode(value, format: format)
-  } else if tag == linear-rgb.type-name {
-    linear-rgb.decode(value, format: format)
-  } else if tag == rgb.type-name {
-    rgb.decode(value, format: format)
-  } else if tag == cmyk.type-name {
-    cmyk.decode(value, format: format)
-  } else if tag == hsl.type-name {
-    hsl.decode(value, format: format)
-  } else if tag == hsv.type-name {
-    hsv.decode(value, format: format)
-  } else {
-    panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
-  }
-}
+/// Every color space's `decode`, keyed by its `typwire-type` tag --
+/// merged into `wire/decode.typ`'s own `decoders` table, so a tagged color
+/// dispatches straight to its space's `decode` with a single lookup.
+/// -> dictionary
+#let decoders = (
+  (luma.type-name): luma.decode,
+  (oklab.type-name): oklab.decode,
+  (oklch.type-name): oklch.decode,
+  (linear-rgb.type-name): linear-rgb.decode,
+  (rgb.type-name): rgb.decode,
+  (cmyk.type-name): cmyk.decode,
+  (hsl.type-name): hsl.decode,
+  (hsv.type-name): hsv.decode,
+)

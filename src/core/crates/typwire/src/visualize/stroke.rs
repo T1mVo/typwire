@@ -1,5 +1,8 @@
+use std::borrow::Cow;
+
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
+use crate::tag::{Tag, Tagged};
 use crate::{Auto, Color, Gradient, Length, OneOf2};
 
 const TYPE_NAME: &str = "stroke";
@@ -94,8 +97,8 @@ pub struct DashPattern {
 /// wired to the wire's `Auto` value via `OneOf2<Auto, _>` rather than a
 /// bespoke "smart" wrapper, the same composition `OneOf2`/`OneOf3` already
 /// exist for.
-#[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(try_from = "StrokeTypst", into = "StrokeTypst")]
+#[derive(Deserialize, Clone, Debug)]
+#[serde(from = "StrokeTypst<'static>")]
 pub struct Stroke {
     pub paint: OneOf2<Auto, Paint>,
     pub thickness: OneOf2<Auto, Length>,
@@ -128,50 +131,52 @@ impl Stroke {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct StrokeTypst {
-    typwire_type: String,
-    paint: OneOf2<Auto, Paint>,
+struct StrokeTypst<'a> {
+    typwire_type: Tag<Stroke>,
+    paint: Cow<'a, OneOf2<Auto, Paint>>,
     thickness: OneOf2<Auto, Length>,
     cap: OneOf2<Auto, LineCap>,
     join: OneOf2<Auto, LineJoin>,
-    dash: OneOf2<Auto, Option<DashPattern>>,
+    dash: Cow<'a, OneOf2<Auto, Option<DashPattern>>>,
     miter_limit: OneOf2<Auto, f64>,
 }
 
-// Serialize into StrokeTypst
-impl From<Stroke> for StrokeTypst {
-    fn from(value: Stroke) -> Self {
+impl Tagged for Stroke {
+    const TYPE_NAME: &'static str = TYPE_NAME;
+}
+
+// Serialize through a borrowing StrokeTypst -- `#[serde(into = ...)]`
+// would clone the whole value first.
+impl Serialize for Stroke {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        StrokeTypst::from(self).serialize(serializer)
+    }
+}
+
+impl<'a> From<&'a Stroke> for StrokeTypst<'a> {
+    fn from(value: &'a Stroke) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
-            paint: value.paint,
-            thickness: value.thickness,
-            cap: value.cap,
-            join: value.join,
-            dash: value.dash,
-            miter_limit: value.miter_limit,
+            typwire_type: Tag::new(),
+            paint: Cow::Borrowed(&value.paint),
+            thickness: value.thickness.clone(),
+            cap: value.cap.clone(),
+            join: value.join.clone(),
+            dash: Cow::Borrowed(&value.dash),
+            miter_limit: value.miter_limit.clone(),
         }
     }
 }
 
 // Deserialize from StrokeTypst
-impl TryFrom<StrokeTypst> for Stroke {
-    type Error = String;
-
-    fn try_from(value: StrokeTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Stroke: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Self::new(
-            value.paint,
+impl From<StrokeTypst<'_>> for Stroke {
+    fn from(value: StrokeTypst<'_>) -> Self {
+        Self::new(
+            value.paint.into_owned(),
             value.thickness,
             value.cap,
             value.join,
-            value.dash,
+            value.dash.into_owned(),
             value.miter_limit,
-        ))
+        )
     }
 }

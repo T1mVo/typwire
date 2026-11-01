@@ -1,6 +1,9 @@
+use std::borrow::Cow;
 use std::collections::BTreeMap;
+use std::fmt;
 
-use cbor4ii::core::Value;
+use serde::de::value::MapAccessDeserializer;
+use serde::de::{self, DeserializeSeed, MapAccess, SeqAccess, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[cfg(feature = "decimal")]
@@ -10,7 +13,7 @@ use crate::Regex;
 use crate::{
     Alignment, Angle, Arguments, Auto, Bytes, Color, DateTime, Duration, Gradient, Label, Length,
     Path, Ratio, Stroke, Symbol, Type, Typwire, Version,
-    wire::{invalid_value, value_to_owned},
+    tag::{TAG_KEY, WithTag},
 };
 
 /// A dynamic value supported by the Typwire protocol.
@@ -89,80 +92,184 @@ impl<'de> Deserialize<'de> for Any {
     where
         D: Deserializer<'de>,
     {
-        let value = Value::deserialize(deserializer)?;
-        from_value(value).map_err(invalid_value)
+        deserializer.deserialize_any(AnyVisitor)
     }
 }
 
 impl Typwire for Any {}
 
-fn from_value(value: Value) -> Result<Any, String> {
-    match value {
-        Value::Null => Ok(Any::None),
-        Value::Bool(value) => Ok(Any::Bool(value)),
-        Value::Integer(value) => i64::try_from(value)
+/// Builds an `Any` straight from the decoder's own callbacks, in one pass
+/// -- no intermediate `cbor4ii::core::Value` tree to build first and walk
+/// a second time. A map whose first key is `typwire-type` is handed to the
+/// native type its tag names (see `crate::tag::next_tag` for why the tag
+/// has to come first); any other map is a plain dictionary.
+struct AnyVisitor;
+
+const OUT_OF_RANGE: &str = "integer is outside Typst's signed 64-bit range";
+
+impl<'de> Visitor<'de> for AnyVisitor {
+    type Value = Any;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a Typwire value")
+    }
+
+    fn visit_bool<E: de::Error>(self, value: bool) -> Result<Any, E> {
+        Ok(Any::Bool(value))
+    }
+
+    fn visit_i64<E: de::Error>(self, value: i64) -> Result<Any, E> {
+        Ok(Any::Integer(value))
+    }
+
+    fn visit_u64<E: de::Error>(self, value: u64) -> Result<Any, E> {
+        i64::try_from(value)
             .map(Any::Integer)
-            .map_err(|_| "integer is outside Typst's signed 64-bit range".to_owned()),
-        Value::Float(value) => Ok(Any::Float(value)),
-        Value::Bytes(value) => Ok(Any::Bytes(Bytes::new(value))),
-        Value::Text(value) => Ok(Any::String(value)),
-        Value::Array(values) => values
-            .into_iter()
-            .map(from_value)
-            .collect::<Result<_, _>>()
-            .map(Any::Array),
-        Value::Map(entries) => from_map(entries),
-        Value::Tag(_, _) => Err("CBOR tags are not supported by Typwire".to_owned()),
-        _ => Err("unknown CBOR value is not supported by Typwire".to_owned()),
+            .map_err(|_| E::custom(OUT_OF_RANGE))
+    }
+
+    fn visit_i128<E: de::Error>(self, value: i128) -> Result<Any, E> {
+        i64::try_from(value)
+            .map(Any::Integer)
+            .map_err(|_| E::custom(OUT_OF_RANGE))
+    }
+
+    fn visit_u128<E: de::Error>(self, value: u128) -> Result<Any, E> {
+        i64::try_from(value)
+            .map(Any::Integer)
+            .map_err(|_| E::custom(OUT_OF_RANGE))
+    }
+
+    fn visit_f64<E: de::Error>(self, value: f64) -> Result<Any, E> {
+        Ok(Any::Float(value))
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Any, E> {
+        Ok(Any::String(value.to_owned()))
+    }
+
+    fn visit_string<E: de::Error>(self, value: String) -> Result<Any, E> {
+        Ok(Any::String(value))
+    }
+
+    fn visit_bytes<E: de::Error>(self, value: &[u8]) -> Result<Any, E> {
+        Ok(Any::Bytes(Bytes::new(value.to_vec())))
+    }
+
+    fn visit_byte_buf<E: de::Error>(self, value: Vec<u8>) -> Result<Any, E> {
+        Ok(Any::Bytes(Bytes::new(value)))
+    }
+
+    // CBOR's `null` arrives as `visit_none`, `format/value.rs`'s (JSON's)
+    // as `visit_unit`.
+    fn visit_none<E: de::Error>(self) -> Result<Any, E> {
+        Ok(Any::None)
+    }
+
+    fn visit_unit<E: de::Error>(self) -> Result<Any, E> {
+        Ok(Any::None)
+    }
+
+    fn visit_some<D: Deserializer<'de>>(self, deserializer: D) -> Result<Any, D::Error> {
+        Any::deserialize(deserializer)
+    }
+
+    fn visit_seq<A: SeqAccess<'de>>(self, mut seq: A) -> Result<Any, A::Error> {
+        // Capped, since the hint comes straight from the (untrusted) input.
+        let mut values = Vec::with_capacity(seq.size_hint().unwrap_or(0).min(4096));
+        while let Some(value) = seq.next_element()? {
+            values.push(value);
+        }
+        Ok(Any::Array(values))
+    }
+
+    fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Any, A::Error> {
+        let Some(first) = map.next_key_seed(StrSeed)? else {
+            return Ok(Any::Dictionary(BTreeMap::new()));
+        };
+
+        if first == TAG_KEY {
+            let tag = map.next_value_seed(StrSeed)?;
+            return native(&tag, map);
+        }
+
+        let mut entries = BTreeMap::new();
+        entries.insert(first.into_owned(), map.next_value()?);
+        while let Some((key, value)) = map.next_entry()? {
+            entries.insert(key, value);
+        }
+        Ok(Any::Dictionary(entries))
     }
 }
 
-fn from_map(entries: Vec<(Value, Value)>) -> Result<Any, String> {
-    let tag = entries.iter().find_map(|(key, value)| match (key, value) {
-        (Value::Text(key), Value::Text(value)) if key == "typwire-type" => Some(value.clone()),
-        _ => None,
-    });
-
-    if let Some(tag) = tag {
-        let value = Value::Map(entries);
-        return match tag.as_str() {
-            "angle" => value_to_owned(value).map(Any::Angle),
-            "length" => value_to_owned(value).map(Any::Length),
-            "ratio" => value_to_owned(value).map(Any::Ratio),
-            "color-luma" | "color-oklab" | "color-oklch" | "color-linear-rgb" | "color-rgb"
-            | "color-cmyk" | "color-hsl" | "color-hsv" => value_to_owned(value).map(Any::Color),
-            "gradient-linear" | "gradient-radial" | "gradient-conic" => {
-                value_to_owned(value).map(Any::Gradient)
-            }
-            "auto" => value_to_owned::<Auto>(value).map(|_| Any::Auto),
-            "datetime" => value_to_owned(value).map(Any::DateTime),
-            "duration" => value_to_owned(value).map(Any::Duration),
-            "version" => value_to_owned(value).map(Any::Version),
-            "type" => value_to_owned(value).map(Any::Type),
-            "path" => value_to_owned(value).map(Any::Path),
-            "symbol" => value_to_owned(value).map(Any::Symbol),
-            "arguments" => value_to_owned(value).map(Any::Arguments),
-            "label" => value_to_owned(value).map(Any::Label),
-            "alignment" => value_to_owned(value).map(Any::Alignment),
-            "stroke" => value_to_owned(value).map(Any::Stroke),
-            #[cfg(feature = "regex")]
-            "regex" => value_to_owned(value).map(Any::Regex),
-            #[cfg(feature = "decimal")]
-            "decimal" => value_to_owned(value).map(Any::Decimal),
-            other => Err(format!("unknown typwire-type tag `{other}`")),
-        };
+/// Decode the rest of a tagged map (its tag already read) as the native type
+/// `tag` names.
+fn native<'de, A: MapAccess<'de>>(tag: &str, map: A) -> Result<Any, A::Error> {
+    fn read<'de, T: Deserialize<'de>, A: MapAccess<'de>>(tag: &str, map: A) -> Result<T, A::Error> {
+        T::deserialize(MapAccessDeserializer::new(WithTag::new(tag, map)))
     }
 
-    entries
-        .into_iter()
-        .map(|(key, value)| {
-            let Value::Text(key) = key else {
-                return Err("Typwire dictionaries require string keys".to_owned());
-            };
-            Ok((key, from_value(value)?))
-        })
-        .collect::<Result<_, _>>()
-        .map(Any::Dictionary)
+    match tag {
+        "angle" => read(tag, map).map(Any::Angle),
+        "length" => read(tag, map).map(Any::Length),
+        "ratio" => read(tag, map).map(Any::Ratio),
+        "color-luma" | "color-oklab" | "color-oklch" | "color-linear-rgb" | "color-rgb"
+        | "color-cmyk" | "color-hsl" | "color-hsv" => read(tag, map).map(Any::Color),
+        "gradient-linear" | "gradient-radial" | "gradient-conic" => {
+            read(tag, map).map(Any::Gradient)
+        }
+        "auto" => read::<Auto, _>(tag, map).map(|_| Any::Auto),
+        "datetime" => read(tag, map).map(Any::DateTime),
+        "duration" => read(tag, map).map(Any::Duration),
+        "version" => read(tag, map).map(Any::Version),
+        "type" => read(tag, map).map(Any::Type),
+        "path" => read(tag, map).map(Any::Path),
+        "symbol" => read(tag, map).map(Any::Symbol),
+        "arguments" => read(tag, map).map(Any::Arguments),
+        "label" => read(tag, map).map(Any::Label),
+        "alignment" => read(tag, map).map(Any::Alignment),
+        "stroke" => read(tag, map).map(Any::Stroke),
+        #[cfg(feature = "regex")]
+        "regex" => read(tag, map).map(Any::Regex),
+        #[cfg(feature = "decimal")]
+        "decimal" => read(tag, map).map(Any::Decimal),
+        other => Err(de::Error::custom(format_args!(
+            "unknown typwire-type tag `{other}`"
+        ))),
+    }
+}
+
+/// A string, borrowed from the input when the decoder can (CBOR from a
+/// slice always can) -- so comparing a map key against `typwire-type`, or
+/// reading a tag, allocates nothing.
+struct StrSeed;
+
+impl<'de> DeserializeSeed<'de> for StrSeed {
+    type Value = Cow<'de, str>;
+
+    fn deserialize<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {
+        deserializer.deserialize_str(self)
+    }
+}
+
+impl<'de> Visitor<'de> for StrSeed {
+    type Value = Cow<'de, str>;
+
+    fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+        formatter.write_str("a string")
+    }
+
+    fn visit_borrowed_str<E: de::Error>(self, value: &'de str) -> Result<Self::Value, E> {
+        Ok(Cow::Borrowed(value))
+    }
+
+    fn visit_str<E: de::Error>(self, value: &str) -> Result<Self::Value, E> {
+        Ok(Cow::Owned(value.to_owned()))
+    }
+
+    fn visit_string<E: de::Error>(self, value: String) -> Result<Self::Value, E> {
+        Ok(Cow::Owned(value))
+    }
 }
 
 impl From<bool> for Any {
@@ -274,6 +381,38 @@ mod tests {
         let bytes = encode(&Length::new(12.0)).unwrap();
         let value: Any = decode(&bytes).unwrap();
         assert!(matches!(value, Any::Length(length) if length.pt() == 12.0));
+    }
+
+    #[test]
+    fn only_a_leading_tag_makes_a_native_value() {
+        // `encode` writes a `BTreeMap`'s keys sorted, so `"a"` lands before
+        // the tag -- an ordinary dictionary that happens to contain one.
+        let value = BTreeMap::from([
+            ("a".to_owned(), Any::from(1_i64)),
+            ("typwire-type".to_owned(), Any::from("length")),
+            ("points".to_owned(), Any::from(1.0)),
+        ]);
+        let bytes = encode(&Any::Dictionary(value)).unwrap();
+        assert!(matches!(decode::<Any>(&bytes).unwrap(), Any::Dictionary(_)));
+    }
+
+    #[test]
+    fn narrow_width_float_inside_a_nested_native_type_round_trips() {
+        // `Any` decodes through `deserialize_any`, which `LenientDeserializer`
+        // has to wrap like every other recursion point for the typed `f64`
+        // inside the `Length` it dispatches to to accept Typst's F16 `0.0`.
+        let bytes: &[u8] = &[
+            0x81, // array(1)
+            0xA2, // map(2)
+            0x6C, b't', b'y', b'p', b'w', b'i', b'r', b'e', b'-', b't', b'y', b'p', b'e', 0x66,
+            b'l', b'e', b'n', b'g', b't', b'h', // "length"
+            0x66, b'p', b'o', b'i', b'n', b't', b's', // "points"
+            0xF9, 0x00, 0x00, // float16(0.0)
+        ];
+        let value: Any = decode(bytes).unwrap();
+        assert!(
+            matches!(&value, Any::Array(items) if matches!(&items[..], [Any::Length(length)] if length.pt() == 0.0))
+        );
     }
 
     #[test]

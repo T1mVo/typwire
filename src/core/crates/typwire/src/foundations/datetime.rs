@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "datetime";
 
 /// A struct representing a date and time with optional fields.
@@ -14,7 +16,7 @@ const TYPE_NAME: &str = "datetime";
 /// assert_eq!(dt.month, Some(12));
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Default, Debug)]
-#[serde(try_from = "DateTimeTypst", into = "DateTimeTypst")]
+#[serde(from = "DateTimeTypst", into = "DateTimeTypst")]
 pub struct DateTime {
     pub year: Option<i64>,
     pub month: Option<i64>,
@@ -186,7 +188,7 @@ impl DateTimeBuilder {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct DateTimeTypst {
-    typwire_type: String,
+    typwire_type: Tag<DateTime>,
     year: Option<i64>,
     month: Option<i64>,
     day: Option<i64>,
@@ -195,11 +197,15 @@ struct DateTimeTypst {
     second: Option<i64>,
 }
 
+impl Tagged for DateTime {
+    const TYPE_NAME: &'static str = TYPE_NAME;
+}
+
 // Serialize into DateTimeTypst
 impl From<DateTime> for DateTimeTypst {
     fn from(value: DateTime) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
             year: value.year,
             month: value.month,
             day: value.day,
@@ -211,24 +217,15 @@ impl From<DateTime> for DateTimeTypst {
 }
 
 // Deserialize from DateTimeTypst
-impl TryFrom<DateTimeTypst> for DateTime {
-    type Error = String;
-
-    fn try_from(value: DateTimeTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for DateTime: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Self {
+impl From<DateTimeTypst> for DateTime {
+    fn from(value: DateTimeTypst) -> Self {
+        Self {
             year: value.year,
             month: value.month,
             day: value.day,
             hour: value.hour,
             minute: value.minute,
             second: value.second,
-        })
+        }
     }
 }

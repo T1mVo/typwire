@@ -1,4 +1,8 @@
-use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+
+use serde::{Deserialize, Serialize, Serializer};
+
+use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "label";
 
@@ -6,8 +10,8 @@ const TYPE_NAME: &str = "label";
 ///
 /// `name` is the label's resolved name, the same string `str(value)` gives
 /// back in Typst -- there is no `repr()` trick involved, unlike `Path`.
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
-#[serde(try_from = "LabelTypst", into = "LabelTypst")]
+#[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
+#[serde(from = "LabelTypst<'static>")]
 pub struct Label {
     pub name: String,
 }
@@ -30,33 +34,35 @@ impl Label {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct LabelTypst {
-    typwire_type: String,
-    name: String,
+struct LabelTypst<'a> {
+    typwire_type: Tag<Label>,
+    name: Cow<'a, str>,
 }
 
-// Serialize into LabelTypst
-impl From<Label> for LabelTypst {
-    fn from(value: Label) -> Self {
+impl Tagged for Label {
+    const TYPE_NAME: &'static str = TYPE_NAME;
+}
+
+// Serialize through a borrowing LabelTypst -- `#[serde(into = ...)]`
+// would clone the whole value first.
+impl Serialize for Label {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        LabelTypst::from(self).serialize(serializer)
+    }
+}
+
+impl<'a> From<&'a Label> for LabelTypst<'a> {
+    fn from(value: &'a Label) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
-            name: value.name,
+            typwire_type: Tag::new(),
+            name: Cow::Borrowed(&value.name),
         }
     }
 }
 
 // Deserialize from LabelTypst
-impl TryFrom<LabelTypst> for Label {
-    type Error = String;
-
-    fn try_from(value: LabelTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Label: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Self::new(value.name))
+impl From<LabelTypst<'_>> for Label {
+    fn from(value: LabelTypst<'_>) -> Self {
+        Self::new(value.name.into_owned())
     }
 }
