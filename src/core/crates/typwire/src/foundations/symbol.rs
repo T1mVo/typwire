@@ -1,4 +1,8 @@
-use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+
+use serde::{Deserialize, Serialize, Serializer};
+
+use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "symbol";
 
@@ -20,8 +24,8 @@ const TYPE_NAME: &str = "symbol";
 /// exactly one grapheme cluster, not necessarily one Unicode scalar value
 /// (e.g. some arrow variants are a base character plus a variation
 /// selector).
-#[derive(Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
-#[serde(try_from = "SymbolTypst", into = "SymbolTypst")]
+#[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
+#[serde(from = "SymbolTypst<'static>")]
 pub struct Symbol {
     pub default: String,
     pub variants: Vec<SymbolVariant>,
@@ -96,35 +100,37 @@ impl SymbolVariant {
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct SymbolTypst {
-    typwire_type: String,
-    default: String,
-    variants: Vec<SymbolVariant>,
+struct SymbolTypst<'a> {
+    typwire_type: Tag<Symbol>,
+    default: Cow<'a, str>,
+    variants: Cow<'a, [SymbolVariant]>,
 }
 
-// Serialize into SymbolTypst
-impl From<Symbol> for SymbolTypst {
-    fn from(value: Symbol) -> Self {
+impl Tagged for Symbol {
+    const TYPE_NAME: &'static str = TYPE_NAME;
+}
+
+// Serialize through a borrowing SymbolTypst -- `#[serde(into = ...)]`
+// would clone the whole value first.
+impl Serialize for Symbol {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        SymbolTypst::from(self).serialize(serializer)
+    }
+}
+
+impl<'a> From<&'a Symbol> for SymbolTypst<'a> {
+    fn from(value: &'a Symbol) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
-            default: value.default,
-            variants: value.variants,
+            typwire_type: Tag::new(),
+            default: Cow::Borrowed(&value.default),
+            variants: Cow::Borrowed(&value.variants),
         }
     }
 }
 
 // Deserialize from SymbolTypst
-impl TryFrom<SymbolTypst> for Symbol {
-    type Error = String;
-
-    fn try_from(value: SymbolTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Symbol: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Self::with_variants(value.default, value.variants))
+impl From<SymbolTypst<'_>> for Symbol {
+    fn from(value: SymbolTypst<'_>) -> Self {
+        Self::with_variants(value.default.into_owned(), value.variants.into_owned())
     }
 }

@@ -1,6 +1,11 @@
-use serde::{Deserialize, Serialize};
+use std::fmt;
+
+use serde::de::value::MapAccessDeserializer;
+use serde::de::{MapAccess, Visitor};
+use serde::{Deserialize, Deserializer, Serialize};
 use thiserror::Error;
 
+use crate::tag::next_tag;
 use crate::{Angle, Center, Ratio, Stop};
 
 /// Represents different types of gradients with specific parameters for each type.
@@ -11,28 +16,42 @@ use crate::{Angle, Center, Ratio, Stop};
 ///
 /// let linear_gradient = Gradient::linear(vec![], Angle::new(45.0), ColorSpace::Oklab);
 /// ```
-#[derive(Serialize, Deserialize, Clone, Debug)]
+///
+/// Like `Color`, `Serialize` is derived and `Deserialize` is hand-written
+/// below, so decoding dispatches on the tag instead of buffering the whole
+/// gradient first.
+#[derive(Serialize, Clone, Debug)]
 #[serde(tag = "typwire-type", rename_all_fields = "kebab-case")]
 pub enum Gradient {
     #[serde(rename = "gradient-linear")]
     Linear {
+        #[serde(with = "compact::stops")]
         stops: Vec<Stop>,
+        #[serde(with = "crate::layout::radians")]
         angle: Angle,
         space: ColorSpace,
     },
     #[serde(rename = "gradient-radial")]
     Radial {
+        #[serde(with = "compact::stops")]
         stops: Vec<Stop>,
+        #[serde(with = "compact::center")]
         center: Center,
+        #[serde(with = "crate::layout::fraction")]
         radius: Ratio,
+        #[serde(with = "compact::center")]
         focal_center: Center,
+        #[serde(with = "crate::layout::fraction")]
         focal_radius: Ratio,
         space: ColorSpace,
     },
     #[serde(rename = "gradient-conic")]
     Conic {
+        #[serde(with = "compact::stops")]
         stops: Vec<Stop>,
+        #[serde(with = "crate::layout::radians")]
         angle: Angle,
+        #[serde(with = "compact::center")]
         center: Center,
         space: ColorSpace,
     },
@@ -160,6 +179,177 @@ impl Gradient {
             center: None,
             space: ColorSpace::default(),
         }
+    }
+}
+
+/// A gradient's own wire shape for its stops and center(s): bare fractions
+/// instead of tagged `ratio` dictionaries (see `crate::layout::fraction`),
+/// since the gradient's tag already fixes what every field is.
+///
+/// Only *inside* a gradient: a standalone `Stop`/`Center` keeps its own
+/// tagged-ratio shape, since Typst has no stop/center type -- a Typst
+/// caller writes one as a plain dictionary of ratios, e.g. `(x: 50%, y:
+/// 50%)`, which encodes generically.
+mod compact {
+    use serde::{Deserialize, Serialize};
+
+    use crate::{Color, Ratio};
+
+    #[derive(Serialize)]
+    struct StopRef<'a> {
+        color: &'a Color,
+        #[serde(with = "crate::layout::fraction")]
+        offset: Ratio,
+    }
+
+    #[derive(Deserialize)]
+    struct StopOwned {
+        color: Color,
+        #[serde(with = "crate::layout::fraction")]
+        offset: Ratio,
+    }
+
+    #[derive(Serialize, Deserialize)]
+    struct CenterFractions {
+        #[serde(with = "crate::layout::fraction")]
+        x: Ratio,
+        #[serde(with = "crate::layout::fraction")]
+        y: Ratio,
+    }
+
+    pub(super) mod stops {
+        use serde::{Deserialize, Deserializer, Serializer};
+
+        use super::{StopOwned, StopRef};
+        use crate::Stop;
+
+        pub(crate) fn serialize<S: Serializer>(
+            stops: &[Stop],
+            serializer: S,
+        ) -> Result<S::Ok, S::Error> {
+            serializer.collect_seq(stops.iter().map(|stop| StopRef {
+                color: &stop.color,
+                offset: stop.offset,
+            }))
+        }
+
+        pub(crate) fn deserialize<'de, D: Deserializer<'de>>(
+            deserializer: D,
+        ) -> Result<Vec<Stop>, D::Error> {
+            Vec::<StopOwned>::deserialize(deserializer).map(|stops| {
+                stops
+                    .into_iter()
+                    .map(|stop| Stop::new(stop.color, stop.offset))
+                    .collect()
+            })
+        }
+    }
+
+    pub(super) mod center {
+        use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+        use super::CenterFractions;
+        use crate::Center;
+
+        pub(crate) fn serialize<S: Serializer>(
+            center: &Center,
+            serializer: S,
+        ) -> Result<S::Ok, S::Error> {
+            CenterFractions {
+                x: center.x,
+                y: center.y,
+            }
+            .serialize(serializer)
+        }
+
+        pub(crate) fn deserialize<'de, D: Deserializer<'de>>(
+            deserializer: D,
+        ) -> Result<Center, D::Error> {
+            CenterFractions::deserialize(deserializer).map(|center| Center::new(center.x, center.y))
+        }
+    }
+}
+
+/// Every `typwire-type` tag a `Gradient` can carry -- the same names as
+/// the `#[serde(rename = ...)]`s on `Gradient`'s variants.
+const GRADIENT_TAGS: &[&str] = &["gradient-linear", "gradient-radial", "gradient-conic"];
+
+// The fields of each `Gradient` variant, after its tag -- what the rest of
+// the wire dictionary is deserialized into once `next_tag` has read it.
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct LinearFields {
+    #[serde(with = "compact::stops")]
+    stops: Vec<Stop>,
+    #[serde(with = "crate::layout::radians")]
+    angle: Angle,
+    space: ColorSpace,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct RadialFields {
+    #[serde(with = "compact::stops")]
+    stops: Vec<Stop>,
+    #[serde(with = "compact::center")]
+    center: Center,
+    #[serde(with = "crate::layout::fraction")]
+    radius: Ratio,
+    #[serde(with = "compact::center")]
+    focal_center: Center,
+    #[serde(with = "crate::layout::fraction")]
+    focal_radius: Ratio,
+    space: ColorSpace,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+struct ConicFields {
+    #[serde(with = "compact::stops")]
+    stops: Vec<Stop>,
+    #[serde(with = "crate::layout::radians")]
+    angle: Angle,
+    #[serde(with = "compact::center")]
+    center: Center,
+    space: ColorSpace,
+}
+
+impl<'de> Deserialize<'de> for Gradient {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        struct GradientVisitor;
+
+        impl<'de> Visitor<'de> for GradientVisitor {
+            type Value = Gradient;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a tagged gradient dictionary")
+            }
+
+            fn visit_map<A: MapAccess<'de>>(self, mut map: A) -> Result<Self::Value, A::Error> {
+                let tag = next_tag(&mut map, GRADIENT_TAGS)?;
+                let fields = MapAccessDeserializer::new(map);
+
+                match tag {
+                    "gradient-linear" => LinearFields::deserialize(fields)
+                        .map(|f| Gradient::linear(f.stops, f.angle, f.space)),
+                    "gradient-radial" => RadialFields::deserialize(fields).map(|f| {
+                        Gradient::radial(
+                            f.stops,
+                            f.center,
+                            f.radius,
+                            f.focal_center,
+                            f.focal_radius,
+                            f.space,
+                        )
+                    }),
+                    "gradient-conic" => ConicFields::deserialize(fields)
+                        .map(|f| Gradient::conic(f.stops, f.angle, f.center, f.space)),
+                    _ => unreachable!("`next_tag` only returns one of `GRADIENT_TAGS`"),
+                }
+            }
+        }
+
+        deserializer.deserialize_map(GradientVisitor)
     }
 }
 
@@ -607,4 +797,66 @@ impl ConicGradientBuilder {
 pub enum GradientBuilderError {
     #[error("builder missing required field: {0}")]
     MissingField(&'static str),
+}
+
+#[cfg(test)]
+mod tests {
+    use cbor4ii::core::Value;
+
+    use super::*;
+    use crate::{color, decode, encode};
+
+    fn field<'a>(map: &'a Value, name: &str) -> &'a Value {
+        let Value::Map(entries) = map else {
+            panic!("expected a map, found {map:?}")
+        };
+        entries
+            .iter()
+            .find_map(|(key, value)| {
+                matches!(key, Value::Text(key) if key == name).then_some(value)
+            })
+            .unwrap_or_else(|| panic!("missing field `{name}`"))
+    }
+
+    #[test]
+    fn nested_ratios_and_angles_are_bare_floats() {
+        let gradient = Gradient::radial(
+            vec![
+                Stop::new(color::RED, Ratio::new(0.0)),
+                Stop::new(color::BLUE, Ratio::new(1.0)),
+            ],
+            Center::new(Ratio::new(0.5), Ratio::new(0.25)),
+            Ratio::new(0.5),
+            Center::new(Ratio::new(0.5), Ratio::new(0.5)),
+            Ratio::new(0.0),
+            ColorSpace::Oklab,
+        );
+        let bytes = encode(&gradient).unwrap();
+        let tree = cbor4ii::serde::from_slice::<Value>(&bytes).unwrap();
+
+        let Value::Array(stops) = field(&tree, "stops") else {
+            panic!("stops must be an array")
+        };
+        assert!(matches!(field(&stops[0], "offset"), Value::Float(_)));
+        assert!(matches!(
+            field(field(&stops[0], "color"), "alpha"),
+            Value::Float(_)
+        ));
+        assert!(matches!(field(field(&tree, "center"), "y"), Value::Float(y) if *y == 0.25));
+        assert!(matches!(field(&tree, "radius"), Value::Float(_)));
+
+        assert!(matches!(
+            decode::<Gradient>(&bytes).unwrap(),
+            Gradient::Radial { center, .. } if center == Center::new(Ratio::new(0.5), Ratio::new(0.25))
+        ));
+    }
+
+    #[test]
+    fn standalone_stop_keeps_tagged_ratios() {
+        // Only a gradient's own stops are compact; a standalone `Stop` is
+        // what a Typst caller writes as a plain `(color: .., offset: 50%)`.
+        let bytes = encode(&Stop::new(color::RED, Ratio::new(0.5))).unwrap();
+        let tree = cbor4ii::serde::from_slice::<Value>(&bytes).unwrap();
+        assert!(matches!(field(&tree, "offset"), Value::Map(_)));
+    }
 }

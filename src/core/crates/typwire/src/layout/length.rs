@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "length";
 
 /// A structure representing a length in points.
@@ -14,7 +16,7 @@ const TYPE_NAME: &str = "length";
 /// assert_eq!(length.inches(), 1.0);
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug)]
-#[serde(try_from = "LengthTypst", into = "LengthTypst")]
+#[serde(from = "LengthTypst", into = "LengthTypst")]
 pub struct Length {
     points: f64,
 }
@@ -98,32 +100,27 @@ impl Length {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct LengthTypst {
-    typwire_type: String,
+    typwire_type: Tag<Length>,
     points: f64,
+}
+
+impl Tagged for Length {
+    const TYPE_NAME: &'static str = TYPE_NAME;
 }
 
 // Serialize into LengthTypst
 impl From<Length> for LengthTypst {
     fn from(value: Length) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
             points: value.points,
         }
     }
 }
 
 // Deserialize from LengthTypst
-impl TryFrom<LengthTypst> for Length {
-    type Error = String;
-
-    fn try_from(value: LengthTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Length: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Length::new(value.points))
+impl From<LengthTypst> for Length {
+    fn from(value: LengthTypst) -> Self {
+        Length::new(value.points)
     }
 }

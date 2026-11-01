@@ -18,7 +18,7 @@
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `hsv` has the same
-  /// tagged-dictionary shape in every format.
+  /// shape in every format.
   /// -> str
   format: "cbor",
 ) = {
@@ -43,10 +43,10 @@
 
   (
     typwire-type: type-name,
-    hue: hue,
-    saturation: saturation,
-    value: value,
-    alpha: alpha,
+    hue: hue.rad(),
+    saturation: saturation / 100%,
+    value: value / 100%,
+    alpha: alpha / 100%,
   )
 }
 
@@ -70,26 +70,26 @@
         + value.typwire-type,
     )
     assert(
-      type(value.hue) == std.angle,
-      message: "hsv.decode: value.hue must be of type angle, Found "
+      type(value.hue) == std.float,
+      message: "hsv.decode: value.hue must be of type float, Found "
         + str(type(value.hue)),
     )
     assert(
-      type(value.saturation) == std.ratio,
-      message: "hsv.decode: value.saturation must be of type ratio, Found "
+      type(value.saturation) == std.float,
+      message: "hsv.decode: value.saturation must be of type float, Found "
         + str(type(value.saturation)),
     )
     assert(
-      type(value.value) == std.ratio,
-      message: "hsv.decode: value.value must be of type ratio, Found "
+      type(value.value) == std.float,
+      message: "hsv.decode: value.value must be of type float, Found "
         + str(type(value.value)),
     )
     assert(
-      type(value.alpha) == std.ratio,
-      message: "hsv.decode: value.alpha must be of type ratio, Found "
+      type(value.alpha) == std.float,
+      message: "hsv.decode: value.alpha must be of type float, Found "
         + str(type(value.alpha)),
     )
   }
 
-  color.hsv(value.hue, value.saturation, value.value, value.alpha)
+  color.hsv(value.hue * 1rad, value.saturation * 100%, value.value * 100%, value.alpha * 100%)
 }

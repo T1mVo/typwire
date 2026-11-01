@@ -1,4 +1,4 @@
-#import "../../utils.typ": float-to-length, is-debug-assert
+#import "../../utils.typ": is-debug-assert
 
 #let type-name = "length"
 
@@ -51,5 +51,5 @@
     )
   }
 
-  float-to-length(value.points)
+  value.points * 1pt
 }

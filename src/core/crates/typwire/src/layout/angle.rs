@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "angle";
 
 /// A structure representing an angle in radians.
 #[derive(Serialize, Deserialize, Clone, PartialEq, PartialOrd, Debug)]
-#[serde(try_from = "AngleTypst", into = "AngleTypst")]
+#[serde(from = "AngleTypst", into = "AngleTypst")]
 pub struct Angle {
     radians: f64,
 }
@@ -60,32 +62,49 @@ impl Angle {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct AngleTypst {
-    typwire_type: String,
+    typwire_type: Tag<Angle>,
     radians: f64,
+}
+
+impl Tagged for Angle {
+    const TYPE_NAME: &'static str = TYPE_NAME;
 }
 
 // Serialize into AngleTypst
 impl From<Angle> for AngleTypst {
     fn from(angle: Angle) -> Self {
         AngleTypst {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
             radians: angle.radians,
         }
     }
 }
 
 // Deserialize from AngleTypst
-impl TryFrom<AngleTypst> for Angle {
-    type Error = String;
+impl From<AngleTypst> for Angle {
+    fn from(value: AngleTypst) -> Self {
+        Self::new(value.radians)
+    }
+}
 
-    fn try_from(value: AngleTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Angle: {}",
-                value.typwire_type
-            ));
-        }
+/// `#[serde(with = "crate::layout::radians")]`: an `Angle` as a bare number
+/// of radians, with no `typwire-type` dictionary around it -- the angle
+/// counterpart of `crate::layout::fraction`.
+pub(crate) mod radians {
+    use serde::{Deserialize, Deserializer, Serializer};
 
-        Ok(Self::new(value.radians))
+    use super::Angle;
+
+    pub(crate) fn serialize<S: Serializer>(
+        angle: &Angle,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        serializer.serialize_f64(angle.radians)
+    }
+
+    pub(crate) fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Angle, D::Error> {
+        f64::deserialize(deserializer).map(Angle::new)
     }
 }

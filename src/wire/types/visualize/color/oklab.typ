@@ -18,7 +18,7 @@
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `oklab` has the same
-  /// tagged-dictionary shape in every format.
+  /// shape in every format.
   /// -> str
   format: "cbor",
 ) = {
@@ -43,10 +43,10 @@
 
   (
     typwire-type: type-name,
-    lightness: lightness,
+    lightness: lightness / 100%,
     a: a,
     b: b,
-    alpha: alpha,
+    alpha: alpha / 100%,
   )
 }
 
@@ -70,8 +70,8 @@
         + value.typwire-type,
     )
     assert(
-      type(value.lightness) == std.ratio,
-      message: "oklab.decode: value.lightness must be of type ratio, Found "
+      type(value.lightness) == std.float,
+      message: "oklab.decode: value.lightness must be of type float, Found "
         + str(type(value.lightness)),
     )
     assert(
@@ -85,11 +85,11 @@
         + str(type(value.b)),
     )
     assert(
-      type(value.alpha) == std.ratio,
-      message: "oklab.decode: value.alpha must be of type ratio, Found "
+      type(value.alpha) == std.float,
+      message: "oklab.decode: value.alpha must be of type float, Found "
         + str(type(value.alpha)),
     )
   }
 
-  color.oklab(value.lightness, value.a, value.b, value.alpha)
+  color.oklab(value.lightness * 100%, value.a, value.b, value.alpha * 100%)
 }

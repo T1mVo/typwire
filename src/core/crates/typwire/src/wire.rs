@@ -1,7 +1,6 @@
 use std::collections::{BTreeMap, BTreeSet, HashMap, HashSet, LinkedList, VecDeque};
 use std::hash::{BuildHasher, Hash};
 
-use cbor4ii::core::Value;
 use serde::de::{DeserializeOwned, Visitor};
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use thiserror::Error;
@@ -178,23 +177,6 @@ tuple_impls!(
     (A, B, C, D, E, F, G, H, I, J, K),
     (A, B, C, D, E, F, G, H, I, J, K, L),
 );
-
-/// Reconstruct any `Typwire` value directly from a generic [`Value`] tree,
-/// with no CBOR bytes in between -- see `format/value.rs::from_value`.
-/// Called both by `Any` (`any.rs`, to reconstruct a native type nested
-/// inside it, needed in every build, `Cbor`-only included) and by
-/// `Json::decode` (`format/json.rs`). The mirror direction (`T` -> `Value`)
-/// and the `Bytes`-tagging tree-walk around it live in `format/json.rs`
-/// now instead of here, since `Json` is the only caller left -- this one
-/// stays here because `Any` needs it independent of which format (if any)
-/// is even enabled.
-pub(crate) fn value_to_owned<T: DeserializeOwned>(value: Value) -> Result<T, String> {
-    crate::format::from_value(value).map_err(|error| error.to_string())
-}
-
-pub(crate) fn invalid_value<E: serde::de::Error>(message: impl std::fmt::Display) -> E {
-    E::custom(message)
-}
 
 // CBOR-specific behavior (narrow float widths, tag rejection, unit vs. null
 // wire shape, ...) is tested alongside `Cbor` itself in `format/cbor.rs`.

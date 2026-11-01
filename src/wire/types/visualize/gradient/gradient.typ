@@ -5,8 +5,6 @@
 #import "center.typ"
 #import "../../../utils.typ": is-debug-assert
 
-#let common-type-name = "gradient-"
-
 /// Encode a gradient into a wire-compatible dictionary.
 /// -> dictionary
 #let encode(
@@ -26,7 +24,10 @@
     )
   }
 
-  let stops = gradient.stops().map(s => stop.encode(s.at(0), s.at(1), format: format))
+  let stops = ()
+  for (color, offset) in gradient.stops() {
+    stops.push(stop.encode(color, offset, format: format))
+  }
   let gradient-space = gradient.space()
   let space = if gradient-space == std.color.luma {
     "luma"
@@ -74,27 +75,12 @@
   }
 }
 
-/// Decode a wire-compatible dictionary into a gradient.
-/// -> gradient
-#let decode(
-  /// The typwire-type tag of the encoded gradient.
-  /// -> str
-  tag,
-  /// A dictionary representing the `encode`d value.
-  /// -> dictionary
-  value,
-  /// The wire format being decoded from. Forwarded to the kind-specific
-  /// `decode`.
-  /// -> str
-  format: "cbor",
-) = {
-  if tag == linear.type-name {
-    linear.decode(value, format: format)
-  } else if tag == radial.type-name {
-    radial.decode(value, format: format)
-  } else if tag == conic.type-name {
-    conic.decode(value, format: format)
-  } else {
-    panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
-  }
-}
+/// Every gradient kind's `decode`, keyed by its `typwire-type` tag --
+/// merged into `wire/decode.typ`'s own `decoders` table, the same way
+/// `color.typ`'s is.
+/// -> dictionary
+#let decoders = (
+  (linear.type-name): linear.decode,
+  (radial.type-name): radial.decode,
+  (conic.type-name): conic.decode,
+)

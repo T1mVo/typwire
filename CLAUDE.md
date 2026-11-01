@@ -311,9 +311,10 @@ hold a direct reference to its concrete inner deserializer (bypassing any
 outer wrapper that only intercepts the top-level call), reaching nested float
 fields requires wrapping the `DeserializeSeed` at every recursion point, not
 just the deserializer — the same "deserializer middleware" pattern
-`serde_path_to_error` uses. `deserialize_enum` is part of this chain because
-`Color` and `Gradient` are internally tagged enums
-(`#[serde(tag = "typwire-type")]`) with `f64` fields inside their variants.
+`serde_path_to_error` uses. `deserialize_any` is wrapped too (its visitor
+in `Wrap`, which therefore forwards every scalar `visit_*` explicitly, not
+just the container ones): `Any` decodes through it, and the native types it
+dispatches to still read typed `f64` fields.
 `Bytes` serializes as a CBOR byte string (→ Typst `bytes`) while `Vec<u8>`
 stays an array — true only for `Cbor`; see *Wire formats* for how `Json`
 represents `Bytes` instead. The crate needs the `half-f16`
@@ -370,13 +371,10 @@ of the type system described elsewhere in this document:
   (never a bare `5` for a whole float), and `json(...)` already decodes
   back to `int`/`float` correctly based on that literal syntax — so
   nothing in `typwire.typ` needs to care. On the Rust side, `Any`'s
-  `Deserialize` already goes through `cbor4ii::core::Value`, and that
-  type's `Deserialize` is fully generic over `D: Deserializer<'de>` (not
-  CBOR-specific in what it consumes, only in which crate it happens to
-  live in) — `deserialize_any`/Visitor dispatch is what every
-  self-describing serde format uses to report int-vs-float, so `Value`
-  reconstructs `Any` correctly regardless of which format produced the
-  bytes, with **zero changes to `any.rs`**.
+  `Deserialize` is a `deserialize_any` visitor, and `deserialize_any`/
+  Visitor dispatch is what every self-describing serde format uses to
+  report int-vs-float, so `Any` reconstructs correctly regardless of which
+  format produced the bytes.
 - **Bytes.** JSON has no native byte-string type — Typst's own
   `json.encode(bytes(..))` confirmed (empirically) to silently produce the
   useless placeholder string `"bytes(3)"` rather than actual content.
@@ -398,19 +396,15 @@ of the type system described elsewhere in this document:
   "consistent" way first and watching it hang. Every other type's `encode`
   always returns a *new* dictionary shape instead, which is what makes
   recursing into it both safe and necessary there (to walk that
-  dictionary's own fields) but wrong here. `is-primitive` (see below) no
-  longer knows anything about `bytes` at all as a result — it used to be
-  the one place bytes' format-sensitivity lived, before `bytes.typ` existed
-  to own that decision itself. There is no separate tree-walk over the
+  dictionary's own fields) but wrong here. Under `"cbor"`, `bytes` is a leaf
+  (`cbor-leaf-types`, `wire/encode.typ`) and never reaches that branch at
+  all. There is no separate tree-walk over the
   already-built tree the way an earlier version of this feature had
   (`wire/rewrite-bytes.typ`, since deleted; `format/json.typ` used to call
   it on `wire.encode`'s output before handing the tree to its native
   encoder). Decode is simpler and fully shared, unchanged by this
-  refactor — `decode-tagged` (`wire/decode.typ`) has one tag arm, `tag ==
-  bytes-type.type-name` → `bytes-type.decode(value, format: format)`
-  (`type-name` and a real `decode` function now that `bytes.typ` exists,
-  rather than a bare `"bytes"` string literal and an inline
-  `bytes(value.data)`), harmless for `Cbor` since its own `cbor.encode`
+  refactor — `decoders` (`wire/decode.typ`) has one entry,
+  `bytes-type.type-name` → `bytes-type.decode`, harmless for `Cbor` since its own `cbor.encode`
   never produces that tag — its `bytes` values are caught by `decode`'s
   primitive fallback before ever reaching tag dispatch. `data` is a plain
   array of byte integers, not base64 — confirmed empirically Typst has no
@@ -418,17 +412,15 @@ of the type system described elsewhere in this document:
   form needs no new dependency on either side. On the Rust side, `Cbor`
   and `Bytes`'s `Serialize`/`Deserialize` (`serialize_bytes`/
   `deserialize_byte_buf`) are untouched; `Json::encode` (`format/json.rs`)
-  instead builds a `cbor4ii::core::Value` tree first (`value_from_owned`,
-  a sibling to the `value_to_owned` `wire.rs` exposes for `any.rs`),
+  instead builds a `cbor4ii::core::Value` tree first (`value_from_owned`),
   rewrites `Value::Bytes` nodes into the same tagged-array shape with
   `rewrite_bytes_to_array`, then serializes *that* tree; `decode` mirrors
-  it with `rewrite_array_to_bytes` before `value_to_owned`. All three of
-  `value_from_owned`/`rewrite_bytes_to_array`/`rewrite_array_to_bytes` live
-  in `format/json.rs` itself, not `wire.rs` — they used to be shared
-  `wire.rs` helpers back when JSON/YAML/TOML all needed them, but `Json` is
-  their only caller now, so they moved to where they're used (`value_to_
-  owned` is the one piece that stayed in `wire.rs`, since `any.rs` calls it
-  directly too, in every build, `Cbor`-only included). `value_from_owned`/
+  it with `rewrite_array_to_bytes` before `value_to_owned`. All four of
+  `value_from_owned`/`value_to_owned`/`rewrite_bytes_to_array`/
+  `rewrite_array_to_bytes` live in `format/json.rs` itself, not `wire.rs` —
+  `Json` is their only caller (`Any` used to decode through a `Value` tree
+  too, but no longer does), and `format/value.rs` is gated behind the
+  `json` feature for the same reason. `value_from_owned`/
   `value_to_owned` both go straight from `T`/`Value` to `Value`/`T` — a
   hand-written `Serializer`/`Deserializer` pair over
   `Value` directly (`format/value.rs`), not (an earlier version of this) a
@@ -474,7 +466,7 @@ generic deserialization).
 #### Format threading (Typst side)
 
 `wire/encode.typ::encode(content, format: "cbor")` and
-`wire/decode.typ::decode`/`decode-tagged` take `format` as a **named**
+`wire/decode.typ::decode` take `format` as a **named**
 argument with a default of `"cbor"`, and every single `wire/types/**`
 module's `encode`/`decode` does too — including the 31 of them (`path`,
 `symbol`, `length`, every color space, every gradient kind, ...) that
@@ -498,16 +490,10 @@ finished, rewriting `bytes` leaves in place. Folding that into the single
 recursive `encode` pass means JSON saves a full extra tree-walk, at the
 cost of `format` appearing in every signature in this layer.
 
-`is-primitive` (`wire/encode.typ`) is `int`/`float`/`str`/`bool`/`none` —
-all primitive in both `"cbor"` and `"json"`, the only two formats this
-crate supports; `bytes` isn't part of this check at all (see the *Bytes*
-bullet above for where its format-sensitivity lives instead, now that it
-has its own module). It used to take a `format` parameter too (back when
-TOML's lack of a native `none` made that one check format-sensitive), and
-before that it was unparameterized entirely with `bytes` unconditionally
-`true` (from when this was the CBOR-only encoder this crate started with)
-— both since simplified away as the formats that needed them were
-removed.
+`leaf-types` (`wire/encode.typ`) is `int`/`float`/`str`/`bool`/`none` —
+leaves in both `"cbor"` and `"json"`; `cbor-leaf-types` adds `bytes`, which
+only CBOR has natively (see the *Bytes* bullet above for every other
+format).
 
 The Rust side does **not** get the equivalent treatment, and deliberately
 so: it has no per-native-type file that would need a `format` parameter
@@ -575,10 +561,17 @@ Both sides are organized the same way, by Typst's own reference categories
   `OneOfN`, the wire protocol itself) stays at the crate root instead of in
   one of these three modules.
   Each `<type>.rs` defines a private `…Typst` shadow struct with
-  `#[serde(try_from = "…Typst", into = "…Typst")]` on the public type
+  `#[serde(from = "…Typst", into = "…Typst")]` (`try_from` where decode can
+  fail for another reason, e.g. `Regex`'s pattern) on the public type
   (named for the Typst-side wire shape it mirrors, not for any one format —
-  every format's encode/decode passes through it); `const TYPE_NAME` is the
-  tag, `TryFrom` verifies it.
+  every format's encode/decode passes through it). Its tag field is a
+  zero-sized `crate::tag::Tag<Self>`, not a `String`: it encodes
+  `<Self as Tagged>::TYPE_NAME` and only decodes from exactly that string,
+  with no allocation either way. Types with heap data (`Arguments`,
+  `Label`, `Path`, `Symbol`, `Type`, `Version`, `Stroke`, `Regex`) instead
+  give the shadow struct a lifetime and `Cow` fields, with a hand-written
+  `Serialize` that borrows from `&self` — `into = ...` would clone the
+  whole value first.
 - Typst: `src/wire/types/{foundations,layout,visualize}/<type>.typ` each
   expose `type-name`, `encode`, `decode` (`Center` and `Stop` live under
   `src/wire/types/visualize/gradient/`, since they're only ever nested inside
@@ -588,12 +581,10 @@ Both sides are organized the same way, by Typst's own reference categories
   directory is named `wire/`, not `cbor/`. `encode.typ::encode` dispatches on
   `std.type(...)` when serializing — except `Auto`, which has no `std.type`
   of its own and is matched by direct value equality (`content == auto`)
-  instead, same as how `none` is detected. `decode.typ::decode-tagged`
-  dispatches on the `typwire-type` string when deserializing. Color/gradient
-  use a `common-type-name` prefix match. Note `decode-tagged` evaluates
-  `<module>.type-name` for the modules *before* the matching one, so every
-  module in that chain must actually define `type-name` (a missing binding is a
-  hard error for unrelated types, not just its own).
+  instead, same as how `none` is detected. `decode.typ::decode` dispatches
+  on the `typwire-type` string when deserializing, through one `decoders`
+  dictionary lookup (`color.typ`/`gradient.typ` each contribute their own
+  `decoders` table for their subtypes).
 
 `auto` and `none` are both Typst keyword literals, not ordinary identifiers —
 a bare `auto`/`none` always evaluates to that literal, so
@@ -677,7 +668,7 @@ the gate, not a runtime failure. There's deliberately no placeholder type
 for the disabled case (an earlier version had one, always erroring on
 decode) — a compile error for code that references `Regex` without the
 feature is a stronger, earlier signal than a value that builds fine and only
-fails when actually decoded. `Any`'s `"regex"` match arm in `from_map` (and
+fails when actually decoded. `Any`'s `"regex"` match arm in `native` (and
 the `Any::Regex` enum variant and its `Serialize` arm) are individually
 `#[cfg(feature = "regex")]`-gated too, so a `regex`-tagged value reaching
 `Any` without the feature falls through to `Any`'s ordinary "unknown
@@ -837,14 +828,52 @@ string sibling to `Length`'s own tagged-dict shape, not something an
 `#[serde(untagged)]` derive over `Length` alone could express.
 
 Adding or renaming a native type means editing both sides plus the tag lists in
-`any.rs` (`from_map`) and `src/wire/decode.typ`.
+`any.rs` (`native`) and `src/wire/decode.typ` (`decoders`).
+
+### Performance rules
+
+CBOR is the format that matters for speed (JSON exists for readability).
+Measured, not guessed, and each rule below exists because ignoring it was
+measurably slow:
+
+- **Typst side: avoid closure calls on big arguments.** Typst memoizes every
+  closure call, hashing all of its arguments first, so a call costs time
+  proportional to the size of what it's handed (~0.8ms for one call with a
+  100,000-element array). `wire/encode.typ`/`decode.typ` therefore never
+  recurse into a leaf, return a container with no nested container/native
+  value as-is (checked natively with `map(std.type).dedup()`), iterate with
+  `for` instead of `.map(closure)`, and don't walk a per-type `encode`'s
+  result a second time unless it embeds arbitrary values (`stroke`,
+  `arguments`). 2000 distinct ints: ~9ms -> ~0.2ms per `wire.encode`.
+- **Tags come first.** `Color`/`Gradient` have hand-written tag-first
+  `Deserialize` impls (`crate::tag::next_tag`), and `Any` dispatches on a
+  leading tag directly (`crate::tag::WithTag` replays it to the chosen
+  type). serde's own `#[serde(tag = ...)]`/an intermediate `Value` tree
+  would buffer the whole value and deserialize it twice. The rule this
+  costs: `typwire-type` must be a tagged dictionary's **first** key — both
+  sides always write it first (Typst dictionaries keep insertion order
+  through `cbor.encode`). A dictionary with the tag anywhere else decodes
+  as a plain dictionary in `Any` and fails for a typed native type.
+- **No nested tags where the enclosing tag already fixes the type.**
+  Inside a color, every ratio/angle component is a bare float (fraction /
+  radians, `crate::layout::{fraction, radians}` serde `with` adapters);
+  inside a gradient, so are stop offsets, centers, radii and the angle
+  (`gradient.rs`'s `compact` module). A standalone `Stop`/`Center` keeps
+  its tagged-ratio shape — a Typst caller writes one as a plain dictionary
+  of ratios. The 9-stop `color.map.viridis` gradient went 1523 -> 793 wire
+  bytes.
+- **wasmi multiplies Rust-side cost ~20×** (Typst runs plugins in an
+  interpreter): ~10μs of native decode+encode showed up as ~220μs per
+  call, while the fixed per-call overhead of a trivial plugin call is only
+  ~2–4μs. An allocation saved per tagged value is worth real time.
 
 ### `Any` and `OneOfN`
 
 - `Any` (`any.rs`) is a hand-written Serde enum for dynamic values. Its
-  `Deserialize` goes through `cbor4ii::core::Value` and **tries the native tag
-  before falling back to a plain dictionary**, so a `Length` inside an `Any`
-  round-trips as `Any::Length`, not `Any::Dictionary`.
+  `Deserialize` is a single-pass `deserialize_any` visitor: a map whose
+  **first key is `typwire-type`** goes to the native type its tag names
+  (`native`), so a `Length` inside an `Any` round-trips as `Any::Length`,
+  not `Any::Dictionary`; any other map is a plain dictionary.
 - `OneOf2`..`OneOf8` (`one_of.rs`, macro-generated) are `#[serde(untagged)]`
   enums. Variants are tried **in declaration order** — overlapping
   representations resolve to the first match.

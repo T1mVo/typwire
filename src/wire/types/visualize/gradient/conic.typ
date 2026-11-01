@@ -48,7 +48,7 @@
   (
     typwire-type: type-name,
     stops: stops,
-    angle: angle,
+    angle: angle.rad(),
     center: center,
     space: space,
   )
@@ -79,8 +79,8 @@
         + str(type(value.stops)),
     )
     assert(
-      type(value.angle) == std.angle,
-      message: "conic.decode: value.angle must be of type angle, Found "
+      type(value.angle) == std.float,
+      message: "conic.decode: value.angle must be of type float, Found "
         + str(type(value.angle)),
     )
     assert(
@@ -95,12 +95,15 @@
     )
   }
 
-  let stops = value.stops.map(s => stop.decode(s, format: format))
+  let stops = ()
+  for s in value.stops {
+    stops.push(stop.decode(s, format: format))
+  }
   let space = color.color-space(value.space)
 
   gradient.conic(
     ..stops,
-    angle: value.angle,
+    angle: value.angle * 1rad,
     center: center.decode(value.center, format: format),
     space: space,
   )

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "alignment";
 
 /// Where to align something horizontally.
@@ -52,16 +54,20 @@ impl Alignment {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct AlignmentTypst {
-    typwire_type: String,
+    typwire_type: Tag<Alignment>,
     x: Option<HAlignment>,
     y: Option<VAlignment>,
+}
+
+impl Tagged for Alignment {
+    const TYPE_NAME: &'static str = TYPE_NAME;
 }
 
 // Serialize into AlignmentTypst
 impl From<Alignment> for AlignmentTypst {
     fn from(value: Alignment) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
             x: value.x,
             y: value.y,
         }
@@ -73,13 +79,6 @@ impl TryFrom<AlignmentTypst> for Alignment {
     type Error = String;
 
     fn try_from(value: AlignmentTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Alignment: {}",
-                value.typwire_type
-            ));
-        }
-
         if value.x.is_none() && value.y.is_none() {
             return Err("Alignment must have at least one of x or y set".to_owned());
         }

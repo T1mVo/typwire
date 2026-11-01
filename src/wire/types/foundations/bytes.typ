@@ -42,7 +42,7 @@
 /// Only ever reached for JSON, the one format with no native byte-string
 /// type: CBOR's own `bytes` values pass straight through
 /// `wire/decode.typ::decode`'s catch-all primitive case before ever
-/// reaching `decode-tagged`'s tag dispatch, so this never runs with
+/// reaching its `decoders` tag dispatch, so this never runs with
 /// `format == "cbor"`.
 /// -> bytes
 #let decode(

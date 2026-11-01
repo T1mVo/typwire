@@ -51,7 +51,10 @@ impl<'de, D: Deserializer<'de>> Deserializer<'de> for LenientDeserializer<D> {
     type Error = D::Error;
 
     fn deserialize_any<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
-        self.0.deserialize_any(visitor)
+        // Wrapped like every other recursion point: a self-describing decode
+        // (`Any`, `OneOfN`'s untagged buffering) can still reach a map or
+        // seq whose nested fields are typed floats.
+        self.0.deserialize_any(Wrap(visitor))
     }
 
     fn deserialize_f32<V: Visitor<'de>>(self, visitor: V) -> Result<V::Value, Self::Error> {
@@ -213,6 +216,11 @@ impl<'de, D: Deserializer<'de>> Deserializer<'de> for LenientDeserializer<D> {
 /// A `Visitor` wrapper that re-applies [`LenientDeserializer`]/[`LenientSeed`]
 /// to whatever nested deserializer, seq/map/enum access cbor4ii's own
 /// visit_* callbacks hand back, then forwards to the real visitor.
+///
+/// Every scalar `visit_*` is forwarded explicitly too: `Visitor`'s defaults
+/// would otherwise reject them (or route them through a different method
+/// than the real visitor expects) once `deserialize_any` hands a `Wrap`
+/// straight to one.
 struct Wrap<V>(V);
 
 impl<'de, V: Visitor<'de>> Visitor<'de> for Wrap<V> {
@@ -224,6 +232,90 @@ impl<'de, V: Visitor<'de>> Visitor<'de> for Wrap<V> {
 
     fn visit_none<E: serde::de::Error>(self) -> Result<Self::Value, E> {
         self.0.visit_none()
+    }
+
+    fn visit_bool<E: serde::de::Error>(self, value: bool) -> Result<Self::Value, E> {
+        self.0.visit_bool(value)
+    }
+
+    fn visit_i8<E: serde::de::Error>(self, value: i8) -> Result<Self::Value, E> {
+        self.0.visit_i8(value)
+    }
+
+    fn visit_i16<E: serde::de::Error>(self, value: i16) -> Result<Self::Value, E> {
+        self.0.visit_i16(value)
+    }
+
+    fn visit_i32<E: serde::de::Error>(self, value: i32) -> Result<Self::Value, E> {
+        self.0.visit_i32(value)
+    }
+
+    fn visit_i64<E: serde::de::Error>(self, value: i64) -> Result<Self::Value, E> {
+        self.0.visit_i64(value)
+    }
+
+    fn visit_i128<E: serde::de::Error>(self, value: i128) -> Result<Self::Value, E> {
+        self.0.visit_i128(value)
+    }
+
+    fn visit_u8<E: serde::de::Error>(self, value: u8) -> Result<Self::Value, E> {
+        self.0.visit_u8(value)
+    }
+
+    fn visit_u16<E: serde::de::Error>(self, value: u16) -> Result<Self::Value, E> {
+        self.0.visit_u16(value)
+    }
+
+    fn visit_u32<E: serde::de::Error>(self, value: u32) -> Result<Self::Value, E> {
+        self.0.visit_u32(value)
+    }
+
+    fn visit_u64<E: serde::de::Error>(self, value: u64) -> Result<Self::Value, E> {
+        self.0.visit_u64(value)
+    }
+
+    fn visit_u128<E: serde::de::Error>(self, value: u128) -> Result<Self::Value, E> {
+        self.0.visit_u128(value)
+    }
+
+    fn visit_f32<E: serde::de::Error>(self, value: f32) -> Result<Self::Value, E> {
+        self.0.visit_f32(value)
+    }
+
+    fn visit_f64<E: serde::de::Error>(self, value: f64) -> Result<Self::Value, E> {
+        self.0.visit_f64(value)
+    }
+
+    fn visit_char<E: serde::de::Error>(self, value: char) -> Result<Self::Value, E> {
+        self.0.visit_char(value)
+    }
+
+    fn visit_str<E: serde::de::Error>(self, value: &str) -> Result<Self::Value, E> {
+        self.0.visit_str(value)
+    }
+
+    fn visit_borrowed_str<E: serde::de::Error>(self, value: &'de str) -> Result<Self::Value, E> {
+        self.0.visit_borrowed_str(value)
+    }
+
+    fn visit_string<E: serde::de::Error>(self, value: String) -> Result<Self::Value, E> {
+        self.0.visit_string(value)
+    }
+
+    fn visit_bytes<E: serde::de::Error>(self, value: &[u8]) -> Result<Self::Value, E> {
+        self.0.visit_bytes(value)
+    }
+
+    fn visit_borrowed_bytes<E: serde::de::Error>(self, value: &'de [u8]) -> Result<Self::Value, E> {
+        self.0.visit_borrowed_bytes(value)
+    }
+
+    fn visit_byte_buf<E: serde::de::Error>(self, value: Vec<u8>) -> Result<Self::Value, E> {
+        self.0.visit_byte_buf(value)
+    }
+
+    fn visit_unit<E: serde::de::Error>(self) -> Result<Self::Value, E> {
+        self.0.visit_unit()
     }
 
     fn visit_some<D: Deserializer<'de>>(self, deserializer: D) -> Result<Self::Value, D::Error> {

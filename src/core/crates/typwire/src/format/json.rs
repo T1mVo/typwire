@@ -1,8 +1,9 @@
 use cbor4ii::core::Value;
 use serde::Serialize;
+use serde::de::DeserializeOwned;
 
 use crate::Typwire;
-use crate::wire::{Error, Format, value_to_owned};
+use crate::wire::{Error, Format};
 
 /// The `json` wire format, backed by `serde_json`.
 ///
@@ -11,13 +12,10 @@ use crate::wire::{Error, Format, value_to_owned};
 /// [`Value::Bytes`] node into the same tagged array shape the Typst side
 /// uses (`src/wire/types/foundations/bytes.typ`) -- `Cbor` needs none of
 /// this, since CBOR has a native byte-string type. `value_from_owned`/
-/// `rewrite_bytes_to_array`/`rewrite_array_to_bytes` below used to live in
-/// `wire.rs`, shared by three formats (JSON, YAML, TOML) back when this
-/// crate supported all of them; now that `Json` is the only one left that
-/// needs this machinery, it lives here instead -- `value_to_owned`
-/// (imported from `wire.rs`) is the one piece that still has to stay
-/// shared, since `Any` (`any.rs`) also calls it directly to reconstruct a
-/// native type, in every build, `Cbor`-only included.
+/// `value_to_owned`/`rewrite_bytes_to_array`/`rewrite_array_to_bytes` below
+/// used to live in `wire.rs`, shared by three formats (JSON, YAML, TOML)
+/// back when this crate supported all of them, and by `Any`, back when it
+/// decoded through a `Value` tree too; `Json` is the only caller left.
 pub struct Json;
 
 impl Format for Json {
@@ -42,6 +40,13 @@ impl Format for Json {
 /// see [`rewrite_bytes_to_array`].
 fn value_from_owned<T: Serialize>(value: &T) -> Result<Value, String> {
     crate::format::to_value(value).map_err(|error| error.to_string())
+}
+
+/// The mirror of [`value_from_owned`]: reconstruct any `Typwire` value
+/// directly from a generic [`Value`] tree -- see
+/// `format/value.rs::from_value`.
+fn value_to_owned<T: DeserializeOwned>(value: Value) -> Result<T, String> {
+    crate::format::from_value(value).map_err(|error| error.to_string())
 }
 
 /// Replace every [`Value::Bytes`] node in `value` with the same tagged

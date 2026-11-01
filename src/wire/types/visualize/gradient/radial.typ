@@ -63,9 +63,9 @@
     typwire-type: type-name,
     stops: stops,
     center: center,
-    radius: radius,
+    radius: radius / 100%,
     focal-center: focal-center,
-    focal-radius: focal-radius,
+    focal-radius: focal-radius / 100%,
     space: space,
   )
 }
@@ -100,8 +100,8 @@
         + str(type(value.center)),
     )
     assert(
-      type(value.radius) == std.ratio,
-      message: "radial.decode: value.radius must be of type ratio, Found "
+      type(value.radius) == std.float,
+      message: "radial.decode: value.radius must be of type float, Found "
         + str(type(value.radius)),
     )
     assert(
@@ -110,8 +110,8 @@
         + str(type(value.focal-center)),
     )
     assert(
-      type(value.focal-radius) == std.ratio,
-      message: "radial.decode: value.focal-radius must be of type ratio, Found "
+      type(value.focal-radius) == std.float,
+      message: "radial.decode: value.focal-radius must be of type float, Found "
         + str(type(value.focal-radius)),
     )
     assert(
@@ -121,15 +121,18 @@
     )
   }
 
-  let stops = value.stops.map(s => stop.decode(s, format: format))
+  let stops = ()
+  for s in value.stops {
+    stops.push(stop.decode(s, format: format))
+  }
   let space = color.color-space(value.space)
 
   gradient.radial(
     ..stops,
     center: center.decode(value.center, format: format),
-    radius: value.radius,
+    radius: value.radius * 100%,
     focal-center: center.decode(value.focal-center, format: format),
-    focal-radius: value.focal-radius,
+    focal-radius: value.focal-radius * 100%,
     space: space,
   )
 }

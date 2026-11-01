@@ -1,6 +1,10 @@
 #![cfg(feature = "regex")]
 
-use serde::{Deserialize, Serialize};
+use std::borrow::Cow;
+
+use serde::{Deserialize, Serialize, Serializer};
+
+use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "regex";
 
@@ -20,8 +24,8 @@ const TYPE_NAME: &str = "regex";
 /// value reaching `Any` without the feature falls through to `Any`'s normal
 /// "unknown typwire-type tag" error instead of a dedicated message -- see
 /// `any.rs`.
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(try_from = "RegexTypst", into = "RegexTypst")]
+#[derive(Clone, Debug, Deserialize)]
+#[serde(try_from = "RegexTypst<'static>")]
 pub struct Regex(regex_lite::Regex);
 
 impl Regex {
@@ -58,34 +62,39 @@ impl Eq for Regex {}
 
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
-struct RegexTypst {
-    typwire_type: String,
-    pattern: String,
+struct RegexTypst<'a> {
+    typwire_type: Tag<Regex>,
+    pattern: Cow<'a, str>,
 }
 
-// Serialize into RegexTypst
-impl From<Regex> for RegexTypst {
-    fn from(value: Regex) -> Self {
+impl Tagged for Regex {
+    const TYPE_NAME: &'static str = TYPE_NAME;
+}
+
+// Serialize through a borrowing RegexTypst -- `#[serde(into = ...)]`
+// would clone the whole value first.
+impl Serialize for Regex {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        RegexTypst::from(self).serialize(serializer)
+    }
+}
+
+impl<'a> From<&'a Regex> for RegexTypst<'a> {
+    fn from(value: &'a Regex) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
-            pattern: value.0.as_str().to_string(),
+            typwire_type: Tag::new(),
+            pattern: Cow::Borrowed(value.0.as_str()),
         }
     }
 }
 
 // Deserialize from RegexTypst
-impl TryFrom<RegexTypst> for Regex {
+impl TryFrom<RegexTypst<'_>> for Regex {
     type Error = String;
 
-    fn try_from(value: RegexTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Regex: {}",
-                value.typwire_type
-            ));
-        }
-
-        Regex::new(&value.pattern).map_err(|error| format!("invalid regex pattern: {error}"))
+    fn try_from(value: RegexTypst<'_>) -> Result<Self, Self::Error> {
+        Regex::new(&value.pattern)
+            .map_err(|error| format!("invalid regex pattern: {error}"))
     }
 }
 
@@ -102,8 +111,8 @@ mod tests {
         let bytes = cbor4ii::serde::to_vec(
             Vec::new(),
             &RegexTypst {
-                typwire_type: TYPE_NAME.to_string(),
-                pattern: "(unclosed".to_string(),
+                typwire_type: Tag::new(),
+                pattern: Cow::Borrowed("(unclosed"),
             },
         )
         .unwrap();

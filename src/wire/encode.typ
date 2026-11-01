@@ -1,4 +1,5 @@
 #import "types/foundations/arguments.typ"
+#import "utils.typ": all-in
 
 // `auto` is a Typst keyword/literal, not an ordinary identifier -- a bare
 // `auto` always evaluates to that literal, so the module must be imported
@@ -27,31 +28,15 @@
 #import "types/visualize/gradient/gradient.typ"
 #import "types/visualize/stroke.typ"
 
-/// Whether `content` is representable as itself on the wire, with no
-/// `typwire-type` tagging: `int`/`float`/`str`/`bool`/`none` are primitive
-/// in both `"cbor"` and `"json"`, the only two formats this crate
-/// supports. `bytes` isn't primitive-or-not here at all -- `bytes-type.
-/// encode` below decides its own shape per format directly, the same way
-/// every other tagged type's own `encode` does.
-/// -> bool
-#let is-primitive(
-  /// `std.type(content)`, already computed by the caller -- accepted
-  /// rather than recomputed here since `encode` (this function's only
-  /// call site) always already has it.
-  /// -> type
-  content-type,
-  /// The content to check.
-  /// -> any
-  content,
-) = {
-  (
-    content-type == std.int
-      or content-type == std.float
-      or content-type == std.str
-      or content-type == std.bool
-      or content == none
-  )
-}
+/// Types that are representable as themselves on the wire, with no
+/// `typwire-type` tagging, in every format.
+#let leaf-types = (std.int, std.float, std.str, std.bool, std.type(none))
+
+/// `leaf-types`, plus `bytes` -- CBOR has a native byte string, so a `bytes`
+/// value is a leaf there. Every other format routes it through
+/// `bytes-type.encode` instead, which decides its shape per format the same
+/// way every other tagged type's own `encode` does.
+#let cbor-leaf-types = leaf-types + (std.bytes,)
 
 /// Recursively turn a Typst value into a plain dictionary/array/primitive
 /// tree: native types become `typwire-type`-tagged dictionaries, everything
@@ -60,6 +45,16 @@
 /// (`cbor.encode`, `json.encode`) -- `format` is threaded through so the
 /// one format-sensitive case (`bytes`) can be resolved in this single
 /// pass, rather than a separate tree-rewrite pass afterward.
+///
+/// Written to make as few closure calls as possible: Typst memoizes every
+/// closure call, which hashes all of its arguments first, so each call
+/// costs time proportional to the size of the subtree it's handed --
+/// measured at ~0.8ms for a single call with a 100,000-element array
+/// argument. Hence leaves are never passed to a recursive call, containers
+/// made only of leaves are returned as-is (checked with native
+/// `map(std.type).dedup()`, no closure per element), iteration uses `for`
+/// rather than `.map(closure)`, and native types whose own `encode` already
+/// returns a finished tree aren't walked a second time.
 /// -> any
 #let encode(
   /// The content to encode.
@@ -69,71 +64,84 @@
   /// -> str
   format: "cbor",
 ) = {
+  let leaves = if format == "cbor" { cbor-leaf-types } else { leaf-types }
   let content-type = std.type(content)
-  let result
 
-  if is-primitive(content-type, content) {
-    result = content
-  } else if content-type == std.bytes {
-    // Not wrapped in a recursive `encode(...)` call like every other
-    // branch below -- `bytes-type.encode` returns the *same* `bytes` value
-    // unchanged under `"cbor"`, so recursing into `encode` on that result
-    // would hit this exact branch again and loop forever. Every other
-    // type's own `encode` always returns a *new* dictionary shape instead,
-    // which is what makes recursing into it there safe and necessary (to
-    // walk that dictionary's own fields).
-    result = bytes-type.encode(content, format: format)
+  if content-type in leaves {
+    content
   } else if content-type == std.array {
-    result = content.map(i => encode(i, format: format))
-  } else if content-type == std.dictionary {
-    result = (:)
-    for (key, value) in content.pairs() {
-      result.insert(key, encode(value, format: format))
+    if all-in(content.map(std.type).dedup(), leaves) {
+      content
+    } else {
+      let result = ()
+      for item in content {
+        result.push(if std.type(item) in leaves { item } else { encode(item, format: format) })
+      }
+      result
     }
+  } else if content-type == std.dictionary {
+    let result = content
+    if not all-in(content.values().map(std.type).dedup(), leaves) {
+      for (key, value) in content {
+        if std.type(value) not in leaves {
+          result.insert(key, encode(value, format: format))
+        }
+      }
+    }
+    result
+  } else if content-type == std.bytes {
+    // Only reached for formats where `bytes` isn't a leaf. Not wrapped in a
+    // recursive `encode(...)` call like the branches below that need one --
+    // `bytes-type.encode` returns `bytes` unchanged for any format that
+    // treats it as a leaf, so recursing into that result could loop forever.
+    bytes-type.encode(content, format: format)
   } else if content == auto {
     // `auto` has no dedicated `std.type`; unlike `none` it isn't part of
     // Typst's own reliable CBOR subset, so it needs a tagged dict like the
     // other native types below, distinguishing it on the wire from `none`.
-    result = encode(auto-value.encode(format: format), format: format)
-  } else if content-type == std.alignment {
-    result = encode(alignment.encode(content, format: format), format: format)
-  } else if content-type == std.angle {
-    result = encode(angle.encode(content, format: format), format: format)
+    auto-value.encode(format: format)
   } else if content-type == std.length {
-    result = encode(length.encode(content, format: format), format: format)
+    length.encode(content, format: format)
   } else if content-type == std.ratio {
-    result = encode(ratio.encode(content, format: format), format: format)
+    ratio.encode(content, format: format)
+  } else if content-type == std.angle {
+    angle.encode(content, format: format)
   } else if content-type == std.color {
-    result = encode(color.encode(content, format: format), format: format)
+    color.encode(content, format: format)
   } else if content-type == std.gradient {
-    result = encode(gradient.encode(content, format: format), format: format)
+    gradient.encode(content, format: format)
   } else if content-type == std.stroke {
-    result = encode(stroke.encode(content, format: format), format: format)
-  } else if content-type == std.datetime {
-    result = encode(datetime.encode(content, format: format), format: format)
-  } else if content-type == std.decimal {
-    result = encode(decimal.encode(content, format: format), format: format)
-  } else if content-type == std.duration {
-    result = encode(duration.encode(content, format: format), format: format)
-  } else if content-type == std.label {
-    result = encode(label.encode(content, format: format), format: format)
-  } else if content-type == std.version {
-    result = encode(version.encode(content, format: format), format: format)
-  } else if content-type == std.type {
-    result = encode(type.encode(content, format: format), format: format)
-  } else if content-type == std.path {
-    result = encode(path.encode(content, format: format), format: format)
-  } else if content-type == std.symbol {
-    result = encode(symbol.encode(content, format: format), format: format)
-  } else if content-type == std.regex {
-    result = encode(regex.encode(content, format: format), format: format)
+    // Every other native type's own `encode` returns a finished tree, made
+    // only of leaves and plain containers. These two instead embed
+    // arbitrary values (a stroke's paint/thickness/dash, an `arguments`'
+    // own arguments) that still need encoding, so their result is walked
+    // once more.
+    encode(stroke.encode(content, format: format), format: format)
   } else if content-type == std.arguments {
-    result = encode(arguments.encode(content, format: format), format: format)
+    encode(arguments.encode(content, format: format), format: format)
+  } else if content-type == std.alignment {
+    alignment.encode(content, format: format)
+  } else if content-type == std.datetime {
+    datetime.encode(content, format: format)
+  } else if content-type == std.decimal {
+    decimal.encode(content, format: format)
+  } else if content-type == std.duration {
+    duration.encode(content, format: format)
+  } else if content-type == std.label {
+    label.encode(content, format: format)
+  } else if content-type == std.version {
+    version.encode(content, format: format)
+  } else if content-type == std.type {
+    type.encode(content, format: format)
+  } else if content-type == std.path {
+    path.encode(content, format: format)
+  } else if content-type == std.symbol {
+    symbol.encode(content, format: format)
+  } else if content-type == std.regex {
+    regex.encode(content, format: format)
   } else if content-type == std.content {
     panic("typwire.encode: content values are not supported")
   } else {
     panic("typwire.encode: unsupported value type " + str(content-type))
   }
-
-  result
 }

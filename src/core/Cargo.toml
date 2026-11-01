@@ -22,9 +22,6 @@ syn = { version = "3.0.4", features = ["full", "visit"] }
 thiserror = "2.0.17"
 wasm-minimal-protocol = "0.1.0"
 
-[workspace.dev-dependencies]
-trybuild = "1.0.114"
-
 # Applies workspace-wide (Cargo has no way to scope `lto` to one package),
 # so a `--release` build of `typwire`/`typwire-macros` for the host is also
 # affected, not just `typwire-tests-plugin`'s wasm build -- worth knowing if

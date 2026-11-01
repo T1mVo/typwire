@@ -1,10 +1,12 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "ratio";
 
 /// A structure representing a ratio from 0 to 1.
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, PartialOrd, Debug)]
-#[serde(try_from = "RatioTypst", into = "RatioTypst")]
+#[serde(from = "RatioTypst", into = "RatioTypst")]
 pub struct Ratio {
     pub ratio: f64,
 }
@@ -46,33 +48,53 @@ impl Ratio {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct RatioTypst {
-    typwire_type: String,
+    typwire_type: Tag<Ratio>,
     ratio: f64,
+}
+
+impl Tagged for Ratio {
+    const TYPE_NAME: &'static str = TYPE_NAME;
 }
 
 // Serialize into RatioTypst
 impl From<Ratio> for RatioTypst {
     fn from(value: Ratio) -> Self {
         RatioTypst {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
             ratio: value.ratio,
         }
     }
 }
 
 // Deserialize from RatioTypst
-impl TryFrom<RatioTypst> for Ratio {
-    type Error = String;
+impl From<RatioTypst> for Ratio {
+    fn from(value: RatioTypst) -> Self {
+        Self::new(value.ratio)
+    }
+}
 
-    fn try_from(value: RatioTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Ratio: {}",
-                value.typwire_type
-            ));
-        }
+/// `#[serde(with = "crate::layout::fraction")]`: a `Ratio` as a bare
+/// fraction (`0.5` for 50%), with no `typwire-type` dictionary around it.
+///
+/// For a field whose enclosing type's own tag already says it's a ratio --
+/// every component of a color, a gradient stop's offset, ... A tagged
+/// dictionary there would only cost wire bytes and a tag check per field.
+pub(crate) mod fraction {
+    use serde::{Deserialize, Deserializer, Serializer};
 
-        Ok(Self::new(value.ratio))
+    use super::Ratio;
+
+    pub(crate) fn serialize<S: Serializer>(
+        ratio: &Ratio,
+        serializer: S,
+    ) -> Result<S::Ok, S::Error> {
+        serializer.serialize_f64(ratio.ratio)
+    }
+
+    pub(crate) fn deserialize<'de, D: Deserializer<'de>>(
+        deserializer: D,
+    ) -> Result<Ratio, D::Error> {
+        f64::deserialize(deserializer).map(Ratio::new)
     }
 }
 

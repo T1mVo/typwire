@@ -43,10 +43,10 @@
 
   (
     typwire-type: type-name,
-    r: r,
-    g: g,
-    b: b,
-    alpha: alpha,
+    r: r / 100%,
+    g: g / 100%,
+    b: b / 100%,
+    alpha: alpha / 100%,
   )
 }
 
@@ -70,26 +70,26 @@
         + value.typwire-type,
     )
     assert(
-      type(value.r) == std.ratio,
-      message: "linear-rgb.decode: value.r must be of type ratio, Found "
+      type(value.r) == std.float,
+      message: "linear-rgb.decode: value.r must be of type float, Found "
         + str(type(value.r)),
     )
     assert(
-      type(value.g) == std.ratio,
-      message: "linear-rgb.decode: value.g must be of type ratio, Found "
+      type(value.g) == std.float,
+      message: "linear-rgb.decode: value.g must be of type float, Found "
         + str(type(value.g)),
     )
     assert(
-      type(value.b) == std.ratio,
-      message: "linear-rgb.decode: value.b must be of type ratio, Found "
+      type(value.b) == std.float,
+      message: "linear-rgb.decode: value.b must be of type float, Found "
         + str(type(value.b)),
     )
     assert(
-      type(value.alpha) == std.ratio,
-      message: "linear-rgb.decode: value.alpha must be of type ratio, Found "
+      type(value.alpha) == std.float,
+      message: "linear-rgb.decode: value.alpha must be of type float, Found "
         + str(type(value.alpha)),
     )
   }
 
-  color.linear-rgb(value.r, value.g, value.b, value.alpha)
+  color.linear-rgb(value.r * 100%, value.g * 100%, value.b * 100%, value.alpha * 100%)
 }

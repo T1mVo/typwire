@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::tag::{Tag, Tagged};
+
 const TYPE_NAME: &str = "duration";
 const SECONDS_IN_MINUTE: f64 = 60.0;
 const MINUTES_IN_HOUR: f64 = 60.0;
@@ -18,7 +20,7 @@ const DAYS_IN_WEEK: f64 = 7.0;
 /// assert_eq!(d.hours(), 1.0);
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
-#[serde(try_from = "DurationTypst", into = "DurationTypst")]
+#[serde(from = "DurationTypst", into = "DurationTypst")]
 pub struct Duration {
     seconds: f64,
 }
@@ -250,35 +252,30 @@ impl DurationBuilder {
 #[derive(Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 struct DurationTypst {
-    typwire_type: String,
+    typwire_type: Tag<Duration>,
     seconds: f64,
+}
+
+impl Tagged for Duration {
+    const TYPE_NAME: &'static str = TYPE_NAME;
 }
 
 // Serialize into DurationTypst
 impl From<Duration> for DurationTypst {
     fn from(value: Duration) -> Self {
         Self {
-            typwire_type: TYPE_NAME.to_string(),
+            typwire_type: Tag::new(),
             seconds: value.seconds,
         }
     }
 }
 
 // Deserialize from DurationTypst
-impl TryFrom<DurationTypst> for Duration {
-    type Error = String;
-
-    fn try_from(value: DurationTypst) -> Result<Self, Self::Error> {
-        if value.typwire_type != TYPE_NAME {
-            return Err(format!(
-                "Invalid typwire-type for Duration: {}",
-                value.typwire_type
-            ));
-        }
-
-        Ok(Self {
+impl From<DurationTypst> for Duration {
+    fn from(value: DurationTypst) -> Self {
+        Self {
             seconds: value.seconds,
-        })
+        }
     }
 }
 

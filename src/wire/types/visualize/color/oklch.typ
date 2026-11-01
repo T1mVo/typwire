@@ -18,7 +18,7 @@
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `oklch` has the same
-  /// tagged-dictionary shape in every format.
+  /// shape in every format.
   /// -> str
   format: "cbor",
 ) = {
@@ -43,10 +43,10 @@
 
   (
     typwire-type: type-name,
-    lightness: lightness,
+    lightness: lightness / 100%,
     chroma: chroma,
-    hue: hue,
-    alpha: alpha,
+    hue: hue.rad(),
+    alpha: alpha / 100%,
   )
 }
 
@@ -70,8 +70,8 @@
         + value.typwire-type,
     )
     assert(
-      type(value.lightness) == std.ratio,
-      message: "oklch.decode: value.lightness must be of type ratio, Found "
+      type(value.lightness) == std.float,
+      message: "oklch.decode: value.lightness must be of type float, Found "
         + str(type(value.lightness)),
     )
     assert(
@@ -80,16 +80,16 @@
         + str(type(value.chroma)),
     )
     assert(
-      type(value.hue) == std.angle,
-      message: "oklch.decode: value.hue must be of type angle, Found "
+      type(value.hue) == std.float,
+      message: "oklch.decode: value.hue must be of type float, Found "
         + str(type(value.hue)),
     )
     assert(
-      type(value.alpha) == std.ratio,
-      message: "oklch.decode: value.alpha must be of type ratio, Found "
+      type(value.alpha) == std.float,
+      message: "oklch.decode: value.alpha must be of type float, Found "
         + str(type(value.alpha)),
     )
   }
 
-  color.oklch(value.lightness, value.chroma, value.hue, value.alpha)
+  color.oklch(value.lightness * 100%, value.chroma, value.hue * 1rad, value.alpha * 100%)
 }

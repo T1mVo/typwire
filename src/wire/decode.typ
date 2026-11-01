@@ -24,79 +24,43 @@
 #import "types/visualize/gradient/gradient.typ"
 #import "types/visualize/stroke.typ"
 
-/// Decode a tagged dictionary by its `typwire-type` tag.
-/// -> any
-#let decode-tagged(
-  /// The `typwire-type` tag read off a dictionary in the tree.
-  /// -> str
-  tag,
-  /// The dictionary itself (already recursively decoded), with `tag`
-  /// still present under its `typwire-type` key.
-  /// -> dictionary
-  value,
-  /// The wire format being decoded from -- one of `"cbor"`, `"json"`.
-  /// Forwarded to every per-type `decode`, though only the `"bytes"` arm
-  /// below actually depends on the tag having been produced by a specific
-  /// format in the first place -- every per-type `decode` ignores it,
-  /// since a tag alone already fully determines how to decode it,
-  /// independent of which format the bytes originally came from.
-  /// -> str
-  format: "cbor",
-) = {
-  if tag == alignment.type-name {
-    alignment.decode(value, format: format)
-  } else if tag == angle.type-name {
-    angle.decode(value, format: format)
-  } else if tag == auto-value.type-name {
-    auto-value.decode(value, format: format)
-  } else if tag == length.type-name {
-    length.decode(value, format: format)
-  } else if tag == ratio.type-name {
-    ratio.decode(value, format: format)
-  } else if tag.starts-with(color.common-type-name) {
-    color.decode(tag, value, format: format)
-  } else if tag.starts-with(gradient.common-type-name) {
-    gradient.decode(tag, value, format: format)
-  } else if tag == stroke.type-name {
-    stroke.decode(value, format: format)
-  } else if tag == datetime.type-name {
-    datetime.decode(value, format: format)
-  } else if tag == decimal.type-name {
-    decimal.decode(value, format: format)
-  } else if tag == duration.type-name {
-    duration.decode(value, format: format)
-  } else if tag == label.type-name {
-    label.decode(value, format: format)
-  } else if tag == version.type-name {
-    version.decode(value, format: format)
-  } else if tag == type.type-name {
-    type.decode(value, format: format)
-  } else if tag == path.type-name {
-    path.decode(value, format: format)
-  } else if tag == symbol.type-name {
-    symbol.decode(value, format: format)
-  } else if tag == regex.type-name {
-    regex.decode(value, format: format)
-  } else if tag == arguments.type-name {
-    arguments.decode(value, format: format)
-  } else if tag == bytes-type.type-name {
-    // `Json` has no native byte-string type, so it tags a `bytes` leaf
-    // with this exact shape while `encode.typ::encode` builds the tree, in
-    // the same pass as everything else; `Cbor` never produces this tag
-    // (its own `bytes` values pass straight through untagged and are
-    // caught by `decode`'s own primitive fallback below, never reaching
-    // this dispatch at all), so this arm simply never triggers on the
-    // CBOR path.
-    bytes-type.decode(value, format: format)
-  } else {
-    panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
-  }
-}
+/// Every tagged type's `decode`, keyed by its `typwire-type` tag. One
+/// dictionary lookup per tagged value instead of an `if`/`else` chain, and
+/// no extra closure layer in between -- see `encode.typ::encode` for why
+/// closure calls are worth avoiding here.
+///
+/// `bytes` is only ever tagged by formats with no native byte string
+/// (`Json`): CBOR's own `bytes` values pass straight through `decode`'s
+/// leaf case, never reaching this table.
+/// -> dictionary
+#let decoders = (
+  (alignment.type-name): alignment.decode,
+  (angle.type-name): angle.decode,
+  (arguments.type-name): arguments.decode,
+  (auto-value.type-name): auto-value.decode,
+  (bytes-type.type-name): bytes-type.decode,
+  (datetime.type-name): datetime.decode,
+  (decimal.type-name): decimal.decode,
+  (duration.type-name): duration.decode,
+  (label.type-name): label.decode,
+  (length.type-name): length.decode,
+  (path.type-name): path.decode,
+  (ratio.type-name): ratio.decode,
+  (regex.type-name): regex.decode,
+  (stroke.type-name): stroke.decode,
+  (symbol.type-name): symbol.decode,
+  (type.type-name): type.decode,
+  (version.type-name): version.decode,
+) + color.decoders + gradient.decoders
 
 /// The mirror of `encode.typ::encode`: recursively reconstruct native
 /// Typst values from a plain dictionary/array/primitive tree. This is the
 /// shared layer every `typwire.<format>.decode` wraps a native format
 /// decoder with (`cbor(...)`, `json(...)`, ...).
+///
+/// Like `encode`, it avoids closure calls wherever it can: only nested
+/// arrays/dictionaries are recursed into, and a container holding none is
+/// returned as-is.
 /// -> any
 #let decode(
   /// A tree produced by `encode`, after a native format decoder has
@@ -104,19 +68,36 @@
   /// -> any
   value,
   /// The wire format being decoded from -- one of `"cbor"`, `"json"`.
-  /// Forwarded to `decode-tagged` and every per-type `decode`; see its
-  /// own doc comment for why almost none of them actually need it.
+  /// Forwarded to every per-type `decode`, though almost none of them
+  /// actually need it: a tag alone already fully determines how to decode
+  /// it, independent of which format the bytes originally came from.
   /// -> str
   format: "cbor",
 ) = {
   let value-type = std.type(value)
 
   if value-type == array {
-    value.map(v => decode(v, format: format))
+    let types = value.map(std.type).dedup()
+    if array in types or dictionary in types {
+      let result = ()
+      for item in value {
+        let item-type = std.type(item)
+        result.push(if item-type == array or item-type == dictionary { decode(item, format: format) } else { item })
+      }
+      result
+    } else {
+      value
+    }
   } else if value-type == dictionary {
-    let decoded = (:)
-    for (key, field) in value.pairs() {
-      decoded.insert(key, decode(field, format: format))
+    let decoded = value
+    let types = value.values().map(std.type).dedup()
+    if array in types or dictionary in types {
+      for (key, field) in value {
+        let field-type = std.type(field)
+        if field-type == array or field-type == dictionary {
+          decoded.insert(key, decode(field, format: format))
+        }
+      }
     }
 
     if "typwire-type" in decoded {
@@ -124,7 +105,12 @@
 
       assert(std.type(tag) == str, message: "typwire.decode: typwire-type must be a string")
 
-      decode-tagged(tag, decoded, format: format)
+      let decoder = decoders.at(tag, default: none)
+      if decoder == none {
+        panic("typwire.decode: unknown typwire-type tag `" + tag + "`")
+      }
+
+      decoder(decoded, format: format)
     } else {
       decoded
     }

@@ -26,8 +26,8 @@
   }
 
   (
-    x: x,
-    y: y,
+    x: x / 100%,
+    y: y / 100%,
   )
 }
 
@@ -44,16 +44,16 @@
 ) = {
   if is-debug-assert {
     assert(
-      type(value.x) == std.ratio,
-      message: "center.decode: value.x must be of type ratio, Found "
+      type(value.x) == std.float,
+      message: "center.decode: value.x must be of type float, Found "
         + str(type(value.x)),
     )
     assert(
-      type(value.y) == std.ratio,
-      message: "center.decode: value.y must be of type ratio, Found "
+      type(value.y) == std.float,
+      message: "center.decode: value.y must be of type float, Found "
         + str(type(value.y)),
     )
   }
 
-  (value.x, value.y)
+  (value.x * 100%, value.y * 100%)
 }
