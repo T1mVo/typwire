@@ -10,24 +10,32 @@
 }
 
 /// Encode a duration into a wire-compatible dictionary.
-///
-/// - duration (duration): A duration.
-/// - format (str): The wire format being encoded for. Unused -- `duration`
-///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(duration, format: "cbor") = {
+#let encode(
+  /// A duration.
+  /// -> duration
+  duration,
+  /// The wire format being encoded for. Unused -- `duration` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   assert(type(duration) == std.duration, message: "duration.encode: duration must be type of duration")
 
   new(duration.seconds())
 }
 
 /// Decode a wire-compatible dictionary into a duration.
-///
-/// - value (dictionary): A dictionary representing the `encode`d duration.
-/// - format (str): The wire format being decoded from. Unused --
-///   `duration` decodes the same way regardless of format.
 /// -> duration
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary representing the `encode`d duration.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `duration` decodes the
+  /// same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   let seconds = int(value.seconds)
   if seconds != value.seconds {
     panic("typwire.decode: Typst cannot reconstruct a duration with fractional seconds")

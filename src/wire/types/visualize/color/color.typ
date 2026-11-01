@@ -11,14 +11,17 @@
 #let common-type-name = "color-"
 
 /// Encode a color into a wire-compatible dictionary.
-///
-/// - color (color): The color to encode.
-/// - format (str): The wire format being encoded for. Forwarded to the
-///   per-color-space `encode`, though none of them currently use it either
-///   -- every color space has the same tagged-dictionary shape in every
-///   format.
 /// -> dictionary
-#let encode(color, format: "cbor") = {
+#let encode(
+  /// The color to encode.
+  /// -> color
+  color,
+  /// The wire format being encoded for. Forwarded to the per-color-space
+  /// `encode`, though none of them currently use it either -- every color
+  /// space has the same tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(color) == std.color,
@@ -51,10 +54,12 @@
 }
 
 /// Map a color space name to its Typst color space.
-///
-/// - name (str): A color space name.
 /// -> function
-#let color-space(name) = {
+#let color-space(
+  /// A color space name.
+  /// -> str
+  name,
+) = {
   if name == "luma" {
     color.luma
   } else if name == "oklab" {
@@ -77,14 +82,20 @@
 }
 
 /// Decode a wire-compatible dictionary into a color.
-///
-/// - tag (string): The typwire-type tag of the encoded color.
-/// - value (dictionary): A dictionary representing the `encode`d value.
-/// - format (str): The wire format being decoded from. Forwarded to the
-///   per-color-space `decode`, though none of them currently use it either
-///   -- every color space decodes the same way regardless of format.
 /// -> color
-#let decode(tag, value, format: "cbor") = {
+#let decode(
+  /// The typwire-type tag of the encoded color.
+  /// -> str
+  tag,
+  /// A dictionary representing the `encode`d value.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Forwarded to the per-color-space
+  /// `decode`, though none of them currently use it either -- every color
+  /// space decodes the same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if tag == luma.type-name {
     luma.decode(value, format: format)
   } else if tag == oklab.type-name {

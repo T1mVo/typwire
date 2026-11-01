@@ -16,21 +16,23 @@
 // `repr`'s exact (undocumented, unstable) formatting for it too.
 #let variant-pattern = regex("\\(\\s*\"([^\"]*)\"\\s*,\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\)")
 
-/// Encode a symbol into a CBOR-compatible dictionary.
-///
-/// A symbol can carry a whole table of named modifier variants (e.g.
-/// `sym.arrow.r` also covers `.double`, `.long`, `.squiggly`, ...). Typst
-/// exposes no way to enumerate them directly from script, but `repr` does
-/// print the full table as Typst source (`symbol("→", ("double", "⇒"),
-/// ...)`), so `variant-pattern` picks the `(modifiers, glyph)` tuples back
-/// out of that text -- parsing a small, well-defined grammar, not `eval`ing
-/// it.
-///
-/// - value (symbol): A symbol.
-/// - format (str): The wire format being encoded for. Unused -- `symbol`
-///   has the same tagged-dictionary shape in every format.
+/// Encode a symbol into a CBOR-compatible dictionary. A symbol can carry a
+/// whole table of named modifier variants (e.g. `sym.arrow.r` also covers
+/// `.double`, `.long`, `.squiggly`, ...); Typst exposes no way to
+/// enumerate them from script, but `repr` prints the full table as Typst
+/// source (`symbol("→", ("double", "⇒"), ...)`), so `variant-pattern`
+/// picks the `(modifiers, glyph)` tuples back out of that text -- parsing
+/// a small, well-defined grammar, not `eval`ing it.
 /// -> dictionary
-#let encode(value, format: "cbor") = {
+#let encode(
+  /// A symbol.
+  /// -> symbol
+  value,
+  /// The wire format being encoded for. Unused -- `symbol` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(type(value) == symbol, message: "symbol.encode: value must be of type symbol")
   }
@@ -62,12 +64,16 @@
 /// restored in the same order `encode` saw them in -- which they always
 /// are, since both `repr` and this decode walk the variant list in the same
 /// order.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- `symbol`
-///   decodes the same way regardless of format.
 /// -> symbol
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `symbol` decodes the
+  /// same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

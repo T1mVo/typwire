@@ -3,15 +3,25 @@
 #let type-name = "color-cmyk"
 
 /// Encode a CMYK color into a wire-compatible dictionary.
-///
-/// - cyan (ratio): The cyan component of the color.
-/// - magenta (ratio): The magenta component of the color.
-/// - yellow (ratio): The yellow component of the color.
-/// - key (ratio): The key (black) component of the color.
-/// - format (str): The wire format being encoded for. Unused -- `cmyk`
-///   has the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(cyan, magenta, yellow, key, format: "cbor") = {
+#let encode(
+  /// The cyan component of the color.
+  /// -> ratio
+  cyan,
+  /// The magenta component of the color.
+  /// -> ratio
+  magenta,
+  /// The yellow component of the color.
+  /// -> ratio
+  yellow,
+  /// The key (black) component of the color.
+  /// -> ratio
+  key,
+  /// The wire format being encoded for. Unused -- `cmyk` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(cyan) == std.ratio,
@@ -41,12 +51,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a CMYK color.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- `cmyk`
-///   decodes the same way regardless of format.
 /// -> color
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `cmyk` decodes the same
+  /// way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

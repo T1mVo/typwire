@@ -1,37 +1,44 @@
 /// Convert a ratio (0% - 100%) to an integer (0 - 255).
-///
-/// - ratio (ratio): A ratio value between 0% and 100%.
 /// -> int
-#let ratio-to-int(ratio) = {
+#let ratio-to-int(
+  /// A ratio value between 0% and 100%.
+  /// -> ratio
+  ratio,
+) = {
   int(255 * calc.clamp(ratio / 100%, 0, 1))
 }
 
 /// Convert a ratio to a float.
-///
-/// - ratio (ratio): A ratio of any value.
 /// -> float
-#let ratio-to-float(ratio) = {
+#let ratio-to-float(
+  /// A ratio of any value.
+  /// -> ratio
+  ratio,
+) = {
   ratio / 100%
 }
 
 /// Convert a float to a ratio.
-///
-/// - float (float): A float value.
 /// -> ratio
-#let float-to-ratio(float) = {
+#let float-to-ratio(
+  /// A float value.
+  /// -> float
+  float,
+) = {
   float * 100%
 }
 
 /// Convert a float to a length.
-///
-/// - float (float): A float value.
 /// -> length
-#let float-to-length(float) = {
+#let float-to-length(
+  /// A float value.
+  /// -> float
+  float,
+) = {
   float * 1pt
 }
 
-/// Check if debug assertions are enabled.
-///
+/// Whether debug assertions are enabled.
 /// -> bool
 #let is-debug-assert = sys.inputs.at("debug-assert", default: false) == "true"
 
@@ -62,10 +69,12 @@
 /// `\n`, `\t`, `\r`, and `\u{...}` (arbitrary codepoint, variable-width hex,
 /// used for any other non-printable character). Pure string manipulation --
 /// deliberately not `eval`, which would execute the content as Typst code.
-///
-/// - content (str): The text between a pair of `repr`-produced quotes.
 /// -> str
-#let unescape-repr-content(content) = {
+#let unescape-repr-content(
+  /// The text between a pair of `repr`-produced quotes.
+  /// -> str
+  content,
+) = {
   content.replace(escape-pattern, m => {
     let hex = m.captures.at(0)
     if hex != none {
@@ -90,8 +99,9 @@
 
 /// Reverse `repr`'s escaping for a full quoted string literal, e.g.
 /// `repr("a\"b")`, quotes included.
-///
 /// -> str
-#let unescape-repr-string(quoted) = {
-  unescape-repr-content(quoted.slice(1, -1))
-}
+#let unescape-repr-string(
+  /// A `repr`-produced quoted string literal.
+  /// -> str
+  quoted,
+) = unescape-repr-content(quoted.slice(1, -1))

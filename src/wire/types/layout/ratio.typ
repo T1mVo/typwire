@@ -3,12 +3,16 @@
 #let type-name = "ratio"
 
 /// Encode a ratio into a wire-compatible float.
-///
-/// - ratio (ratio): A ratio of any value.
-/// - format (str): The wire format being encoded for. Unused -- `ratio`
-///   has the same tagged-dictionary shape in every format.
 /// -> float
-#let encode(ratio, format: "cbor") = {
+#let encode(
+  /// A ratio of any value.
+  /// -> ratio
+  ratio,
+  /// The wire format being encoded for. Unused -- `ratio` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(ratio) == std.ratio,
@@ -23,12 +27,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a ratio.
-///
-/// - value (dictionary): A dictionary representing the `encode`d value.
-/// - format (str): The wire format being decoded from. Unused -- `ratio`
-///   decodes the same way regardless of format.
 /// -> ratio
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary representing the `encode`d value.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `ratio` decodes the
+  /// same way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

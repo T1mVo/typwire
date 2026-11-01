@@ -1,13 +1,19 @@
 #import "../../../utils.typ": is-debug-assert
 
 /// Encode a stop into a wire-compatible dictionary.
-///
-/// - color (color): A color,
-/// - offset (ratio): A ratio value between 0% and 100%.
-/// - format (str): The wire format being encoded for. Unused -- `stop` has
-///   the same untagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(color, offset, format: "cbor") = {
+#let encode(
+  /// A color.
+  /// -> color
+  color,
+  /// A ratio value between 0% and 100%.
+  /// -> ratio
+  offset,
+  /// The wire format being encoded for. Unused -- `stop` has the same
+  /// untagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(color) == std.color,
@@ -26,12 +32,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a stop tuple.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- `stop`
-///   decodes the same way regardless of format.
 /// -> (color, float)
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `stop` decodes the same
+  /// way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(value.color) == std.color,

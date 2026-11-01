@@ -1,8 +1,3 @@
-#import "types/layout/alignment.typ"
-#import "types/layout/angle.typ"
-#import "types/layout/length.typ"
-#import "types/layout/ratio.typ"
-
 #import "types/foundations/arguments.typ"
 
 // `auto` is a Typst keyword/literal, not an ordinary identifier -- a bare
@@ -21,22 +16,33 @@
 #import "types/foundations/symbol.typ"
 #import "types/foundations/type.typ"
 #import "types/foundations/version.typ"
-
+#import "types/layout/alignment.typ"
+#import "types/layout/angle.typ"
+#import "types/layout/length.typ"
+#import "types/layout/ratio.typ"
 #import "types/visualize/color/color.typ"
 #import "types/visualize/gradient/gradient.typ"
 #import "types/visualize/stroke.typ"
 
-/// - tag (str): The `typwire-type` tag read off a dictionary in the tree.
-/// - value (dictionary): The dictionary itself (already recursively
-///   decoded), with `tag` still present under its `typwire-type` key.
-/// - format (str): The wire format being decoded from -- one of `"cbor"`,
-///   `"json"`. Forwarded to every per-type `decode`, though only the
-///   `"bytes"` arm below actually depends on the tag having been produced
-///   by a specific format in the first place -- every per-type `decode`
-///   ignores it, since a tag alone already fully determines how to decode
-///   it, independent of which format the bytes originally came from.
+/// Decode a tagged dictionary by its `typwire-type` tag.
 /// -> any
-#let decode-tagged(tag, value, format: "cbor") = {
+#let decode-tagged(
+  /// The `typwire-type` tag read off a dictionary in the tree.
+  /// -> str
+  tag,
+  /// The dictionary itself (already recursively decoded), with `tag`
+  /// still present under its `typwire-type` key.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from -- one of `"cbor"`, `"json"`.
+  /// Forwarded to every per-type `decode`, though only the `"bytes"` arm
+  /// below actually depends on the tag having been produced by a specific
+  /// format in the first place -- every per-type `decode` ignores it,
+  /// since a tag alone already fully determines how to decode it,
+  /// independent of which format the bytes originally came from.
+  /// -> str
+  format: "cbor",
+) = {
   if tag == alignment.type-name {
     alignment.decode(value, format: format)
   } else if tag == angle.type-name {
@@ -91,14 +97,18 @@
 /// Typst values from a plain dictionary/array/primitive tree. This is the
 /// shared layer every `typwire.<format>.decode` wraps a native format
 /// decoder with (`cbor(...)`, `json(...)`, ...).
-///
-/// - value (any): A tree produced by `encode`, after a native format
-///   decoder has parsed it back out of the wire bytes.
-/// - format (str): The wire format being decoded from -- one of `"cbor"`,
-///   `"json"`. Forwarded to `decode-tagged` and every per-type `decode`;
-///   see its own doc comment for why almost none of them actually need it.
 /// -> any
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A tree produced by `encode`, after a native format decoder has
+  /// parsed it back out of the wire bytes.
+  /// -> any
+  value,
+  /// The wire format being decoded from -- one of `"cbor"`, `"json"`.
+  /// Forwarded to `decode-tagged` and every per-type `decode`; see its
+  /// own doc comment for why almost none of them actually need it.
+  /// -> str
+  format: "cbor",
+) = {
   let value-type = std.type(value)
 
   if value-type == array {

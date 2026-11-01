@@ -3,13 +3,19 @@
 #let type-name = "color-luma"
 
 /// Encode a luma color into a wire-compatible dictionary.
-///
-/// - lightness (ratio): The lightness component of the color.
-/// - alpha (ratio): The alpha (transparency) component of the color.
-/// - format (str): The wire format being encoded for. Unused -- `luma` has
-///   the same tagged-dictionary shape in every format.
 /// -> dictionary
-#let encode(lightness, alpha, format: "cbor") = {
+#let encode(
+  /// The lightness component of the color.
+  /// -> ratio
+  lightness,
+  /// The alpha (transparency) component of the color.
+  /// -> ratio
+  alpha,
+  /// The wire format being encoded for. Unused -- `luma` has the same
+  /// tagged-dictionary shape in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(lightness) == std.ratio,
@@ -29,12 +35,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a luma color.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Unused -- `luma`
-///   decodes the same way regardless of format.
 /// -> color
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Unused -- `luma` decodes the same
+  /// way regardless of format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,

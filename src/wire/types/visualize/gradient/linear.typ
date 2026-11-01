@@ -5,15 +5,23 @@
 #let type-name = "gradient-linear"
 
 /// Encode a linear gradient into a wire-compatible dictionary.
-///
-/// - stops (array): An array of encoded stops.
-/// - angle (angle): The angle of the gradient.
-/// - space (str): The name of the color space.
-/// - format (str): The wire format being encoded for. Unused -- `stops`
-///   and `angle` are already encoded by the caller, and the rest of this
-///   shape is the same in every format.
 /// -> dictionary
-#let encode(stops, angle, space, format: "cbor") = {
+#let encode(
+  /// An array of encoded stops.
+  /// -> array
+  stops,
+  /// The angle of the gradient.
+  /// -> angle
+  angle,
+  /// The name of the color space.
+  /// -> str
+  space,
+  /// The wire format being encoded for. Unused -- `stops` and `angle` are
+  /// already encoded by the caller, and the rest of this shape is the
+  /// same in every format.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       type(stops) == std.array,
@@ -38,12 +46,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a linear gradient.
-///
-/// - value (dictionary): A dictionary produced by `encode`.
-/// - format (str): The wire format being decoded from. Forwarded to each
-///   stop's `decode`, though it doesn't use it either.
 /// -> gradient
-#let decode(value, format: "cbor") = {
+#let decode(
+  /// A dictionary produced by `encode`.
+  /// -> dictionary
+  value,
+  /// The wire format being decoded from. Forwarded to each stop's
+  /// `decode`, though it doesn't use it either.
+  /// -> str
+  format: "cbor",
+) = {
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
