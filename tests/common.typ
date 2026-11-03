@@ -5,7 +5,7 @@
 
 /// The compiled test plugin. Built and placed here by `scripts/test.py`;
 /// running the suite any other way requires building it first.
-#let plugin = plugin("../target/typwire-tests/plugin.wasm")
+#let plugin = plugin("target/plugin.wasm")
 
 /// Assert that `value` survives a Typst -> Rust -> Typst round trip through the
 /// plugin function `func`.
