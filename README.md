@@ -240,8 +240,6 @@ Native primitives (`int`, `float`, `bool`, `str`, `none`, `array`,
 #let shape = (typwire-type: "version", components: (1, 2, 3))
 ```
 
-**Note:** `version` uses `repr()` to determine the component count, whose output is unstable and might change any time. Use this type with caution.
-
 ##### Symbol
 
 ```typ

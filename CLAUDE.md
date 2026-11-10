@@ -751,20 +751,16 @@ upstream's own doc comment.
 `version(1)`, `version(1, 2, 3, 4, 5, 6, 7)`, ... are all valid Typst — there
 is no fixed major/minor/patch/revision/build scheme, confirmed empirically
 against an earlier version of this module that assumed exactly five and
-silently zero-padded anything shorter). `.at(n)` can't reveal how many
-components a value actually has: it returns `0` for any `n` past the real
-end rather than erroring (confirmed: `version(1, 2).at(4)` is `0`), and
-equality is lenient to that same padding (`version(1, 2) ==
-version(1, 2, 0, 0, 0)` is `true`), so neither can distinguish "has 2
-components" from "has 5, with 3 trailing zeros." `repr()` is the one place
-that does: `repr(version(1, 2))` is the literal source `"version(1, 2)"`, so
-`version.typ::component-count` strips the `"version("`/`")"` wrapper and
-counts `", "`-separated entries in what's left (`""` specifically means
-zero, not one empty entry) — text parsing used *only* to get a count, not
-to read the actual values back, per the same "don't trust `repr()` for data,
-only shape" caution `path`/`symbol`/`regex` already follow elsewhere in this
-file; `.at(i)` for `i` in that range then reads the real `i64` components
-directly. `encode`'s debug assertion needed the same `std.version`
+silently zero-padded anything shorter). `.at(n)` can't reveal how many components a value actually has: it returns
+`0` for any `n` past the real end rather than erroring (confirmed:
+`version(1, 2).at(4)` is `0`), and equality is lenient to that same padding
+(`version(1, 2) == version(1, 2, 0, 0, 0)` is `true`), so neither can
+distinguish "has 2 components" from "has 5, with 3 trailing zeros." Casting
+to an array can: `array(version(1, 2))` is `(1, 2)`, exactly the components
+given, so `version.typ::encode` just calls `array(version)` — an earlier
+version counted components by parsing `repr()` output instead, which was
+dropped since `repr()` formatting is unstable and the cast is a documented
+conversion. `encode`'s debug assertion needed the same `std.version`
 qualification `type.typ` already uses for `type` — `version`'s own
 parameter is named `version`, shadowing the builtin the same way, and the
 unqualified form (`type(version) == version`) is a type-vs-value comparison
