@@ -7,8 +7,8 @@ pub use foundations::Decimal;
 #[cfg(feature = "regex")]
 pub use foundations::Regex;
 pub use foundations::{
-    Arguments, Array, Auto, Bool, DateTime, DateTimeBuilder, Dictionary, Duration, DurationBuilder,
-    Float, Int, Label, Path, Str, Symbol, SymbolVariant, Type, Version,
+    Arguments, Array, Auto, Bool, Bytes, DateTime, DateTimeBuilder, Dictionary, Duration,
+    DurationBuilder, Float, Int, Label, Path, Str, Symbol, SymbolVariant, Type, Version,
 };
 pub use layout::{Alignment, Angle, HAlignment, Length, Radius, Ratio, VAlignment};
 pub use one_of::{OneOf2, OneOf3, OneOf4, OneOf5, OneOf6, OneOf7, OneOf8};
@@ -19,7 +19,7 @@ pub use visualize::{
     Paint, RadialGradientBuilder, Rgb, Stop, Stroke, color,
 };
 pub use wasm_minimal_protocol::initiate_protocol;
-pub use wire::{Bytes, Error, Format, Typwire, decode, encode};
+pub use wire::{Error, Format, Typwire, decode, encode};
 
 mod any;
 mod format;
