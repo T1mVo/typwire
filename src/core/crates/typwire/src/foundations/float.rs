@@ -1,10 +1,26 @@
 use serde::{Deserialize, Serialize};
 
-/// A Typst `float`, wrapped as its own named type.
+/// A floating-point number, stored in 64 bits.
 ///
-/// Wire-transparent -- see [`crate::Int`]'s doc comment for what that means
-/// and why. No `Eq`/`Ord`/`Hash`, for the same reason `f64` itself doesn't
-/// have them (`NaN`).
+/// Wire-identical to a bare `f64`; the wrapper only names the Typst type in a
+/// signature.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/float/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Float, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn half(value: Float) -> Result<Float, String> {
+///     Ok(Float::new(*value / 2.0))
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Copy, Default, PartialEq, PartialOrd, Debug)]
 #[serde(transparent)]
 pub struct Float(f64);

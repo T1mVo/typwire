@@ -8,22 +8,28 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "regex";
 
-/// A structure representing a Typst regular expression.
+/// A regular expression.
 ///
-/// Backed by [`regex_lite::Regex`]: decoding a `Regex` off the wire compiles
-/// the pattern immediately, so a malformed pattern fails at decode time
-/// rather than producing a value that silently can't be used as advertised.
-/// `Regex` derefs to `regex_lite::Regex`, so `is_match`/`find`/`captures`/
-/// etc. are all directly available.
+/// Backed by [`regex_lite::Regex`] and derefs to it. The pattern is compiled on
+/// decode, so a malformed one fails there. Only available with the `regex`
+/// feature.
 ///
-/// This whole module -- the type, `Any::Regex`, and every `Typwire`/`From`
-/// impl for it -- only exists when this crate's `regex` feature is enabled.
-/// There's no placeholder type for the disabled case: a plugin that
-/// references `Regex` without the feature gets a compile error, not a value
-/// that builds fine and only fails at wire-decode time. A `regex`-tagged
-/// value reaching `Any` without the feature falls through to `Any`'s normal
-/// "unknown typwire-type tag" error instead of a dedicated message -- see
-/// `any.rs`.
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/regex/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Regex, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn matches(pattern: Regex, text: String) -> Result<bool, String> {
+///     Ok(pattern.is_match(&text))
+/// }
+/// ```
 #[derive(Clone, Debug, Deserialize)]
 #[serde(try_from = "RegexTypst<'static>")]
 pub struct Regex(regex_lite::Regex);
@@ -93,8 +99,7 @@ impl TryFrom<RegexTypst<'_>> for Regex {
     type Error = String;
 
     fn try_from(value: RegexTypst<'_>) -> Result<Self, Self::Error> {
-        Regex::new(&value.pattern)
-            .map_err(|error| format!("invalid regex pattern: {error}"))
+        Regex::new(&value.pattern).map_err(|error| format!("invalid regex pattern: {error}"))
     }
 }
 

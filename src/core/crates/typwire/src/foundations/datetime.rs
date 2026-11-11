@@ -4,16 +4,25 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "datetime";
 
-/// A struct representing a date and time with optional fields.
+/// Represents a date, a time, or a combination of both.
+///
+/// Every field is optional, matching Typst's `datetime` constructor.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/datetime/).
 ///
 /// # Examples
 ///
 /// ```
-/// use typwire::DateTime;
+/// use typwire::{DateTime, initiate_protocol};
 ///
-/// let dt = DateTime::builder().year(2025).month(12).day(3).build();
-/// assert_eq!(dt.year, Some(2025));
-/// assert_eq!(dt.month, Some(12));
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn year(date: DateTime) -> Result<Option<i64>, String> {
+///     Ok(date.year)
+/// }
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Default, Debug)]
 #[serde(from = "DateTimeTypst", into = "DateTimeTypst")]

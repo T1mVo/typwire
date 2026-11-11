@@ -8,16 +8,25 @@ const MINUTES_IN_HOUR: f64 = 60.0;
 const HOURS_IN_DAY: f64 = 24.0;
 const DAYS_IN_WEEK: f64 = 7.0;
 
-/// A structure representing a duration of time in seconds.
+/// Represents a positive or negative span of time.
+///
+/// Stored in seconds.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/duration/).
 ///
 /// # Examples
 ///
 /// ```
-/// use typwire::Duration;
+/// use typwire::{Duration, initiate_protocol};
 ///
-/// let d = Duration::new(3600.0);
-/// assert_eq!(d.seconds(), 3600.0);
-/// assert_eq!(d.hours(), 1.0);
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn minutes(duration: Duration) -> Result<f64, String> {
+///     Ok(duration.minutes())
+/// }
 /// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 #[serde(from = "DurationTypst", into = "DurationTypst")]

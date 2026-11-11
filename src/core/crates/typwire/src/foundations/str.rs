@@ -1,9 +1,26 @@
 use serde::{Deserialize, Serialize};
 
-/// A Typst `str`, wrapped as its own named type.
+/// A sequence of Unicode codepoints.
 ///
-/// Wire-transparent -- see [`crate::Int`]'s doc comment for what that means
-/// and why.
+/// Wire-identical to a bare `String`; the wrapper only names the Typst type in a
+/// signature.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/str/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Str, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn shout(text: Str) -> Result<Str, String> {
+///     Ok(Str::new(text.to_uppercase()))
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[serde(transparent)]
 pub struct Str(String);

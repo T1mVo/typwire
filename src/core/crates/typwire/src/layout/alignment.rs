@@ -4,7 +4,24 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "alignment";
 
-/// Where to align something horizontally.
+/// A horizontal alignment: `start`, `left`, `center`, `right` or `end`.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/layout/alignment/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{HAlignment, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_centered(alignment: HAlignment) -> Result<bool, String> {
+///     Ok(alignment == HAlignment::Center)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum HAlignment {
@@ -15,7 +32,24 @@ pub enum HAlignment {
     End,
 }
 
-/// Where to align something vertically.
+/// A vertical alignment: `top`, `horizon` or `bottom`.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/layout/alignment/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{VAlignment, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_top(alignment: VAlignment) -> Result<bool, String> {
+///     Ok(alignment == VAlignment::Top)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum VAlignment {
@@ -24,10 +58,27 @@ pub enum VAlignment {
     Bottom,
 }
 
-/// A structure representing a Typst 1D or 2D alignment.
+/// Where to align something along an axis: horizontally, vertically, or both,
+/// like `center + horizon`.
 ///
-/// Mirrors Typst's own `Alignment::H`/`V`/`Both`: at least one of `x`/`y` is
-/// always present, enforced on decode.
+/// At least one of `x`/`y` is always present, enforced on decode.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/layout/alignment/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Alignment, HAlignment, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_centered(alignment: Alignment) -> Result<bool, String> {
+///     Ok(alignment.x == Some(HAlignment::Center))
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(try_from = "AlignmentTypst", into = "AlignmentTypst")]
 pub struct Alignment {

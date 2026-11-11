@@ -6,12 +6,27 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "version";
 
-/// A structure representing a Typst version.
+/// A version with an arbitrary number of components.
 ///
-/// Typst's `version(...)` constructor accepts any number of components
-/// (`version()`, `version(1)`, `version(1, 2, 3, 4, 5, 6, 7)`, ... are all
-/// valid) -- there is no fixed major/minor/patch/revision/build scheme, so
-/// `components` is a plain `Vec<i64>` rather than named fields.
+/// `components` keeps exactly the components given: `version(1, 2)` and
+/// `version(1, 2, 0)` stay distinct, even though Typst compares them equal.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/version/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Version, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn major(version: Version) -> Result<i64, String> {
+///     Ok(version.components.first().copied().unwrap_or(0))
+/// }
+/// ```
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(from = "VersionTypst<'static>")]
 pub struct Version {

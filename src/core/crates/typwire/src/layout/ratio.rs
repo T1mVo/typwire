@@ -4,7 +4,26 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "ratio";
 
-/// A structure representing a ratio from 0 to 1.
+/// A ratio of a whole, written in Typst as a number followed by a percent sign.
+///
+/// Stored as a fraction: `0.5` is `50%`.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/layout/ratio/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Ratio, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn percent(ratio: Ratio) -> Result<String, String> {
+///     Ok(ratio.to_percentage())
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, PartialOrd, Debug)]
 #[serde(from = "RatioTypst", into = "RatioTypst")]
 pub struct Ratio {

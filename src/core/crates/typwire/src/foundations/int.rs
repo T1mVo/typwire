@@ -1,14 +1,27 @@
 use serde::{Deserialize, Serialize};
 
-/// A Typst `int`, wrapped as its own named type.
+/// An integer: a positive whole number, a negative whole number, or zero, stored
+/// in 64 bits.
 ///
-/// Wire-transparent: `#[serde(transparent)]` makes this encode/decode
-/// exactly like a bare `i64` -- `i64` is already `Typwire` in its own right
-/// (see `wire.rs`) and stays that way; `Int` exists purely so a plugin's
-/// exported function signature can read `Int` instead of `i64`, matching
-/// Typst's own reference type name. Because the wire shape is identical,
-/// nothing on the Typst side needs to know or care which one a plugin
-/// author chose.
+/// Wire-identical to a bare `i64`; the wrapper only names the Typst type in a
+/// signature.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/int/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Int, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn double(value: Int) -> Result<Int, String> {
+///     Ok(Int::new(*value * 2))
+/// }
+/// ```
 #[derive(
     Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug,
 )]

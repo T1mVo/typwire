@@ -6,24 +6,28 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "decimal";
 
-/// A structure representing a Typst fixed-point decimal number.
+/// A fixed-point decimal number type for precise base-10 arithmetic, such as
+/// currency.
 ///
-/// Backed by [`rust_decimal::Decimal`] -- the same crate Typst's own
-/// `decimal` type wraps internally (confirmed by reading
-/// `typst-library/src/foundations/decimal.rs` upstream: `pub struct
-/// Decimal(rust_decimal::Decimal);`), so this is exactly Typst's own
-/// representation, not an approximation of it. `Decimal` derefs to
-/// `rust_decimal::Decimal`, so its arithmetic methods are all directly
-/// available.
+/// Backed by [`rust_decimal::Decimal`], the same type Typst wraps, and derefs to
+/// it. Only available with the `decimal` feature.
 ///
-/// This whole module -- the type, `Any::Decimal`, and every `Typwire`/
-/// `From` impl for it -- only exists when this crate's `decimal` feature is
-/// enabled. There's no placeholder type for the disabled case: a plugin
-/// that references `Decimal` without the feature gets a compile error, not
-/// a value that builds fine and only fails at wire-decode time. A
-/// `decimal`-tagged value reaching `Any` without the feature falls through
-/// to `Any`'s normal "unknown typwire-type tag" error instead of a
-/// dedicated message -- see `any.rs`.
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/decimal/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Decimal, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_negative(value: Decimal) -> Result<bool, String> {
+///     Ok(value.is_sign_negative())
+/// }
+/// ```
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 #[serde(try_from = "DecimalTypst", into = "DecimalTypst")]
 pub struct Decimal(rust_decimal::Decimal);

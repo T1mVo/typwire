@@ -15,7 +15,24 @@ const TYPE_NAME: &str = "stroke";
 /// other unsupported value does.
 pub type Paint = OneOf2<Color, Gradient>;
 
-/// How the ends of a stroke are rendered.
+/// How the ends of a stroke are rendered: `butt`, `round` or `square`.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/stroke/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{LineCap, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_round(cap: LineCap) -> Result<bool, String> {
+///     Ok(cap == LineCap::Round)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum LineCap {
@@ -24,7 +41,24 @@ pub enum LineCap {
     Square,
 }
 
-/// How sharp turns in a stroke are rendered.
+/// How sharp turns in a stroke are rendered: `miter`, `round` or `bevel`.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/stroke/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{LineJoin, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_round(join: LineJoin) -> Result<bool, String> {
+///     Ok(join == LineJoin::Round)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum LineJoin {
@@ -33,15 +67,28 @@ pub enum LineJoin {
     Bevel,
 }
 
-/// One entry of a stroke's dash array: either a length, or Typst's `"dot"`
-/// marker (a dash the same length as the stroke's own thickness).
+/// One entry of a stroke's dash array: a length, or `"dot"` (a dash as long as
+/// the stroke is thick).
 ///
-/// Not itself a `typwire-type`-tagged native value -- Typst represents a
-/// concrete `.dash` field as a plain dictionary, not a distinct runtime
-/// type (confirmed empirically: `type(stroke(dash: "dashed").dash)` is
-/// `dictionary`, not some dedicated dash-pattern type) -- so this, like
-/// [`DashPattern`], round-trips via ordinary Serde nesting inside
-/// [`Stroke`]'s own tagged dictionary rather than carrying a tag of its own.
+/// Carries no `typwire-type` tag: Typst represents a `.dash` field as a plain
+/// dictionary, so this nests inside [`Stroke`] via ordinary Serde.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/stroke/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{DashLength, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_dot(entry: DashLength) -> Result<bool, String> {
+///     Ok(matches!(entry, DashLength::Dot))
+/// }
+/// ```
 #[derive(Clone, Debug)]
 pub enum DashLength {
     Length(Length),
@@ -82,8 +129,27 @@ impl<'de> Deserialize<'de> for DashLength {
     }
 }
 
-/// A stroke's dash pattern: alternating dash/gap lengths plus a phase
-/// offset. See [`DashLength`] for why this carries no `typwire-type` tag.
+/// A stroke's dash pattern: alternating dash and gap lengths plus a phase
+/// offset.
+///
+/// Untagged, like [`DashLength`].
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/stroke/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{DashPattern, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn segments(pattern: DashPattern) -> Result<i64, String> {
+///     Ok(pattern.array.len() as i64)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashPattern {
@@ -91,12 +157,30 @@ pub struct DashPattern {
     pub phase: Length,
 }
 
-/// A structure representing a Typst line stroke.
+/// Defines how to draw a line: a paint, thickness, line cap, line join, miter
+/// limit and dash pattern.
 ///
-/// Every field is `auto`-able, matching Typst's own `Stroke`: each is
-/// wired to the wire's `Auto` value via `OneOf2<Auto, _>` rather than a
-/// bespoke "smart" wrapper, the same composition `OneOf2`/`OneOf3` already
-/// exist for.
+/// Every field may be `auto`, modeled as `OneOf2<Auto, _>`.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/stroke/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Length, OneOf2, Stroke, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn thickness(stroke: Stroke) -> Result<Option<Length>, String> {
+///     Ok(match stroke.thickness {
+///         OneOf2::First(_) => None,
+///         OneOf2::Second(length) => Some(length),
+///     })
+/// }
+/// ```
 #[derive(Deserialize, Clone, Debug)]
 #[serde(from = "StrokeTypst<'static>")]
 pub struct Stroke {

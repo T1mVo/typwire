@@ -8,10 +8,27 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "arguments";
 
-/// A structure representing Typst's captured `arguments` type.
+/// Captured arguments to a function, either positional or named.
 ///
-/// `pos` and `named` mirror Typst's own `.pos()`/`.named()` split; order is
-/// only meaningful within each group, not between them.
+/// Mirrors Typst's `.pos()`/`.named()` split; order is only kept within each
+/// group.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/arguments/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Arguments, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn count(args: Arguments) -> Result<i64, String> {
+///     Ok((args.pos.len() + args.named.len()) as i64)
+/// }
+/// ```
 #[derive(Deserialize, Clone, Debug)]
 #[serde(from = "ArgumentsTypst<'static>")]
 pub struct Arguments {

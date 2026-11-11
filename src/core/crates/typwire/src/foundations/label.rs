@@ -6,10 +6,26 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "label";
 
-/// A structure representing a Typst label.
+/// A label for an element.
 ///
-/// `name` is the label's resolved name, the same string `str(value)` gives
-/// back in Typst -- there is no `repr()` trick involved, unlike `Path`.
+/// `name` is the same string `str(label)` gives in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/label/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Label, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn name(label: Label) -> Result<String, String> {
+///     Ok(label.name)
+/// }
+/// ```
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[serde(from = "LabelTypst<'static>")]
 pub struct Label {
