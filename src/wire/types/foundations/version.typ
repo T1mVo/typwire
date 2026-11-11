@@ -3,6 +3,7 @@
 #let type-name = "version"
 
 /// Encode a version into a wire-compatible dictionary.
+/// 
 /// -> dictionary
 #let encode(
   /// A version.
@@ -27,13 +28,13 @@
 }
 
 /// Decode a wire-compatible dictionary into a version.
+/// 
 /// -> version
 #let decode(
   /// A dictionary representing the `encode`d value.
   /// -> dictionary
   value,
-  /// The wire format being decoded from. Unused -- `version` decodes the
-  /// same way regardless of format.
+  /// The wire format being decoded from.
   /// -> str
   format: "cbor",
 ) = {

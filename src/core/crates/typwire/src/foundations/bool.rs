@@ -1,9 +1,26 @@
 use serde::{Deserialize, Serialize};
 
-/// A Typst `bool`, wrapped as its own named type.
+/// A type with two states, `true` and `false`.
 ///
-/// Wire-transparent -- see [`crate::Int`]'s doc comment for what that means
-/// and why.
+/// Wire-identical to a bare `bool`; the wrapper only names the Typst type in a
+/// signature.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/bool/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Bool, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn invert(flag: Bool) -> Result<Bool, String> {
+///     Ok(Bool::new(!*flag))
+/// }
+/// ```
 #[derive(
     Serialize, Deserialize, Clone, Copy, Default, PartialEq, Eq, PartialOrd, Ord, Hash, Debug,
 )]

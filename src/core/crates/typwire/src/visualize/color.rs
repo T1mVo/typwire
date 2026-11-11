@@ -97,7 +97,26 @@ pub const LIME: Color = Color::Rgb(Rgb::new(
     Ratio::new(1.0),
 ));
 
-/// A grayscale color with lightness and alpha (transparency).
+/// A color in the grayscale (D65 gray) color space.
+///
+/// The `color.luma` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Luma, Ratio, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn lightness(color: Luma) -> Result<Ratio, String> {
+///     Ok(color.lightness)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Luma {
     /// The lightness component of the color.
@@ -125,7 +144,26 @@ impl Luma {
     }
 }
 
-/// A color in the OKLab color space.
+/// A color in the Oklab color space.
+///
+/// The `color.oklab` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Oklab, Ratio, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn lightness(color: Oklab) -> Result<Ratio, String> {
+///     Ok(color.lightness)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Oklab {
     /// The lightness component of the color.
@@ -166,7 +204,26 @@ impl Oklab {
     }
 }
 
-/// A color in the OKLCH color space.
+/// A color in the Oklch color space.
+///
+/// The `color.oklch` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Oklch, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn chroma(color: Oklch) -> Result<f64, String> {
+///     Ok(color.chroma)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Oklch {
     /// The lightness component of the color.
@@ -209,6 +266,25 @@ impl Oklch {
 }
 
 /// A color in the linear RGB color space.
+///
+/// The `color.linear-rgb` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{LinearRgb, Ratio, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn red(color: LinearRgb) -> Result<Ratio, String> {
+///     Ok(color.r)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct LinearRgb {
     /// The red component of the color.
@@ -246,7 +322,26 @@ impl LinearRgb {
     }
 }
 
-/// A color in the standard RGB color space.
+/// A color in the sRGB color space.
+///
+/// The `color.rgb` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Ratio, Rgb, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn red(color: Rgb) -> Result<Ratio, String> {
+///     Ok(color.r)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Rgb {
     /// The red component of the color.
@@ -284,7 +379,26 @@ impl Rgb {
     }
 }
 
-/// A color in the CMYK color space.
+/// A color in the device CMYK color space.
+///
+/// The `color.cmyk` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Cmyk, Ratio, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn cyan(color: Cmyk) -> Result<Ratio, String> {
+///     Ok(color.cyan)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Cmyk {
     /// The cyan component of the color.
@@ -327,7 +441,26 @@ impl Cmyk {
     }
 }
 
-/// A color in the HSL (Hue, Saturation, Lightness) color space.
+/// A color in the HSL (hue, saturation, lightness) color space.
+///
+/// The `color.hsl` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Hsl, Ratio, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn saturation(color: Hsl) -> Result<Ratio, String> {
+///     Ok(color.saturation)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Hsl {
     /// The hue component of the color.
@@ -370,7 +503,26 @@ impl Hsl {
     }
 }
 
-/// A color in the HSV (Hue, Saturation, Value) color space.
+/// A color in the HSV (hue, saturation, value) color space.
+///
+/// The `color.hsv` constructor in Typst.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Hsv, Ratio, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn value(color: Hsv) -> Result<Ratio, String> {
+///     Ok(color.value)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Hsv {
     /// The hue component of the color.
@@ -413,11 +565,27 @@ impl Hsv {
     }
 }
 
-/// Represents a color in various color spaces.
+/// A color in a specific color space.
 ///
-/// `Serialize` is derived (serde writes an internally tagged enum's tag
-/// first, with no buffering); `Deserialize` is hand-written below, since
-/// the derived one would buffer the whole color before reading its tag.
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/color/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Color, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_rgb(color: Color) -> Result<bool, String> {
+///     Ok(matches!(color, Color::Rgb(_)))
+/// }
+/// ```
+// `Serialize` is derived (serde writes an internally tagged enum's tag
+// first, with no buffering); `Deserialize` is hand-written below, since
+// the derived one would buffer the whole color before reading its tag.
 #[derive(Serialize, Clone, PartialEq, Debug)]
 #[serde(tag = "typwire-type")]
 pub enum Color {

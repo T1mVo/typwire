@@ -8,18 +8,31 @@ use thiserror::Error;
 use crate::tag::next_tag;
 use crate::{Angle, Center, Ratio, Stop};
 
-/// Represents different types of gradients with specific parameters for each type.
+/// A color gradient: linear, radial or conic.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/gradient/).
 ///
 /// # Examples
-/// ```
-/// use typwire::{Angle, Center, ColorSpace, Gradient, Ratio, Stop};
 ///
-/// let linear_gradient = Gradient::linear(vec![], Angle::new(45.0), ColorSpace::Oklab);
 /// ```
+/// use typwire::{Gradient, initiate_protocol};
 ///
-/// Like `Color`, `Serialize` is derived and `Deserialize` is hand-written
-/// below, so decoding dispatches on the tag instead of buffering the whole
-/// gradient first.
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn kind(gradient: Gradient) -> Result<String, String> {
+///     Ok(match gradient {
+///         Gradient::Linear { .. } => "linear".to_owned(),
+///         Gradient::Radial { .. } => "radial".to_owned(),
+///         Gradient::Conic { .. } => "conic".to_owned(),
+///     })
+/// }
+/// ```
+// Like `Color`, `Serialize` is derived and `Deserialize` is hand-written
+// below, so decoding dispatches on the tag instead of buffering the whole
+// gradient first.
 #[derive(Serialize, Clone, Debug)]
 #[serde(tag = "typwire-type", rename_all_fields = "kebab-case")]
 pub enum Gradient {
@@ -353,6 +366,24 @@ impl<'de> Deserialize<'de> for Gradient {
     }
 }
 
+/// The color space a gradient interpolates its stops in.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/visualize/gradient/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{ColorSpace, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn is_oklab(space: ColorSpace) -> Result<bool, String> {
+///     Ok(matches!(space, ColorSpace::Oklab))
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum ColorSpace {

@@ -4,16 +4,25 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "length";
 
-/// A structure representing a length in points.
+/// A size or distance.
+///
+/// Stored in points.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/layout/length/).
 ///
 /// # Examples
 ///
 /// ```
-/// use typwire::Length;
+/// use typwire::{Length, initiate_protocol};
 ///
-/// let length = Length::new(72.0);
-/// assert_eq!(length.pt(), 72.0);
-/// assert_eq!(length.inches(), 1.0);
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn to_mm(length: Length) -> Result<f64, String> {
+///     Ok(length.mm())
+/// }
 /// ```
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(from = "LengthTypst", into = "LengthTypst")]

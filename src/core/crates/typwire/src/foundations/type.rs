@@ -6,7 +6,24 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "type";
 
-/// A structure representing a type defined by a string.
+/// Describes a kind of value, such as `int` or `str`.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/type/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Type, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn type_name(ty: Type) -> Result<String, String> {
+///     Ok(ty.ty)
+/// }
+/// ```
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(from = "TypeTypst<'static>")]
 pub struct Type {

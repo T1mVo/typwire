@@ -4,7 +4,26 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "angle";
 
-/// A structure representing an angle in radians.
+/// An angle describing a rotation.
+///
+/// Stored in radians.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/layout/angle/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Angle, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn degrees(angle: Angle) -> Result<f64, String> {
+///     Ok(angle.deg())
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, PartialEq, PartialOrd, Debug)]
 #[serde(from = "AngleTypst", into = "AngleTypst")]
 pub struct Angle {

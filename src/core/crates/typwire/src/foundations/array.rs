@@ -2,15 +2,27 @@ use serde::{Deserialize, Serialize};
 
 use crate::Typwire;
 
-/// A Typst `array`, wrapped as its own named generic type.
+/// A sequence of values.
 ///
-/// Wire-transparent: `#[serde(transparent)]` makes this encode/decode
-/// exactly like a bare `Vec<T>` -- `Vec<T>` is already `Typwire` for any
-/// `T: Typwire` in its own right (see `wire.rs`) and stays that way;
-/// `Array<T>` exists purely so a plugin's exported function signature can
-/// read `Array<T>` instead of `Vec<T>`, matching Typst's own reference type
-/// name. Because the wire shape is identical, nothing on the Typst side
-/// needs to know or care which one a plugin author chose.
+/// Wire-identical to a bare `Vec<T>`. Typst arrays may mix types; `T` fixes the
+/// element type here.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/array/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Array, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn sum(values: Array<i64>) -> Result<i64, String> {
+///     Ok(values.iter().sum())
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq, Debug)]
 #[serde(transparent)]
 pub struct Array<T>(Vec<T>);

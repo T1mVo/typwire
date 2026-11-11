@@ -6,15 +6,27 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "path";
 
-/// A structure representing a Typst file system path.
+/// A file system path.
 ///
-/// Named to match Typst's own `path` type; shadows [`std::path::Path`] if
-/// both are imported unqualified.
+/// Always the absolute, root-resolved form (leading `/`). Shadows
+/// [`std::path::Path`] if both are imported unqualified.
 ///
-/// Always the absolute, root-resolved form (leading `/`) that Typst's own
-/// `repr()` of a path uses -- that's the only form that's meaningful
-/// independent of which file constructed it, since a relative path string
-/// only means something relative to the file it was written in.
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/path/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Path, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn file_name(path: Path) -> Result<String, String> {
+///     Ok(path.path.rsplit('/').next().unwrap_or_default().to_owned())
+/// }
+/// ```
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(from = "PathTypst<'static>")]
 pub struct Path {

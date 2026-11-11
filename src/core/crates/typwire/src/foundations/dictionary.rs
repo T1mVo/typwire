@@ -4,16 +4,27 @@ use serde::{Deserialize, Serialize};
 
 use crate::Typwire;
 
-/// A Typst `dictionary`, wrapped as its own named generic type.
+/// A map from string keys to values.
 ///
-/// Wire-transparent: `#[serde(transparent)]` makes this encode/decode
-/// exactly like a bare `BTreeMap<String, T>` -- already `Typwire` for any
-/// `T: Typwire` in its own right (see `wire.rs`) and stays that way;
-/// `Dictionary<T>` exists purely so a plugin's exported function signature
-/// can read `Dictionary<T>` instead of `BTreeMap<String, T>`, matching
-/// Typst's own reference type name. Because the wire shape is identical,
-/// nothing on the Typst side needs to know or care which one a plugin
-/// author chose.
+/// Wire-identical to a bare `BTreeMap<String, T>`. Typst dictionaries may mix
+/// value types; `T` fixes the value type here.
+///
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/dictionary/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Dictionary, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn count(entries: Dictionary<i64>) -> Result<i64, String> {
+///     Ok(entries.len() as i64)
+/// }
+/// ```
 #[derive(Serialize, Deserialize, Clone, Default, PartialEq, Debug)]
 #[serde(transparent)]
 pub struct Dictionary<T>(BTreeMap<String, T>);

@@ -6,24 +6,29 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "symbol";
 
-/// A structure representing a Typst Unicode symbol.
+/// A Unicode symbol, optionally with named modifier variants.
 ///
-/// A Typst `symbol` can carry a whole table of named modifier variants
-/// (e.g. `sym.arrow.r` also covers `.double`, `.long`, `.squiggly`, ...).
-/// `default` is the currently selected glyph (what `str`/`Display` on the
-/// Typst value gives); `variants` is every other named modifier variant,
-/// extracted from Typst's `repr` of the symbol (the only place that table
-/// is observable from script at all). Reconstructing a Typst `symbol` value
-/// from this is functionally equivalent to the original -- `str()` and
-/// modifier field access both agree with it -- but is never `==` to a
-/// built-in (`sym.*`/`emoji.*`) original, since those use a different
-/// internal representation in Typst than anything a plugin can construct;
-/// see `src/cbor/types/foundations/symbol.typ`.
+/// `default` is the selected glyph (what `str(symbol)` gives); `variants` holds
+/// the other modifier variants. Glyphs are `String`s because a variant may be
+/// more than one scalar value. A rebuilt symbol is never `==` to a built-in
+/// `sym.*`/`emoji.*` original in Typst.
 ///
-/// Holds `String`s, not `char`s: Typst guarantees a variant's text is
-/// exactly one grapheme cluster, not necessarily one Unicode scalar value
-/// (e.g. some arrow variants are a base character plus a variation
-/// selector).
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/symbol/).
+///
+/// # Examples
+///
+/// ```
+/// use typwire::{Symbol, initiate_protocol};
+///
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn glyph(symbol: Symbol) -> Result<String, String> {
+///     Ok(symbol.default)
+/// }
+/// ```
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(from = "SymbolTypst<'static>")]
 pub struct Symbol {

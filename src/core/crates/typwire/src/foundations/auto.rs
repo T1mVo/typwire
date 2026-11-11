@@ -4,17 +4,27 @@ use crate::tag::{Tag, Tagged};
 
 const TYPE_NAME: &str = "auto";
 
-/// Typst's `auto`: a value that indicates a smart default.
+/// A value that indicates a smart default. The type has exactly one value,
+/// `auto`.
 ///
-/// Distinct from [`Option::None`], which represents the absence of a value;
-/// `auto` instead tells the receiver to pick its own default.
+/// See the [Typst documentation](https://typst.app/docs/reference/foundations/auto/).
 ///
 /// # Examples
 ///
 /// ```
-/// use typwire::Auto;
+/// use typwire::{Auto, Length, OneOf2, initiate_protocol};
 ///
-/// let value = Auto;
+/// # use typwire::{Cbor, __private};
+/// # fn main() {}
+/// initiate_protocol!();
+///
+/// #[typwire::export]
+/// fn describe(width: OneOf2<Auto, Length>) -> Result<String, String> {
+///     Ok(match width {
+///         OneOf2::First(Auto) => "auto".to_owned(),
+///         OneOf2::Second(length) => format!("{}pt", length.pt()),
+///     })
+/// }
 /// ```
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, Eq, Debug)]
 #[serde(from = "AutoTypst", into = "AutoTypst")]
