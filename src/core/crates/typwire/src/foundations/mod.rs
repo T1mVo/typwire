@@ -4,6 +4,7 @@ mod arguments;
 mod array;
 mod auto;
 mod bool;
+mod bytes;
 mod datetime;
 #[cfg(feature = "decimal")]
 mod decimal;
@@ -24,6 +25,7 @@ pub use arguments::Arguments;
 pub use array::Array;
 pub use auto::Auto;
 pub use bool::Bool;
+pub use bytes::Bytes;
 pub use datetime::{DateTime, DateTimeBuilder};
 #[cfg(feature = "decimal")]
 pub use decimal::Decimal;
