@@ -212,6 +212,19 @@ slowdown) — a real factor, alongside the debug/release gap above, in the
 decision to drop both formats entirely (see *Wire formats*) rather than
 keep maintaining them.
 
+## Benchmarks
+
+`benchmarks/` compares typwire (CBOR) against the
+[sertyp](https://typst.app/universe/package/sertyp) package (0.1.5). It has its
+own Cargo workspace with two pass-through wasm plugins (`typwire-plugin` using
+`Any`, `sertyp-plugin` using `Item`), `bench.typ` (one workload per compile,
+chosen with `--input workload=… --input lib=…`) and `run.nu`, which builds both
+plugins, verifies each case round-trips, times them with `hyperfine`, and
+subtracts a `lib=none` payload-construction baseline. Run
+`nu benchmarks/run.nu [--runs N] [workload…]`. sertyp fails the `*-large`/`natives`
+workloads (Typst's loop-iteration limit in its `deserialize`); the runner reports
+those as FAILED rather than aborting.
+
 ## Repository layout note (mid-refactor)
 
 Commit `ff6be1127` ("refactor: change repo layout") moved `src-typst/src/` →
