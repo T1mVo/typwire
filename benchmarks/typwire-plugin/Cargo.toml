@@ -1,0 +1,12 @@
+[package]
+name = "bench-typwire-plugin"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+typwire = { path = "../../src/core/crates/typwire", features = ["decimal", "regex"] }
+serde = { version = "1.0.228", features = ["derive"] }

@@ -441,11 +441,11 @@ via typwire, be aware of the performance overhead that comes with it:
 
 These measurements were taken with medium-sized data, like a gradient with 9 stops. Performance scales directly with the size of the data.
 
-- **~13 ms** to load the plugin. Paid once per compilation, no matter how
+- **~10 ms** to load the plugin. Paid once per compilation, no matter how
   many times it's called afterward.
-- **~2–4 ms** extra for the first call specifically, before per-call cost
+- **~1 ms** extra for the first call specifically, before per-call cost
   settles.
-- **~200–400 μs** per call after that.
+- **~150 μs** per call after that.
 
 If no specific format is desired, or performance matters, use CBOR. JSON is
 measurably slower:
@@ -453,7 +453,26 @@ measurably slower:
 | Format | Relative speed |
 | :-: | :-: |
 | CBOR | 1x (baseline) |
-| JSON | ~1.4x – 1.5x |
+| JSON | ~2.5x |
+
+### Comparison with sertyp
+
+[sertyp](https://typst.app/universe/package/sertyp) solves a similar problem and
+is considerably more feature-rich (for example, it can serialize `content`,
+functions and styles, which typwire deliberately does not). typwire instead
+specializes in performance. Time spent on the plugin round trip, CBOR only:
+
+| Workload | typwire | sertyp | Speedup |
+| :- | -: | -: | -: |
+| 6000 integers | ~14 ms | ~943 ms | ~66x |
+| 1000 small dictionaries | ~26 ms | ~372 ms | ~14x |
+| 300 calls, one gradient each | ~54 ms | ~993 ms | ~18x |
+| 40 kB of bytes | ~9 ms | ~19 ms | ~2x |
+
+sertyp also fails on larger payloads (a few thousand nodes) because its
+deserializer hits Typst's loop-iteration limit. See the full
+[benchmark results](benchmarks/RESULT.md) for more workloads and how they were
+measured.
 
 ## Version compatibility
 

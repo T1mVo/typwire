@@ -1,0 +1,12 @@
+[package]
+name = "bench-sertyp-plugin"
+version = "0.0.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+wasm-minimal-protocol = "0.2.0"
+sertyp = "=0.1.5"
