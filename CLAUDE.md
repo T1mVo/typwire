@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `typwire` is a two-sided library for typed, Serde-backed data exchange across the
 Typst ⇆ WASM-plugin boundary. It ships as **two coordinated packages that must
-stay version-locked** (`0.3.0` today, set in both `typst.toml` and every
+stay version-locked** (`0.2.0` today, set in both `typst.toml` and every
 `Cargo.toml`):
 
 - a **Typst package** (`src/lib.typ` + `src/wire/` + `src/format/`) that

@@ -445,7 +445,7 @@ dependencies = [
 
 [[package]]
 name = "typwire"
-version = "0.3.0"
+version = "0.2.0"
 dependencies = [
  "cbor4ii",
  "regex-lite",
@@ -459,7 +459,7 @@ dependencies = [
 
 [[package]]
 name = "typwire-macros"
-version = "0.3.0"
+version = "0.2.0"
 dependencies = [
  "proc-macro-crate",
  "proc-macro2",
@@ -469,7 +469,7 @@ dependencies = [
 
 [[package]]
 name = "typwire-tests-plugin"
-version = "0.3.0"
+version = "0.2.0"
 dependencies = [
  "serde",
  "talc",

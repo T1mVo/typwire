@@ -60,7 +60,7 @@ fn measure(
 Call it from Typst with separately encoded positional arguments:
 
 ```typ
-#import "@preview/typwire:0.3.0"
+#import "@preview/typwire:0.2.0"
 
 #let plugin = plugin("plugin.wasm")
 #let report = typwire.call(
