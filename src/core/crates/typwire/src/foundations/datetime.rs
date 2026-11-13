@@ -27,11 +27,17 @@ const TYPE_NAME: &str = "datetime";
 #[derive(Serialize, Deserialize, Clone, PartialEq, Default, Debug)]
 #[serde(from = "DateTimeTypst", into = "DateTimeTypst")]
 pub struct DateTime {
+    /// The year, if the date component is present.
     pub year: Option<i64>,
+    /// The month (1-12), if the date component is present.
     pub month: Option<i64>,
+    /// The day of the month (1-31), if the date component is present.
     pub day: Option<i64>,
+    /// The hour (0-23), if the time component is present.
     pub hour: Option<i64>,
+    /// The minute (0-59), if the time component is present.
     pub minute: Option<i64>,
+    /// The second (0-59), if the time component is present.
     pub second: Option<i64>,
 }
 
@@ -58,6 +64,7 @@ impl DateTime {
     }
 }
 
+/// A builder for [`DateTime`], created with [`DateTime::builder`].
 pub struct DateTimeBuilder {
     year: Option<i64>,
     month: Option<i64>,

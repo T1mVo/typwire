@@ -32,7 +32,9 @@ const TYPE_NAME: &str = "symbol";
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(from = "SymbolTypst<'static>")]
 pub struct Symbol {
+    /// The symbol's glyph when no modifiers are applied.
     pub default: String,
+    /// The modifier variants, in the order Typst lists them.
     pub variants: Vec<SymbolVariant>,
 }
 

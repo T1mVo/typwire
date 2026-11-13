@@ -30,6 +30,7 @@ const TYPE_NAME: &str = "path";
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(from = "PathTypst<'static>")]
 pub struct Path {
+    /// The path as a string.
     pub path: String,
 }
 

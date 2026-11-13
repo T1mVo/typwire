@@ -25,10 +25,15 @@ const TYPE_NAME: &str = "alignment";
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum HAlignment {
+    /// The start of the text direction.
     Start,
+    /// The left edge.
     Left,
+    /// The horizontal center.
     Center,
+    /// The right edge.
     Right,
+    /// The end of the text direction.
     End,
 }
 
@@ -53,8 +58,11 @@ pub enum HAlignment {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum VAlignment {
+    /// The top edge.
     Top,
+    /// The vertical center.
     Horizon,
+    /// The bottom edge.
     Bottom,
 }
 
@@ -82,7 +90,9 @@ pub enum VAlignment {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(try_from = "AlignmentTypst", into = "AlignmentTypst")]
 pub struct Alignment {
+    /// The horizontal component, if any.
     pub x: Option<HAlignment>,
+    /// The vertical component, if any.
     pub y: Option<VAlignment>,
 }
 

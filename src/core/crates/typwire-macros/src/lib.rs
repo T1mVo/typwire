@@ -1,3 +1,9 @@
+//! Procedural macros for [`typwire`](https://docs.rs/typwire).
+//!
+//! This crate is re-exported by `typwire`, which is the crate to depend on:
+//! use `#[typwire::export]` to expose a function to the host and
+//! `#[derive(Typwire)]` to allow a type to cross the boundary.
+
 use std::collections::hash_map::DefaultHasher;
 use std::hash::{Hash, Hasher};
 
@@ -12,6 +18,9 @@ use syn::{
     TypeReference, parse_macro_input,
 };
 
+/// Mark a type as allowed to cross the Typwire boundary.
+///
+/// The type must also implement `Serialize` and `Deserialize`.
 #[proc_macro_derive(Typwire)]
 pub fn derive_typwire(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as syn::DeriveInput);

@@ -16,8 +16,10 @@ pub trait Typwire: Serialize + DeserializeOwned {}
 /// An error raised while encoding or decoding a supported wire format.
 #[derive(Debug, Error, PartialEq, Eq)]
 pub enum Error {
+    /// The value could not be serialized into the target format.
     #[error("could not serialize value: {0}")]
     Serialization(String),
+    /// The bytes could not be deserialized into the requested type.
     #[error("could not deserialize value: {0}")]
     Deserialization(String),
 }
@@ -29,7 +31,9 @@ pub enum Error {
 /// [`decode`] (this module's free functions) always mean `Cbor`
 /// (`crate::format::Cbor`), matching Typst's own `typwire.call` default.
 pub trait Format {
+    /// Encode `value` into this format's bytes.
     fn encode<T: Typwire>(value: &T) -> Result<Vec<u8>, Error>;
+    /// Decode `bytes` produced by this format into a `T`.
     fn decode<T: Typwire>(bytes: &[u8]) -> Result<T, Error>;
 }
 

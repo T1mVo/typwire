@@ -36,36 +36,52 @@ use crate::{Angle, Center, Ratio, Stop};
 #[derive(Serialize, Clone, Debug)]
 #[serde(tag = "typwire-type", rename_all_fields = "kebab-case")]
 pub enum Gradient {
+    /// A gradient that changes along a straight line.
     #[serde(rename = "gradient-linear")]
     Linear {
+        /// The color stops, in order along the gradient.
         #[serde(with = "compact::stops")]
         stops: Vec<Stop>,
+        /// The direction of the gradient.
         #[serde(with = "crate::layout::radians")]
         angle: Angle,
+        /// The color space the stops are interpolated in.
         space: ColorSpace,
     },
+    /// A gradient that radiates outward from a center.
     #[serde(rename = "gradient-radial")]
     Radial {
+        /// The color stops, in order along the gradient.
         #[serde(with = "compact::stops")]
         stops: Vec<Stop>,
+        /// The center of the gradient.
         #[serde(with = "compact::center")]
         center: Center,
+        /// The radius of the end circle, as a ratio.
         #[serde(with = "crate::layout::fraction")]
         radius: Ratio,
+        /// The center of the focal circle the gradient starts from.
         #[serde(with = "compact::center")]
         focal_center: Center,
+        /// The radius of the focal circle, as a ratio.
         #[serde(with = "crate::layout::fraction")]
         focal_radius: Ratio,
+        /// The color space the stops are interpolated in.
         space: ColorSpace,
     },
+    /// A gradient that sweeps around a center point.
     #[serde(rename = "gradient-conic")]
     Conic {
+        /// The color stops, in order along the gradient.
         #[serde(with = "compact::stops")]
         stops: Vec<Stop>,
+        /// The direction of the gradient.
         #[serde(with = "crate::layout::radians")]
         angle: Angle,
+        /// The center of the gradient.
         #[serde(with = "compact::center")]
         center: Center,
+        /// The color space the stops are interpolated in.
         space: ColorSpace,
     },
 }
@@ -387,14 +403,22 @@ impl<'de> Deserialize<'de> for Gradient {
 #[derive(Serialize, Deserialize, Clone, Default, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub enum ColorSpace {
+    /// Grayscale.
     Luma,
+    /// Oklab, the perceptual color space Typst interpolates in by default.
     #[default]
     Oklab,
+    /// Oklch, the polar form of Oklab.
     Oklch,
+    /// Linear-light sRGB.
     LinearRgb,
+    /// Standard sRGB.
     Rgb,
+    /// Subtractive cyan, magenta, yellow and key (black).
     Cmyk,
+    /// Hue, saturation and lightness.
     Hsl,
+    /// Hue, saturation and value.
     Hsv,
 }
 

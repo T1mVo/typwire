@@ -7,89 +7,107 @@ use serde::{Deserialize, Deserializer, Serialize};
 use crate::tag::next_tag;
 use crate::{Angle, Gradient, Ratio};
 
+/// Typst's predefined `color.black` (`#000000`).
 pub const BLACK: Color = Color::Luma(Luma::new(Ratio::new(0.0), Ratio::new(1.0)));
+/// Typst's predefined `color.gray` (`#aaaaaa`).
 pub const GRAY: Color = Color::Luma(Luma::new(Ratio::new(170.0 / 255.0), Ratio::new(1.0)));
+/// Typst's predefined `color.silver` (`#dddddd`).
 pub const SILVER: Color = Color::Luma(Luma::new(Ratio::new(221.0 / 255.0), Ratio::new(1.0)));
+/// Typst's predefined `color.white` (`#ffffff`).
 pub const WHITE: Color = Color::Luma(Luma::new(Ratio::new(1.0), Ratio::new(1.0)));
 
+/// Typst's predefined `color.navy` (`#001f3f`).
 pub const NAVY: Color = Color::Rgb(Rgb::new(
     Ratio::new(0.0),
     Ratio::new(31.0 / 255.0),
     Ratio::new(63.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.blue` (`#0074d9`).
 pub const BLUE: Color = Color::Rgb(Rgb::new(
     Ratio::new(0.0),
     Ratio::new(116.0 / 255.0),
     Ratio::new(217.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.aqua` (`#7fdbff`).
 pub const AQUA: Color = Color::Rgb(Rgb::new(
     Ratio::new(127.0 / 255.0),
     Ratio::new(219.0 / 255.0),
     Ratio::new(1.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.teal` (`#39cccc`).
 pub const TEAL: Color = Color::Rgb(Rgb::new(
     Ratio::new(57.0 / 255.0),
     Ratio::new(204.0 / 255.0),
     Ratio::new(204.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.eastern` (`#239dad`).
 pub const EASTERN: Color = Color::Rgb(Rgb::new(
     Ratio::new(35.0 / 255.0),
     Ratio::new(157.0 / 255.0),
     Ratio::new(173.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.purple` (`#b10dc9`).
 pub const PURPLE: Color = Color::Rgb(Rgb::new(
     Ratio::new(177.0 / 255.0),
     Ratio::new(13.0 / 255.0),
     Ratio::new(201.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.fuchsia` (`#f012be`).
 pub const FUCHSIA: Color = Color::Rgb(Rgb::new(
     Ratio::new(240.0 / 255.0),
     Ratio::new(18.0 / 255.0),
     Ratio::new(190.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.maroon` (`#85144b`).
 pub const MAROON: Color = Color::Rgb(Rgb::new(
     Ratio::new(133.0 / 255.0),
     Ratio::new(20.0 / 255.0),
     Ratio::new(75.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.red` (`#ff4136`).
 pub const RED: Color = Color::Rgb(Rgb::new(
     Ratio::new(1.0),
     Ratio::new(65.0 / 255.0),
     Ratio::new(54.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.orange` (`#ff851b`).
 pub const ORANGE: Color = Color::Rgb(Rgb::new(
     Ratio::new(1.0),
     Ratio::new(133.0 / 255.0),
     Ratio::new(27.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.yellow` (`#ffdc00`).
 pub const YELLOW: Color = Color::Rgb(Rgb::new(
     Ratio::new(1.0),
     Ratio::new(220.0 / 255.0),
     Ratio::new(0.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.olive` (`#3d9970`).
 pub const OLIVE: Color = Color::Rgb(Rgb::new(
     Ratio::new(61.0 / 255.0),
     Ratio::new(153.0 / 255.0),
     Ratio::new(112.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.green` (`#2ecc40`).
 pub const GREEN: Color = Color::Rgb(Rgb::new(
     Ratio::new(46.0 / 255.0),
     Ratio::new(204.0 / 255.0),
     Ratio::new(64.0 / 255.0),
     Ratio::new(1.0),
 ));
+/// Typst's predefined `color.lime` (`#01ff70`).
 pub const LIME: Color = Color::Rgb(Rgb::new(
     Ratio::new(1.0 / 255.0),
     Ratio::new(1.0),

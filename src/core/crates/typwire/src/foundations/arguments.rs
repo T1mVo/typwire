@@ -32,7 +32,9 @@ const TYPE_NAME: &str = "arguments";
 #[derive(Deserialize, Clone, Debug)]
 #[serde(from = "ArgumentsTypst<'static>")]
 pub struct Arguments {
+    /// The positional arguments, in order.
     pub pos: Vec<Any>,
+    /// The named arguments, by name.
     pub named: BTreeMap<String, Any>,
 }
 

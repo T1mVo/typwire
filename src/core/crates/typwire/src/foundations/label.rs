@@ -29,6 +29,7 @@ const TYPE_NAME: &str = "label";
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Hash, Debug)]
 #[serde(from = "LabelTypst<'static>")]
 pub struct Label {
+    /// The label's name, without the surrounding `<` and `>`.
     pub name: String,
 }
 
