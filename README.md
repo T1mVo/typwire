@@ -15,7 +15,7 @@ cargo add typwire
 Add the Typst package to a document:
 
 ```typ
-#import "@preview/typwire:0.3.0"
+#import "@preview/typwire:0.2.0"
 ```
 
 ## Quick Start
@@ -36,7 +36,7 @@ fn measure(label: String, scale: f64) -> Result<(String, Length), String> {
 Call the plugin function from Typst:
 
 ```typ
-#import "@preview/typwire:0.3.0"
+#import "@preview/typwire:0.2.0"
 
 #let plugin = plugin("plugin.wasm")
 #let (text, width) = typwire.call(plugin.measure, "Value: ", 1.5)
