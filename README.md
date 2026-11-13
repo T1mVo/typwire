@@ -268,6 +268,51 @@ Useful for inspecting or testing the wire shape Typwire produces without going t
 
 </details>
 
+## Performance
+
+If you're considering moving a pure-Typst implementation to a WASM plugin
+via typwire, be aware of the performance overhead that comes with it:
+
+These measurements were taken with medium-sized data, like a gradient with 9 stops. Performance scales directly with the size of the data.
+
+- **~10 ms** to load the plugin. Paid once per compilation, no matter how
+  many times it's called afterward.
+- **~1 ms** extra for the first call specifically, before per-call cost
+  settles.
+- **~150 μs** per call after that.
+
+If no specific format is desired, or performance matters, use CBOR. JSON is
+measurably slower:
+
+| Format | Relative speed |
+| :-: | :-: |
+| CBOR | 1x (baseline) |
+| JSON | ~2.5x |
+
+### Comparison with sertyp
+
+[sertyp](https://typst.app/universe/package/sertyp) solves a similar problem and
+is considerably more feature-rich (for example, it can serialize `content`,
+functions and styles, which typwire deliberately does not). typwire instead
+specializes in performance. Time spent on the plugin round trip, CBOR only:
+
+| Workload | typwire | sertyp | Speedup |
+| :- | -: | -: | -: |
+| 6000 integers | ~14 ms | ~943 ms | ~66x |
+| 1000 small dictionaries | ~26 ms | ~372 ms | ~14x |
+| 300 calls, one gradient each | ~54 ms | ~993 ms | ~18x |
+| 40 kB of bytes | ~9 ms | ~19 ms | ~2x |
+
+sertyp also fails on larger payloads (a few thousand nodes) because its
+deserializer hits Typst's loop-iteration limit. See the full
+[benchmark results](benchmarks/RESULT.md) for more workloads and how they were
+measured.
+
+## Version compatibility
+
+The Rust crate and the Typst package are versioned together and must be on
+the **exact same version**. There is no compatibility guarantee across a version mismatch.
+
 ## Wire shapes
 
 The actual Typst dictionary each tagged type above round-trips as: The
@@ -500,51 +545,6 @@ this type with caution. Requires the `regex` feature on the Rust side.
   miter-limit: 4.0,
 )
 ```
-
-## Performance
-
-If you're considering moving a pure-Typst implementation to a WASM plugin
-via typwire, be aware of the performance overhead that comes with it:
-
-These measurements were taken with medium-sized data, like a gradient with 9 stops. Performance scales directly with the size of the data.
-
-- **~10 ms** to load the plugin. Paid once per compilation, no matter how
-  many times it's called afterward.
-- **~1 ms** extra for the first call specifically, before per-call cost
-  settles.
-- **~150 μs** per call after that.
-
-If no specific format is desired, or performance matters, use CBOR. JSON is
-measurably slower:
-
-| Format | Relative speed |
-| :-: | :-: |
-| CBOR | 1x (baseline) |
-| JSON | ~2.5x |
-
-### Comparison with sertyp
-
-[sertyp](https://typst.app/universe/package/sertyp) solves a similar problem and
-is considerably more feature-rich (for example, it can serialize `content`,
-functions and styles, which typwire deliberately does not). typwire instead
-specializes in performance. Time spent on the plugin round trip, CBOR only:
-
-| Workload | typwire | sertyp | Speedup |
-| :- | -: | -: | -: |
-| 6000 integers | ~14 ms | ~943 ms | ~66x |
-| 1000 small dictionaries | ~26 ms | ~372 ms | ~14x |
-| 300 calls, one gradient each | ~54 ms | ~993 ms | ~18x |
-| 40 kB of bytes | ~9 ms | ~19 ms | ~2x |
-
-sertyp also fails on larger payloads (a few thousand nodes) because its
-deserializer hits Typst's loop-iteration limit. See the full
-[benchmark results](benchmarks/RESULT.md) for more workloads and how they were
-measured.
-
-## Version compatibility
-
-The Rust crate and the Typst package are versioned together and must be on
-the **exact same version**. There is no compatibility guarantee across a version mismatch.
 
 ## License
 
