@@ -47,13 +47,16 @@
 }
 
 /// Encode a datetime into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// A datetime.
+  ///
   /// -> datetime
   datetime,
   /// The wire format being encoded for. Unused -- `datetime` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -75,13 +78,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a datetime.
+///
 /// -> datetime
 #let decode(
   /// A dictionary representing the `encode`d value.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `datetime` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

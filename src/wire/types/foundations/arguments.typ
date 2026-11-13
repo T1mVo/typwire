@@ -3,13 +3,16 @@
 #let type-name = "arguments"
 
 /// Encode captured arguments into a CBOR-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// Captured arguments.
+  ///
   /// -> arguments
   value,
   /// The wire format being encoded for. Unused -- `arguments` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -28,13 +31,16 @@
 }
 
 /// Decode a CBOR-compatible dictionary into captured arguments.
+///
 /// -> arguments
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `arguments` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

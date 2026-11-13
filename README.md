@@ -50,24 +50,65 @@ Call the plugin function from Typst:
 ### `typwire`
 
 ```typ
-/// Calls a plugin function: encodes each positional argument
-/// independently, invokes the export, and decodes its single return
-/// value. Named arguments are not supported.
+/// Call a typed Typwire plugin function with positional arguments, using
+/// the given wire format -- the plugin export and the call site must agree
+/// on the same one.
+///
+/// Each argument is encoded independently and the returned bytes are
+/// decoded.
+///
 /// -> any
-#let call(function, ..args, format: "cbor") = { /* .. */ }
+#let call(
+  /// The plugin function to call.
+  ///
+  /// -> function
+  function,
+  /// Positional arguments to encode and pass.
+  ///
+  /// -> any
+  ..args,
+  /// The wire format to call with -- one of `"cbor"` (the default,
+  /// matching `#[typwire::export]`'s own default), `"json"`.
+  ///
+  /// -> str
+  format: "cbor",
+) = { /* .. */ }
 ```
 
 ```typ
-/// Encodes a value into the given format's bytes/string.
-/// -> bytes, str
-#let encode(value, format: "cbor") = { /* .. */ }
+/// Encode a Typst value into a wire format's bytes/string.
+///
+/// -> bytes | str
+#let encode(
+  /// The value to encode.
+  ///
+  /// -> any
+  value,
+  /// The wire format to encode into -- one of `"cbor"` (the default,
+  /// matching `#[typwire::export]`'s own default), `"json"`. Use
+  /// `typwire.debug.encode` instead to inspect the shared tree with no
+  /// serialization at all.
+  ///
+  /// -> str
+  format: "cbor",
+) = { /* .. */ }
 ```
 
 ```typ
-/// Decodes the given format's bytes/string and reconstructs supported
-/// native Typst values.
+/// The mirror of `encode`: decode a wire format's bytes/string and
+/// reconstruct supported native Typst values.
+///
 /// -> any
-#let decode(data, format: "cbor") = { /* .. */ }
+#let decode(
+  /// The encoded Typwire value.
+  ///
+  /// -> bytes | str
+  data,
+  /// The wire format `data` was encoded with -- must match.
+  ///
+  /// -> str
+  format: "cbor",
+) = { /* .. */ }
 ```
 
 ### `typwire.debug`
@@ -75,37 +116,94 @@ Call the plugin function from Typst:
 Useful for inspecting or testing the wire shape Typwire produces without going through an actual format or a plugin round trip.
 
 ```typ
-/// Encodes a value into the shared tree, with no serialization.
+/// Encode a value into the shared dictionary/array/primitive tree
+/// `typwire.<format>.encode` would otherwise hand to a native format
+/// encoder -- with no serialization step applied, so the result is a plain
+/// Typst value, not `bytes`/`str`. Useful for inspecting or testing the
+/// wire shape Typwire produces without a plugin round trip.
+///
+/// `bytes` is the one part of this tree that's still format-sensitive
+/// (CBOR keeps it native; JSON tags it), so `format` picks which format's
+/// tagging rules to preview -- it's otherwise unrelated to serialization,
+/// which this namespace never does.
+///
 /// -> any
-#let encode(value, format: "cbor") = { /* .. */ }
+#let encode(
+  /// The value to encode.
+  ///
+  /// -> any
+  value,
+  /// Which format's tagging rules to preview for `bytes`. One of `"cbor"`,
+  /// `"json"`.
+  ///
+  /// -> str
+  format: "cbor",
+) = { /* .. */ }
 ```
 
 ```typ
-/// The mirror of `encode`: reconstructs native Typst values from a tree
-/// that was never serialized.
+/// The mirror of `encode`: reconstruct native Typst values from a tree that
+/// was never serialized, such as one produced by `encode` above.
+///
 /// -> any
-#let decode(data, format: "cbor") = { /* .. */ }
+#let decode(
+  /// A dictionary/array/primitive tree, as produced by `encode`.
+  ///
+  /// -> any
+  data,
+  /// The format `data`'s tree was produced for -- must match whatever
+  /// `encode` (or a real `typwire.<format>.encode`) used to build it, so
+  /// `bytes` tags are resolved the same way they were tagged.
+  ///
+  /// -> str
+  format: "cbor",
+) = { /* .. */ }
 ```
 
 <details>
 <summary><code>typwire.cbor</code></summary>
 
 ```typ
-/// Encodes a value into CBOR bytes.
+/// Encode a value into CBOR bytes.
+///
 /// -> bytes
-#let encode(value) = { /* .. */ }
+#let encode(
+  /// The value to encode.
+  ///
+  /// -> any
+  value,
+) = { /* .. */ }
 ```
 
 ```typ
-/// Decodes CBOR bytes and reconstructs supported native Typst values.
+/// Decode CBOR bytes and reconstruct supported native Typst values.
+///
 /// -> any
-#let decode(data) = { /* .. */ }
+#let decode(
+  /// The encoded Typwire value.
+  ///
+  /// -> bytes
+  data,
+) = { /* .. */ }
 ```
 
 ```typ
-/// Calls a plugin function with positional arguments, using CBOR.
+/// Call a typed Typwire plugin function with positional arguments, using
+/// CBOR as the wire format.
+///
+/// Each argument is encoded independently and the returned bytes are decoded.
+///
 /// -> any
-#let call(function, ..args) = { /* .. */ }
+#let call(
+  /// The plugin function to call.
+  ///
+  /// -> function
+  function,
+  /// The positional arguments to pass to the function.
+  ///
+  /// -> any
+  ..args,
+) = { /* .. */ }
 ```
 
 </details>
@@ -114,23 +212,58 @@ Useful for inspecting or testing the wire shape Typwire produces without going t
 <summary><code>typwire.json</code></summary>
 
 ```typ
-/// Encodes a value into a JSON string. JSON has no native byte-string
-/// type, so any `bytes` value is rewritten into a tagged array first.
+/// Encode a value into a JSON string.
+///
+/// JSON has no native byte-string type, so any `bytes` value is tagged
+/// into an array instead -- handled directly by `wire.encode(value,
+/// "json")`, in the same recursive pass as everything else.
+///
 /// -> str
-#let encode(value) = { /* .. */ }
+#let encode(
+  /// The value to encode.
+  ///
+  /// -> any
+  value,
+) = { /* .. */ }
 ```
 
 ```typ
-/// Decodes a JSON string or bytes and reconstructs supported native Typst
+/// Decode a JSON string or bytes and reconstruct supported native Typst
 /// values.
+///
+/// A plain `str` is coerced to `bytes` first -- Typst's own `json(...)`
+/// treats a bare `str` argument as a *file path* to load, not inline
+/// content, so passing `encode`'s own `str` output straight through would
+/// silently try to read a file instead of decoding it.
+///
 /// -> any
-#let decode(data) = { /* .. */ }
+#let decode(
+  /// The encoded Typwire value.
+  ///
+  /// -> bytes | str
+  data,
+) = { /* .. */ }
 ```
 
 ```typ
-/// Calls a plugin function with positional arguments, using JSON.
+/// Call a typed Typwire plugin function with positional arguments, using
+/// JSON as the wire format.
+///
+/// Each argument is encoded independently and the returned bytes are
+/// decoded. Plugin calls require `bytes` arguments, so each encoded string
+/// is wrapped with `bytes(..)` before the call.
+///
 /// -> any
-#let call(function, ..args) = { /* .. */ }
+#let call(
+  /// The plugin function to call.
+  ///
+  /// -> function
+  function,
+  /// The positional arguments to pass to the function.
+  ///
+  /// -> any
+  ..args,
+) = { /* .. */ }
 ```
 
 </details>

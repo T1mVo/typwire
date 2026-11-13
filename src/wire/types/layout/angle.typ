@@ -3,13 +3,16 @@
 #let type-name = "angle"
 
 /// Encode an angle into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// An angle.
+  ///
   /// -> angle
   angle,
   /// The wire format being encoded for. Unused -- `angle` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -27,13 +30,16 @@
 }
 
 /// Decode a wire-compatible dictionary into an angle.
+///
 /// -> angle
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `angle` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

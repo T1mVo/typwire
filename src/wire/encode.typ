@@ -55,12 +55,15 @@
 /// `map(std.type).dedup()`, no closure per element), iteration uses `for`
 /// rather than `.map(closure)`, and native types whose own `encode` already
 /// returns a finished tree aren't walked a second time.
+///
 /// -> any
 #let encode(
   /// The content to encode.
+  ///
   /// -> any
   content,
   /// The wire format being encoded for -- one of `"cbor"`, `"json"`.
+  ///
   /// -> str
   format: "cbor",
 ) = {

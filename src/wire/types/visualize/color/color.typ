@@ -9,14 +9,17 @@
 #import "../../../utils.typ": is-debug-assert
 
 /// Encode a color into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The color to encode.
+  ///
   /// -> color
   color,
   /// The wire format being encoded for. Forwarded to the per-color-space
   /// `encode`, though none of them currently use it either -- every color
   /// space has the same tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -52,9 +55,11 @@
 }
 
 /// Map a color space name to its Typst color space.
+///
 /// -> function
 #let color-space(
   /// A color space name.
+  ///
   /// -> str
   name,
 ) = {
@@ -82,6 +87,7 @@
 /// Every color space's `decode`, keyed by its `typwire-type` tag --
 /// merged into `wire/decode.typ`'s own `decoders` table, so a tagged color
 /// dispatches straight to its space's `decode` with a single lookup.
+///
 /// -> dictionary
 #let decoders = (
   (luma.type-name): luma.decode,

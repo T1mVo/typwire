@@ -6,23 +6,29 @@
 #let type-name = "gradient-conic"
 
 /// Encode a conic gradient into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// An array of encoded stops.
+  ///
   /// -> array
   stops,
   /// The angle of the gradient.
+  ///
   /// -> angle
   angle,
   /// An encoded center.
+  ///
   /// -> dictionary
   center,
   /// The name of the color space.
+  ///
   /// -> str
   space,
   /// The wire format being encoded for. Unused -- every nested value here
   /// is already encoded by the caller, and the rest of this shape is the
   /// same in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -55,13 +61,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a conic gradient.
+///
 /// -> gradient
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Forwarded to each stop's/center's
   /// `decode`, though neither uses it either.
+  ///
   /// -> str
   format: "cbor",
 ) = {

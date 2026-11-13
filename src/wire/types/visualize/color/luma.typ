@@ -3,16 +3,20 @@
 #let type-name = "color-luma"
 
 /// Encode a luma color into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The lightness component of the color.
+  ///
   /// -> ratio
   lightness,
   /// The alpha (transparency) component of the color.
+  ///
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `luma` has the same
   /// shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -35,13 +39,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a luma color.
+///
 /// -> color
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `luma` decodes the same
   /// way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

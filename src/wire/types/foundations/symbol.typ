@@ -23,13 +23,16 @@
 /// source (`symbol("→", ("double", "⇒"), ...)`), so `variant-pattern`
 /// picks the `(modifiers, glyph)` tuples back out of that text -- parsing
 /// a small, well-defined grammar, not `eval`ing it.
+///
 /// -> dictionary
 #let encode(
   /// A symbol.
+  ///
   /// -> symbol
   value,
   /// The wire format being encoded for. Unused -- `symbol` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -64,13 +67,16 @@
 /// restored in the same order `encode` saw them in -- which they always
 /// are, since both `repr` and this decode walk the variant list in the same
 /// order.
+///
 /// -> symbol
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `symbol` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

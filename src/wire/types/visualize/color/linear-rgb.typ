@@ -3,22 +3,28 @@
 #let type-name = "color-linear-rgb"
 
 /// Encode a linear RGB color into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The red component of the color.
+  ///
   /// -> ratio
   r,
   /// The green component of the color.
+  ///
   /// -> ratio
   g,
   /// The blue component of the color.
+  ///
   /// -> ratio
   b,
   /// The alpha (transparency) component of the color.
+  ///
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `linear-rgb` has the
   /// same tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -51,13 +57,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a linear RGB color.
+///
 /// -> color
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `linear-rgb` decodes
   /// the same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

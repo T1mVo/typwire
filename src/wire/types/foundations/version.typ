@@ -7,10 +7,12 @@
 /// -> dictionary
 #let encode(
   /// A version.
+  ///
   /// -> version
   version,
   /// The wire format being encoded for. Unused -- `version` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -32,9 +34,11 @@
 /// -> version
 #let decode(
   /// A dictionary representing the `encode`d value.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from.
+  ///
   /// -> str
   format: "cbor",
 ) = {

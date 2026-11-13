@@ -6,29 +6,37 @@
 #let type-name = "gradient-radial"
 
 /// Encode a radial gradient into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// An array of encoded stops.
+  ///
   /// -> array
   stops,
   /// An encoded center.
+  ///
   /// -> dictionary
   center,
   /// The radius of the gradient.
+  ///
   /// -> ratio
   radius,
   /// An encoded focal center.
+  ///
   /// -> dictionary
   focal-center,
   /// The focal radius of the gradient.
+  ///
   /// -> ratio
   focal-radius,
   /// The name of the color space.
+  ///
   /// -> str
   space,
   /// The wire format being encoded for. Unused -- every nested value here
   /// is already encoded by the caller, and the rest of this shape is the
   /// same in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -71,13 +79,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a radial gradient.
+///
 /// -> gradient
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Forwarded to each stop's/center's
   /// `decode`, though none of them use it either.
+  ///
   /// -> str
   format: "cbor",
 ) = {

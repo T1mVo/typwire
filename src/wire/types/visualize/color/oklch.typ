@@ -3,22 +3,28 @@
 #let type-name = "color-oklch"
 
 /// Encode an OKLCH color into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The lightness component of the color.
+  ///
   /// -> ratio
   lightness,
   /// The chroma component of the color.
+  ///
   /// -> float
   chroma,
   /// The hue component of the color.
+  ///
   /// -> angle
   hue,
   /// The alpha (transparency) component of the color.
+  ///
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `oklch` has the same
   /// shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -51,13 +57,16 @@
 }
 
 /// Decode a wire-compatible dictionary into an OKLCH color.
+///
 /// -> color
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `oklch` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

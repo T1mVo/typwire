@@ -3,22 +3,28 @@
 #let type-name = "color-hsl"
 
 /// Encode an HSL color into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The hue component of the color.
+  ///
   /// -> angle
   hue,
   /// The saturation component of the color.
+  ///
   /// -> ratio
   saturation,
   /// The lightness component of the color.
+  ///
   /// -> ratio
   lightness,
   /// The alpha (transparency) component of the color.
+  ///
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `hsl` has the same
   /// shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -51,13 +57,16 @@
 }
 
 /// Decode a wire-compatible dictionary into an HSL color.
+///
 /// -> color
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `hsl` decodes the same
   /// way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

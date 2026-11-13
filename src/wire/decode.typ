@@ -32,6 +32,7 @@
 /// `bytes` is only ever tagged by formats with no native byte string
 /// (`Json`): CBOR's own `bytes` values pass straight through `decode`'s
 /// leaf case, never reaching this table.
+///
 /// -> dictionary
 #let decoders = (
   (alignment.type-name): alignment.decode,
@@ -61,16 +62,19 @@
 /// Like `encode`, it avoids closure calls wherever it can: only nested
 /// arrays/dictionaries are recursed into, and a container holding none is
 /// returned as-is.
+///
 /// -> any
 #let decode(
   /// A tree produced by `encode`, after a native format decoder has
   /// parsed it back out of the wire bytes.
+  ///
   /// -> any
   value,
   /// The wire format being decoded from -- one of `"cbor"`, `"json"`.
   /// Forwarded to every per-type `decode`, though almost none of them
   /// actually need it: a tag alone already fully determines how to decode
   /// it, independent of which format the bytes originally came from.
+  ///
   /// -> str
   format: "cbor",
 ) = {

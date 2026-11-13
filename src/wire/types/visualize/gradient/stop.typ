@@ -7,16 +7,20 @@
 /// already (a finished tree, not walked again by `wire/encode.typ`), its
 /// offset a bare fraction -- the stop's position in a gradient already says
 /// it's a ratio, so it needs no tag of its own.
+///
 /// -> dictionary
 #let encode(
   /// A color.
+  ///
   /// -> color
   color,
   /// A ratio value between 0% and 100%.
+  ///
   /// -> ratio
   offset,
   /// The wire format being encoded for. Forwarded to the color's own
   /// `encode`.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -38,13 +42,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a stop tuple.
+///
 /// -> (color, ratio)
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `stop` decodes the same
   /// way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

@@ -3,22 +3,28 @@
 #let type-name = "color-hsv"
 
 /// Encode an HSV color into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The hue component of the color.
+  ///
   /// -> angle
   hue,
   /// The saturation component of the color.
+  ///
   /// -> ratio
   saturation,
   /// The value (brightness) component of the color.
+  ///
   /// -> ratio
   value,
   /// The alpha (transparency) component of the color.
+  ///
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `hsv` has the same
   /// shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -51,13 +57,16 @@
 }
 
 /// Decode a wire-compatible dictionary into an HSV color.
+///
 /// -> color
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `hsv` decodes the same
   /// way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

@@ -28,27 +28,33 @@
 }
 
 /// Encode a Typst value into a wire format's bytes/string.
+///
 /// -> bytes | str
 #let encode(
   /// The value to encode.
+  ///
   /// -> any
   value,
   /// The wire format to encode into -- one of `"cbor"` (the default,
   /// matching `#[typwire::export]`'s own default), `"json"`. Use
   /// `typwire.debug.encode` instead to inspect the shared tree with no
   /// serialization at all.
+  ///
   /// -> str
   format: "cbor",
 ) = resolve-format(format).encode(value)
 
 /// The mirror of `encode`: decode a wire format's bytes/string and
 /// reconstruct supported native Typst values.
+///
 /// -> any
 #let decode(
   /// The encoded Typwire value.
+  ///
   /// -> bytes | str
   data,
   /// The wire format `data` was encoded with -- must match.
+  ///
   /// -> str
   format: "cbor",
 ) = resolve-format(format).decode(data)
@@ -59,16 +65,20 @@
 ///
 /// Each argument is encoded independently and the returned bytes are
 /// decoded.
+///
 /// -> any
 #let call(
   /// The plugin function to call.
+  ///
   /// -> function
   function,
   /// Positional arguments to encode and pass.
+  ///
   /// -> any
   ..args,
   /// The wire format to call with -- one of `"cbor"` (the default,
   /// matching `#[typwire::export]`'s own default), `"json"`.
+  ///
   /// -> str
   format: "cbor",
 ) = resolve-format(format).call(function, ..args)

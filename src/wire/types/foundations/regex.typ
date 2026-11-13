@@ -10,13 +10,16 @@
 /// literal backslashes (`\d`, `\s`, `\.`, ...), which is exactly the case
 /// `unescape-repr-string` had to be fixed to handle correctly (see its own
 /// comment in `utils.typ`).
+///
 /// -> dictionary
 #let encode(
   /// A regular expression.
+  ///
   /// -> regex
   value,
   /// The wire format being encoded for. Unused -- `regex` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -36,13 +39,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a regular expression.
+///
 /// -> regex
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `regex` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
