@@ -8,13 +8,17 @@ macro_rules! one_of {
         #[derive(Clone, Debug, Serialize, Deserialize)]
         #[serde(untagged)]
         pub enum $name<$($type),+> {
-            $($variant($type)),+
+            $(
+                #[doc = concat!("The `", stringify!($variant), "` alternative.")]
+                $variant($type)
+            ),+
         }
 
         impl<$($type: Typwire),+> Typwire for $name<$($type),+> {}
 
         impl<$($type),+> $name<$($type),+> {
             $(
+                #[doc = concat!("Construct the `", stringify!($variant), "` alternative.")]
                 pub fn $constructor(value: $type) -> Self {
                     Self::$variant(value)
                 }

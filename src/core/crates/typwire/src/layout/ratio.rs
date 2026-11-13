@@ -27,6 +27,7 @@ const TYPE_NAME: &str = "ratio";
 #[derive(Serialize, Deserialize, Clone, Copy, PartialEq, PartialOrd, Debug)]
 #[serde(from = "RatioTypst", into = "RatioTypst")]
 pub struct Ratio {
+    /// The ratio as a fraction, where `1.0` is 100%.
     pub ratio: f64,
 }
 

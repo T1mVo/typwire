@@ -36,8 +36,11 @@ pub type Paint = OneOf2<Color, Gradient>;
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum LineCap {
+    /// The line ends exactly at its endpoint.
     Butt,
+    /// The line ends in a semicircle around its endpoint.
     Round,
+    /// The line extends past its endpoint by half its thickness.
     Square,
 }
 
@@ -62,8 +65,11 @@ pub enum LineCap {
 #[derive(Serialize, Deserialize, Clone, Copy, Debug, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum LineJoin {
+    /// Corners come to a sharp point, up to the miter limit.
     Miter,
+    /// Corners are rounded off.
     Round,
+    /// Corners are cut off flat.
     Bevel,
 }
 
@@ -91,7 +97,9 @@ pub enum LineJoin {
 /// ```
 #[derive(Clone, Debug)]
 pub enum DashLength {
+    /// A dash of the given length.
     Length(Length),
+    /// A dash as long as the stroke is thick.
     Dot,
 }
 
@@ -153,7 +161,9 @@ impl<'de> Deserialize<'de> for DashLength {
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(rename_all = "kebab-case")]
 pub struct DashPattern {
+    /// The alternating dash and gap lengths.
     pub array: Vec<DashLength>,
+    /// How far into the pattern the stroke starts.
     pub phase: Length,
 }
 
@@ -184,11 +194,17 @@ pub struct DashPattern {
 #[derive(Deserialize, Clone, Debug)]
 #[serde(from = "StrokeTypst<'static>")]
 pub struct Stroke {
+    /// The color or gradient the line is drawn with.
     pub paint: OneOf2<Auto, Paint>,
+    /// The line's thickness.
     pub thickness: OneOf2<Auto, Length>,
+    /// How the ends of the line are drawn.
     pub cap: OneOf2<Auto, LineCap>,
+    /// How sharp turns are drawn.
     pub join: OneOf2<Auto, LineJoin>,
+    /// The dash pattern, or `None` for a solid line.
     pub dash: OneOf2<Auto, Option<DashPattern>>,
+    /// The ratio of miter length to thickness above which a miter join falls back to a bevel.
     pub miter_limit: OneOf2<Auto, f64>,
 }
 

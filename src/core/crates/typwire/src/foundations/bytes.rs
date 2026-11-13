@@ -27,14 +27,17 @@ use serde::{Deserialize, Deserializer, Serialize, Serializer};
 pub struct Bytes(Vec<u8>);
 
 impl Bytes {
+    /// Wrap an owned byte vector.
     pub const fn new(bytes: Vec<u8>) -> Self {
         Self(bytes)
     }
 
+    /// Unwrap into the underlying byte vector.
     pub fn into_inner(self) -> Vec<u8> {
         self.0
     }
 
+    /// Borrow the underlying bytes.
     pub fn as_slice(&self) -> &[u8] {
         &self.0
     }

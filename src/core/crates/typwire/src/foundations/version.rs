@@ -30,6 +30,7 @@ const TYPE_NAME: &str = "version";
 #[derive(Deserialize, Clone, PartialEq, Eq, Debug)]
 #[serde(from = "VersionTypst<'static>")]
 pub struct Version {
+    /// The version components, exactly as many as were given.
     pub components: Vec<i64>,
 }
 

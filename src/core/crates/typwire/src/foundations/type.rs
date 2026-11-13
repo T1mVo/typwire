@@ -27,6 +27,7 @@ const TYPE_NAME: &str = "type";
 #[derive(Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord, Debug)]
 #[serde(from = "TypeTypst<'static>")]
 pub struct Type {
+    /// The type's name, such as `"integer"`.
     pub ty: String,
 }
 

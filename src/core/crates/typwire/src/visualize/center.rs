@@ -5,7 +5,9 @@ use crate::Ratio;
 /// A structure representing the center of a gradient, defined by x and y ratios.
 #[derive(Serialize, Deserialize, Clone, PartialEq, Debug)]
 pub struct Center {
+    /// The horizontal position, as a ratio of the gradient's width.
     pub x: Ratio,
+    /// The vertical position, as a ratio of the gradient's height.
     pub y: Ratio,
 }
 

@@ -19,33 +19,59 @@ use crate::{
 /// A dynamic value supported by the Typwire protocol.
 #[derive(Clone, Debug)]
 pub enum Any {
+    /// Typst `none`.
     None,
+    /// Typst `auto`.
     Auto,
+    /// A Typst `bool`.
     Bool(bool),
+    /// A Typst `int`.
     Integer(i64),
+    /// A Typst `float`.
     Float(f64),
+    /// A Typst `str`.
     String(String),
+    /// Typst `bytes`.
     Bytes(Bytes),
+    /// A Typst `array` of dynamic values.
     Array(Vec<Self>),
+    /// A Typst `dictionary` with string keys.
     Dictionary(BTreeMap<String, Self>),
+    /// A Typst `angle`.
     Angle(Angle),
+    /// A Typst `length`.
     Length(Length),
+    /// A Typst `ratio`.
     Ratio(Ratio),
+    /// A Typst `color`, in any of its color spaces.
     Color(Color),
+    /// A Typst `gradient`.
     Gradient(Gradient),
+    /// A Typst `datetime`.
     DateTime(DateTime),
+    /// A Typst `duration`.
     Duration(Duration),
+    /// A Typst `version`.
     Version(Version),
+    /// A Typst `type`.
     Type(Type),
+    /// A Typst `path`.
     Path(Path),
+    /// A Typst `symbol`, including its modifier variants.
     Symbol(Symbol),
+    /// Typst `arguments`.
     Arguments(Arguments),
+    /// A Typst `label`.
     Label(Label),
+    /// A Typst `alignment`.
     Alignment(Alignment),
+    /// A Typst `stroke`.
     Stroke(Stroke),
     #[cfg(feature = "regex")]
+    /// A Typst `regex`.
     Regex(Regex),
     #[cfg(feature = "decimal")]
+    /// A Typst `decimal`.
     Decimal(Decimal),
 }
 

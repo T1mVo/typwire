@@ -2,16 +2,27 @@ use serde::{Deserialize, Serialize};
 
 use crate::Length;
 
+/// The corner radii of a rectangle, where `None` leaves a corner at Typst's
+/// default.
+///
+/// Typst has no dedicated runtime type for this: `rect(radius: ..)` takes a
+/// plain dictionary of corner keys, so this round-trips as an untagged
+/// dictionary.
 #[derive(Serialize, Deserialize, Clone, Debug)]
 #[serde(from = "RadiusTypst", into = "RadiusTypst", rename_all = "kebab-case")]
 pub struct Radius {
+    /// The radius of the top-left corner.
     pub top_left: Option<Length>,
+    /// The radius of the top-right corner.
     pub top_right: Option<Length>,
+    /// The radius of the bottom-left corner.
     pub bottom_left: Option<Length>,
+    /// The radius of the bottom-right corner.
     pub bottom_right: Option<Length>,
 }
 
 impl Radius {
+    /// Creates a new `Radius` from the radius of each corner.
     pub const fn new(
         top_left: Option<Length>,
         top_right: Option<Length>,
@@ -26,6 +37,8 @@ impl Radius {
         }
     }
 
+    /// Creates a new builder for constructing a `Radius`, which also accepts
+    /// per-side and fallback radii as Typst does.
     pub const fn builder() -> RadiusBuilder {
         RadiusBuilder {
             top_left: None,

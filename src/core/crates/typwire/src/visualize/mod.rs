@@ -7,6 +7,7 @@
 //! reachable from outside the crate -- only the `typwire::color` alias is.
 
 mod center;
+/// Typst's predefined colors, such as [`color::BLACK`] and [`color::RED`].
 pub mod color;
 mod gradient;
 mod stop;

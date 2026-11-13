@@ -144,6 +144,7 @@ impl Duration {
     }
 }
 
+/// A builder for [`Duration`], created with [`Duration::builder`].
 pub struct DurationBuilder {
     seconds: f64,
     minutes: f64,
