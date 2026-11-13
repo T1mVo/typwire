@@ -1,3 +1,5 @@
+use std::ops::Deref;
+
 use serde::de::Visitor;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -52,6 +54,14 @@ impl From<Vec<u8>> for Bytes {
 impl From<Bytes> for Vec<u8> {
     fn from(value: Bytes) -> Self {
         value.0
+    }
+}
+
+impl Deref for Bytes {
+    type Target = [u8];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()
     }
 }
 
