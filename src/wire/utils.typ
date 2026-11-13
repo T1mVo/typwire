@@ -1,7 +1,9 @@
 /// Convert a ratio (0% - 100%) to an integer (0 - 255).
+///
 /// -> int
 #let ratio-to-int(
   /// A ratio value between 0% and 100%.
+  ///
   /// -> ratio
   ratio,
 ) = {
@@ -9,9 +11,11 @@
 }
 
 /// Convert a ratio to a float.
+///
 /// -> float
 #let ratio-to-float(
   /// A ratio of any value.
+  ///
   /// -> ratio
   ratio,
 ) = {
@@ -19,9 +23,11 @@
 }
 
 /// Convert a float to a ratio.
+///
 /// -> ratio
 #let float-to-ratio(
   /// A float value.
+  ///
   /// -> float
   float,
 ) = {
@@ -29,9 +35,11 @@
 }
 
 /// Convert a float to a length.
+///
 /// -> length
 #let float-to-length(
   /// A float value.
+  ///
   /// -> float
   float,
 ) = {
@@ -42,12 +50,15 @@
 /// already-deduplicated list (`values.map(std.type).dedup()`) -- see
 /// `encode.typ::encode` for why this is checked natively per container
 /// rather than with a closure per element.
+///
 /// -> bool
 #let all-in(
   /// The types to check.
+  ///
   /// -> array
   types,
   /// The types allowed.
+  ///
   /// -> array
   allowed,
 ) = {
@@ -60,6 +71,7 @@
 }
 
 /// Whether debug assertions are enabled.
+///
 /// -> bool
 #let is-debug-assert = sys.inputs.at("debug-assert", default: false) == "true"
 
@@ -90,9 +102,11 @@
 /// `\n`, `\t`, `\r`, and `\u{...}` (arbitrary codepoint, variable-width hex,
 /// used for any other non-printable character). Pure string manipulation --
 /// deliberately not `eval`, which would execute the content as Typst code.
+///
 /// -> str
 #let unescape-repr-content(
   /// The text between a pair of `repr`-produced quotes.
+  ///
   /// -> str
   content,
 ) = {
@@ -120,9 +134,11 @@
 
 /// Reverse `repr`'s escaping for a full quoted string literal, e.g.
 /// `repr("a\"b")`, quotes included.
+///
 /// -> str
 #let unescape-repr-string(
   /// A `repr`-produced quoted string literal.
+  ///
   /// -> str
   quoted,
 ) = unescape-repr-content(quoted.slice(1, -1))

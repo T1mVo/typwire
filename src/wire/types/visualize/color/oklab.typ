@@ -3,22 +3,28 @@
 #let type-name = "color-oklab"
 
 /// Encode an OKLab color into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The lightness component of the color.
+  ///
   /// -> ratio
   lightness,
   /// The 'a' component of the color.
+  ///
   /// -> float
   a,
   /// The 'b' component of the color.
+  ///
   /// -> float
   b,
   /// The alpha (transparency) component of the color.
+  ///
   /// -> ratio
   alpha,
   /// The wire format being encoded for. Unused -- `oklab` has the same
   /// shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -51,13 +57,16 @@
 }
 
 /// Decode a wire-compatible dictionary into an OKLab color.
+///
 /// -> color
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `oklab` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

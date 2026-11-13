@@ -3,13 +3,16 @@
 #let type-name = "length"
 
 /// Encode a length into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// A length.
+  ///
   /// -> length
   length,
   /// The wire format being encoded for. Unused -- `length` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -27,13 +30,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a length.
+///
 /// -> length
 #let decode(
   /// A dictionary representing the `encode`d length.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `length` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

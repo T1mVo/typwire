@@ -7,14 +7,17 @@
 /// gradient, a length, a plain string, `none`, or a plain dictionary of
 /// lengths/strings for `dash`) -- so, like `arguments`, this just reads
 /// the fields back and leaves recursing into them to the caller.
+///
 /// -> dictionary
 #let encode(
   /// The stroke to encode.
+  ///
   /// -> stroke
   value,
   /// The wire format being encoded for. Unused -- every field's own
   /// recursive encode (done by the caller, not here) is what actually
   /// varies by format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -37,14 +40,17 @@
 }
 
 /// Decode a wire-compatible dictionary into a stroke.
+///
 /// -> stroke
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- every field's own
   /// recursive decode (done by the caller, not here) is what actually
   /// varies by format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

@@ -5,20 +5,25 @@
 #let type-name = "gradient-linear"
 
 /// Encode a linear gradient into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// An array of encoded stops.
+  ///
   /// -> array
   stops,
   /// The angle of the gradient.
+  ///
   /// -> angle
   angle,
   /// The name of the color space.
+  ///
   /// -> str
   space,
   /// The wire format being encoded for. Unused -- `stops` and `angle` are
   /// already encoded by the caller, and the rest of this shape is the
   /// same in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -46,13 +51,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a linear gradient.
+///
 /// -> gradient
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Forwarded to each stop's
   /// `decode`, though it doesn't use it either.
+  ///
   /// -> str
   format: "cbor",
 ) = {

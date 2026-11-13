@@ -11,12 +11,15 @@
 /// array of byte integers instead. Not base64: Typst has no built-in
 /// base64 codec to match a base64 string against, so the array form needs
 /// no new dependency on either side.
+///
 /// -> bytes | dictionary
 #let encode(
   /// The bytes to encode.
+  ///
   /// -> bytes
   value,
   /// The wire format being encoded for.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -44,13 +47,16 @@
 /// `wire/decode.typ::decode`'s catch-all primitive case before ever
 /// reaching its `decoders` tag dispatch, so this never runs with
 /// `format == "cbor"`.
+///
 /// -> bytes
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- the tag alone already
   /// fully determines how to decode it.
+  ///
   /// -> str
   format: "cbor",
 ) = {

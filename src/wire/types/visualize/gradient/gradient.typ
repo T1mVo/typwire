@@ -6,14 +6,17 @@
 #import "../../../utils.typ": is-debug-assert
 
 /// Encode a gradient into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// A gradient.
+  ///
   /// -> gradient
   gradient,
   /// The wire format being encoded for. Forwarded to every nested `encode`
   /// call (stops, center(s), and the kind-specific encoder), though none
   /// of them currently use it either.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -78,6 +81,7 @@
 /// Every gradient kind's `decode`, keyed by its `typwire-type` tag --
 /// merged into `wire/decode.typ`'s own `decoders` table, the same way
 /// `color.typ`'s is.
+///
 /// -> dictionary
 #let decoders = (
   (linear.type-name): linear.decode,

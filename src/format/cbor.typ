@@ -1,17 +1,21 @@
 #import "../wire/lib.typ" as wire
 
 /// Encode a value into CBOR bytes.
+///
 /// -> bytes
 #let encode(
   /// The value to encode.
+  ///
   /// -> any
   value,
 ) = cbor.encode(wire.encode(value, format: "cbor"))
 
 /// Decode CBOR bytes and reconstruct supported native Typst values.
+///
 /// -> any
 #let decode(
   /// The encoded Typwire value.
+  ///
   /// -> bytes
   data,
 ) = {
@@ -27,12 +31,15 @@
 /// CBOR as the wire format.
 ///
 /// Each argument is encoded independently and the returned bytes are decoded.
+///
 /// -> any
 #let call(
   /// The plugin function to call.
+  ///
   /// -> function
   function,
   /// The positional arguments to pass to the function.
+  ///
   /// -> any
   ..args,
 ) = {

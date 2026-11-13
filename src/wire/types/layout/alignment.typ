@@ -69,13 +69,16 @@
 }
 
 /// Encode a 1D or 2D alignment into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The alignment to encode.
+  ///
   /// -> alignment
   value,
   /// The wire format being encoded for. Unused -- `alignment` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -94,13 +97,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a 1D or 2D alignment.
+///
 /// -> alignment
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `alignment` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

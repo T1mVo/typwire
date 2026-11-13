@@ -3,13 +3,16 @@
 #let type-name = "ratio"
 
 /// Encode a ratio into a wire-compatible float.
+///
 /// -> float
 #let encode(
   /// A ratio of any value.
+  ///
   /// -> ratio
   ratio,
   /// The wire format being encoded for. Unused -- `ratio` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -27,13 +30,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a ratio.
+///
 /// -> ratio
 #let decode(
   /// A dictionary representing the `encode`d value.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `ratio` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

@@ -11,13 +11,16 @@
 /// leaves the quoted, escaped string literal for the path text, which
 /// `unescape-repr-string` then decodes by hand (no `eval`, so this can
 /// never run arbitrary code).
+///
 /// -> dictionary
 #let encode(
   /// A path.
+  ///
   /// -> path
   value,
   /// The wire format being encoded for. Unused -- `path` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -37,13 +40,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a path.
+///
 /// -> path
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `path` decodes the same
   /// way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

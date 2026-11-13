@@ -3,13 +3,16 @@
 #let type-name = "label"
 
 /// Encode a label into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// The label to encode.
+  ///
   /// -> label
   value,
   /// The wire format being encoded for. Unused -- `label` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -27,13 +30,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a label.
+///
 /// -> label
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `label` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {

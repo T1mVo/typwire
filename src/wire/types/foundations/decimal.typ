@@ -3,13 +3,16 @@
 #let type-name = "decimal"
 
 /// Encode a decimal into a wire-compatible dictionary.
+///
 /// -> dictionary
 #let encode(
   /// A decimal.
+  ///
   /// -> decimal
   value,
   /// The wire format being encoded for. Unused -- `decimal` has the same
   /// tagged-dictionary shape in every format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
@@ -33,13 +36,16 @@
 }
 
 /// Decode a wire-compatible dictionary into a decimal.
+///
 /// -> decimal
 #let decode(
   /// A dictionary produced by `encode`.
+  ///
   /// -> dictionary
   value,
   /// The wire format being decoded from. Unused -- `decimal` decodes the
   /// same way regardless of format.
+  ///
   /// -> str
   format: "cbor",
 ) = {
