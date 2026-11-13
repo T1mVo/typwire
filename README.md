@@ -49,11 +49,6 @@ Call the plugin function from Typst:
 
 ### `typwire`
 
-Picks a wire format per call via `format:` (default `"cbor"`, the same one
-`#[typwire::export]` picks when no `format` is given) instead of going
-through one of the namespaces below. `typwire.call(f, x, format: "json")`
-and `typwire.json.call(f, x)` run the identical function either way.
-
 ```typ
 /// Calls a plugin function: encodes each positional argument
 /// independently, invokes the export, and decodes its single return
@@ -77,14 +72,7 @@ and `typwire.json.call(f, x)` run the identical function either way.
 
 ### `typwire.debug`
 
-No serialization at all — `encode` stops at the shared dictionary/array/
-primitive tree every other namespace's `encode` would otherwise hand to a
-native format encoder, and `decode` reconstructs from that same tree. No
-`call`: there's no `bytes`/`str` here to hand a plugin. Useful for
-inspecting or testing the wire shape Typwire produces without going through
-an actual format or a plugin round trip. `format:` doesn't pick a
-serialization here (there is none) — it only picks which format's `bytes`
-tagging rules to preview.
+Useful for inspecting or testing the wire shape Typwire produces without going through an actual format or a plugin round trip.
 
 ```typ
 /// Encodes a value into the shared tree, with no serialization.
@@ -147,72 +135,16 @@ tagging rules to preview.
 
 </details>
 
-## Supported types
-
-Every Typst value with a native CBOR/JSON primitive (`int`, `float`, `bool`,
-`str`, `none`, `array`, `dictionary`) round-trips directly, with no extra
-wire structure. Everything else is sent as a tagged dictionary carrying a
-`typwire-type` field, reconstructed back into the real Typst value on
-decode. A handful of those types have no other way to read their data back
-out of Typst at all and are encoded by parsing Typst's own `repr()` output
-instead of calling an accessor — marked below.
-
-| Typst type | Rust type(s) | Wire shape | Uses `repr()` |
-| --- | --- | --- | --- |
-| `int` | `i64`, `Int` | native | |
-| `float` | `f64`, `Float` | native | |
-| `bool` | `bool`, `Bool` | native | |
-| `str` | `String`, `Str` | native | |
-| `none` | `Option::None` | native | |
-| `array` | `Vec<T>`, `VecDeque<T>`, `LinkedList<T>`, `BTreeSet<T>`, `HashSet<T>`, `[T; N]`, tuples, `Array<T>` | native | |
-| `dictionary` | `BTreeMap<String, T>`, `HashMap<String, T>`, derived structs, `Dictionary<T>` | native | |
-| `bytes` | `Bytes` (`Vec<u8>` stays a plain array) | native (CBOR); tagged array¹ (JSON) | |
-| `auto` | `Auto` | tagged | |
-| `type` | `Type` | tagged | |
-| `label` | `Label` | tagged | |
-| `version` | `Version` | tagged | component count |
-| `symbol` | `Symbol` | tagged | ✓ |
-| `path` | `Path` | tagged | ✓ |
-| `regex` (feature `regex`) | `Regex` | tagged | ✓ |
-| `decimal` (feature `decimal`) | `Decimal` | tagged | |
-| `datetime` | `DateTime` | tagged | |
-| `duration` | `Duration` | tagged | |
-| `arguments` | `Arguments` | tagged | |
-| `angle` | `Angle` | tagged | |
-| `length` | `Length` | tagged | |
-| `ratio` | `Ratio` | tagged | |
-| `alignment` | `Alignment` | tagged | |
-| corner radius dictionary | `Radius` | plain dictionary² | |
-| `color` (and its 8 color spaces) | `Color` | tagged | |
-| `gradient` (linear/radial/conic, stops) | `Gradient` | tagged | |
-| `stroke` | `Stroke` | tagged, built from the wire shapes above | |
-
-¹ JSON has no byte-string type, so its format layer rewrites `bytes` into a
-tagged array of byte integers; CBOR keeps its native byte string.
-² Typst represents a corner-radius dictionary as an ordinary dictionary too,
-not a distinct runtime type, so this is the one type with no `typwire-type`
-tag at all.
-
-Two more mechanisms sit outside this table: `Any` holds any supported value
-dynamically (reconstructing native types by their tag rather than falling
-back to a plain dictionary), and `OneOf2` through `OneOf8` accept an ordered
-list of alternative shapes, trying each in declaration order.
-
-Not supported: borrowed values (`&str`, `&[u8]`, borrowed models), Typst
-`content`, `function`, fractions, directions, relative lengths, and a
-stroke's tiling-pattern paint.
-
 ## Wire shapes
 
-The actual Typst dictionary each tagged type above round-trips as — the
-same shape `typwire.debug.encode` returns. Every one carries a
-`typwire-type` string tag except the corner radius dictionary (the one
-exception — Typst itself has no distinct runtime type for it either).
-The tag is always the dictionary's **first** key — the Rust side relies on
-that to dispatch on it in a single pass. Inside a color or gradient, the
+The actual Typst dictionary each tagged type above round-trips as: The
+same shape `typwire.debug.encode` returns.
+
+Inside a color or gradient, the
 enclosing tag already says what each field is, so nested ratios and angles
 are bare floats there (a fraction, and radians) rather than tagged
 dictionaries of their own.
+
 Native primitives (`int`, `float`, `bool`, `str`, `none`, `array`,
 `dictionary`) aren't repeated here; they pass through untagged.
 
