@@ -10,6 +10,10 @@ export def main [] {
 
     cp --update LICENSE-APACHE LICENSE-MIT README.md typst.toml $package_dir
 
+    let package_resources_dir: string = $package_dir | path join resources
+    mkdir $package_resources_dir
+    cp --update ($resources_dir | path join banner.svg) $package_resources_dir
+
     let package_src_dir: string = $package_dir | path join src
     mkdir $package_src_dir
     ls src | where name !~ core | each {|path| cp --recursive --update $path.name $package_src_dir } | ignore

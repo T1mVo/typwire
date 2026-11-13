@@ -1,3 +1,5 @@
+![Banner](resources/banner.svg)
+
 # typwire
 
 Typed data exchange between Typst and (Rust) WASM plugins.
