@@ -62,6 +62,159 @@ impl DateTime {
             second: None,
         }
     }
+
+    /// Converts this date and time into a Unix timestamp: the number of
+    /// seconds since 1970-01-01 00:00:00, interpreting the value as UTC.
+    ///
+    /// The year, month and day must all be present. A missing hour, minute or
+    /// second counts as zero. Returns `None` if the date is incomplete, a
+    /// component is out of range (such as February 30th or hour 24), or the
+    /// result does not fit in an `i64`.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use typwire::DateTime;
+    ///
+    /// let epoch = DateTime::builder().year(1970).month(1).day(1).build();
+    /// assert_eq!(epoch.unix_timestamp(), Some(0));
+    ///
+    /// let dt = DateTime::builder()
+    ///     .year(2000)
+    ///     .month(1)
+    ///     .day(1)
+    ///     .hour(12)
+    ///     .second(30)
+    ///     .build();
+    /// assert_eq!(dt.unix_timestamp(), Some(946_728_030));
+    ///
+    /// let before = DateTime::builder()
+    ///     .year(1969)
+    ///     .month(12)
+    ///     .day(31)
+    ///     .hour(23)
+    ///     .minute(59)
+    ///     .second(59)
+    ///     .build();
+    /// assert_eq!(before.unix_timestamp(), Some(-1));
+    ///
+    /// let time_only = DateTime::builder().hour(12).build();
+    /// assert_eq!(time_only.unix_timestamp(), None);
+    /// ```
+    pub fn unix_timestamp(&self) -> Option<i64> {
+        let (year, month, day) = (self.year?, self.month?, self.day?);
+        let (hour, minute, second) = (
+            self.hour.unwrap_or(0),
+            self.minute.unwrap_or(0),
+            self.second.unwrap_or(0),
+        );
+
+        if !(1..=12).contains(&month)
+            || !(1..=days_in_month(year, month)).contains(&day)
+            || !(0..24).contains(&hour)
+            || !(0..60).contains(&minute)
+            || !(0..60).contains(&second)
+        {
+            return None;
+        }
+
+        // Days since the epoch, via the proleptic Gregorian calendar
+        // algorithm from <https://howardhinnant.github.io/date_algorithms.html>.
+        let shifted_year = if month <= 2 {
+            year.checked_sub(1)?
+        } else {
+            year
+        };
+        let era = shifted_year.div_euclid(400);
+        let year_of_era = shifted_year.rem_euclid(400);
+        let day_of_year = (153 * (if month > 2 { month - 3 } else { month + 9 }) + 2) / 5 + day - 1;
+        let day_of_era = year_of_era * 365 + year_of_era / 4 - year_of_era / 100 + day_of_year;
+        let days = era
+            .checked_mul(146_097)?
+            .checked_add(day_of_era)?
+            .checked_sub(719_468)?;
+
+        // Widened so the day count times 86,400 cannot overflow before the
+        // time of day brings the total back into range.
+        let seconds = i128::from(days) * 86_400 + i128::from(hour * 3_600 + minute * 60 + second);
+
+        i64::try_from(seconds).ok()
+    }
+
+    /// Creates a `DateTime` from a Unix timestamp: the number of seconds since
+    /// 1970-01-01 00:00:00, interpreted as UTC.
+    ///
+    /// Every field of the result is set. This is the inverse of
+    /// [`DateTime::unix_timestamp`].
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use typwire::DateTime;
+    ///
+    /// let epoch = DateTime::from_unix_timestamp(0);
+    /// assert_eq!(
+    ///     epoch,
+    ///     DateTime::builder()
+    ///         .year(1970)
+    ///         .month(1)
+    ///         .day(1)
+    ///         .hour(0)
+    ///         .minute(0)
+    ///         .second(0)
+    ///         .build()
+    /// );
+    ///
+    /// let before = DateTime::from_unix_timestamp(-1);
+    /// assert_eq!((before.year, before.month, before.day), (Some(1969), Some(12), Some(31)));
+    /// assert_eq!((before.hour, before.minute, before.second), (Some(23), Some(59), Some(59)));
+    ///
+    /// let dt = DateTime::from_unix_timestamp(946_728_030);
+    /// assert_eq!(dt.unix_timestamp(), Some(946_728_030));
+    /// ```
+    pub const fn from_unix_timestamp(timestamp: i64) -> Self {
+        let days = timestamp.div_euclid(86_400);
+        let seconds_of_day = timestamp.rem_euclid(86_400);
+
+        // Civil date from days since the epoch, via the proleptic Gregorian
+        // calendar algorithm from
+        // <https://howardhinnant.github.io/date_algorithms.html>.
+        let shifted_days = days + 719_468;
+        let era = shifted_days.div_euclid(146_097);
+        let day_of_era = shifted_days.rem_euclid(146_097);
+        let year_of_era =
+            (day_of_era - day_of_era / 1_460 + day_of_era / 36_524 - day_of_era / 146_096) / 365;
+        let day_of_year = day_of_era - (365 * year_of_era + year_of_era / 4 - year_of_era / 100);
+        let month_index = (5 * day_of_year + 2) / 153;
+        let day = day_of_year - (153 * month_index + 2) / 5 + 1;
+        let month = if month_index < 10 {
+            month_index + 3
+        } else {
+            month_index - 9
+        };
+        let year = year_of_era + era * 400 + if month <= 2 { 1 } else { 0 };
+
+        Self {
+            year: Some(year),
+            month: Some(month),
+            day: Some(day),
+            hour: Some(seconds_of_day / 3_600),
+            minute: Some(seconds_of_day % 3_600 / 60),
+            second: Some(seconds_of_day % 60),
+        }
+    }
+}
+
+/// The number of days in `month` (1-12) of `year`.
+const fn days_in_month(year: i64, month: i64) -> i64 {
+    let leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
+
+    match month {
+        2 if leap => 29,
+        2 => 28,
+        4 | 6 | 9 | 11 => 30,
+        _ => 31,
+    }
 }
 
 /// A builder for [`DateTime`], created with [`DateTime::builder`].
