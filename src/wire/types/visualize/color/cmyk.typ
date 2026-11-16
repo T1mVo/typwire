@@ -100,5 +100,10 @@
     )
   }
 
-  color.cmyk(value.cyan * 100%, value.magenta * 100%, value.yellow * 100%, value.key * 100%)
+  color.cmyk(
+    value.cyan * 100%,
+    value.magenta * 100%,
+    value.yellow * 100%,
+    value.key * 100%,
+  )
 }

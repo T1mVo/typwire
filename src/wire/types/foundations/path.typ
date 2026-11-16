@@ -56,11 +56,15 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "path.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "path.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
     assert(
       type(value.path) == str,
-      message: "path.decode: value.path must be of type str, Found " + str(type(value.path)),
+      message: "path.decode: value.path must be of type str, Found "
+        + str(type(value.path)),
     )
   }
 

@@ -1,4 +1,4 @@
-#import "../../common.typ": roundtrip-format, plugin, typwire
+#import "../../common.typ": plugin, roundtrip-format, typwire
 
 // Functions renamed via `#[typwire::export(rename = "...")]`. Kebab-case
 // names are reachable directly as `plugin.some-name` -- `dictionary(plugin)`
@@ -18,6 +18,10 @@
 #assert.eq(typwire.json.call(plugin.add-lengths-json, 100pt, -60pt), 40pt)
 
 // The Rust identifiers themselves are not exported.
-#for name in ("renamed_length_json", "renamed_add_json", "renamed_nullary_json") {
+#for name in (
+  "renamed_length_json",
+  "renamed_add_json",
+  "renamed_nullary_json",
+) {
   assert(name not in exports, message: "unexpected `" + name + "` export")
 }

@@ -1,30 +1,37 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 // All fields auto (the default stroke).
 #roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, stroke())
 
 // A fully specified stroke: solid paint, explicit cap/join/dash/miter-limit.
-#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor,
-  stroke(
-    paint: red,
-    thickness: 2pt,
-    cap: "round",
-    join: "bevel",
-    dash: "dashed",
-    miter-limit: 5.0,
-  ),
-)
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, stroke(
+  paint: red,
+  thickness: 2pt,
+  cap: "round",
+  join: "bevel",
+  dash: "dashed",
+  miter-limit: 5.0,
+))
 
 // Gradient paint.
-#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, 2pt + gradient.linear(red, blue))
+#roundtrip-format(
+  typwire.cbor,
+  plugin.roundtrip-stroke-cbor,
+  2pt + gradient.linear(red, blue),
+)
 
 // `dash: none` (explicitly no dash, distinct from `auto`).
-#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, stroke(dash: none))
+#roundtrip-format(
+  typwire.cbor,
+  plugin.roundtrip-stroke-cbor,
+  stroke(dash: none),
+)
 
 // A custom dash array mixing lengths and the `"dot"` marker, plus a phase.
-#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor,
-  stroke(dash: (array: (10pt, 5pt, "dot", 5pt), phase: 3pt)),
-)
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, stroke(dash: (
+  array: (10pt, 5pt, "dot", 5pt),
+  phase: 3pt,
+)))
 
 // The `2pt + red` shorthand.
 #roundtrip-format(typwire.cbor, plugin.roundtrip-stroke-cbor, 2pt + red)

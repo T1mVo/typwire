@@ -52,11 +52,15 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "decimal.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "decimal.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
     assert(
       type(value.decimal) == str,
-      message: "decimal.decode: value.decimal must be of type str, Found " + str(type(value.decimal)),
+      message: "decimal.decode: value.decimal must be of type str, Found "
+        + str(type(value.decimal)),
     )
   }
 

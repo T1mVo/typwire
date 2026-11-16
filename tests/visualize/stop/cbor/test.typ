@@ -1,4 +1,10 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
-#roundtrip-format(typwire.cbor, plugin.roundtrip-stop-cbor, (color: rgb("#1b1f8a"), offset: 25%))
-#roundtrip-format(typwire.cbor, plugin.roundtrip-stop-cbor, (color: luma(40%), offset: 0%))
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stop-cbor, (
+  color: rgb("#1b1f8a"),
+  offset: 25%,
+))
+#roundtrip-format(typwire.cbor, plugin.roundtrip-stop-cbor, (
+  color: luma(40%),
+  offset: 0%,
+))

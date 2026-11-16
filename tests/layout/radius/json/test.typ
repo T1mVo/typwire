@@ -1,10 +1,15 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 // `Radius` decodes `left`/`top`/`right`/`bottom`/`rest` shorthands into the
 // four canonical per-corner fields, but always re-encodes just those four
 // (with the shorthands cleared to `none`). A value only survives a full
 // round trip when it is already in that canonical shape.
-#let corners(top-left: none, top-right: none, bottom-left: none, bottom-right: none) = (
+#let corners(
+  top-left: none,
+  top-right: none,
+  bottom-left: none,
+  bottom-right: none,
+) = (
   top-left: top-left,
   top-right: top-right,
   bottom-left: bottom-left,
@@ -16,7 +21,10 @@
   rest: none,
 )
 
-#roundtrip-format(typwire.json, plugin.roundtrip-radius-json, corners(top-left: 5pt, bottom-right: 3pt))
+#roundtrip-format(typwire.json, plugin.roundtrip-radius-json, corners(
+  top-left: 5pt,
+  bottom-right: 3pt,
+))
 #roundtrip-format(typwire.json, plugin.roundtrip-radius-json, corners())
 
 // The shorthands themselves are exercised directly against the resolved

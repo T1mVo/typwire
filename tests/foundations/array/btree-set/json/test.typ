@@ -1,4 +1,4 @@
-#import "../../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../../common.typ": plugin, roundtrip-format, typwire
 
 // `BTreeSet` always re-serializes in sorted order.
 #roundtrip-format(typwire.json, plugin.roundtrip-btree-set-json, ())

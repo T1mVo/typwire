@@ -1,4 +1,4 @@
-#import "../../common.typ": roundtrip-format, plugin, typwire
+#import "../../common.typ": plugin, roundtrip-format, typwire
 
 // Functions renamed via `#[typwire::export(rename = "...")]`. Kebab-case
 // names are reachable directly as `plugin.some-name` -- `dictionary(plugin)`
@@ -18,6 +18,10 @@
 #assert.eq(typwire.cbor.call(plugin.add-lengths-cbor, 100pt, -60pt), 40pt)
 
 // The Rust identifiers themselves are not exported.
-#for name in ("renamed_length_cbor", "renamed_add_cbor", "renamed_nullary_cbor") {
+#for name in (
+  "renamed_length_cbor",
+  "renamed_add_cbor",
+  "renamed_nullary_cbor",
+) {
   assert(name not in exports, message: "unexpected `" + name + "` export")
 }

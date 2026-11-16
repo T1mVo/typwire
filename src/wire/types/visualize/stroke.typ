@@ -57,7 +57,10 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "stroke.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "stroke.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
   }
 

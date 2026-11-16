@@ -1,4 +1,4 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 // A symbol built from a single string has no modifier variants, so it
 // round-trips exactly like any other native type.
@@ -9,7 +9,11 @@
 // too: `encode` recovers the full variant table from `repr`, and
 // reconstructing with `symbol(default, ..variants)` in the same order
 // `repr` listed them lands back on an equal value.
-#roundtrip-format(typwire.cbor, plugin.roundtrip-symbol-cbor, symbol("a", ("mod1", "b"), ("mod2", "c")))
+#roundtrip-format(typwire.cbor, plugin.roundtrip-symbol-cbor, symbol(
+  "a",
+  ("mod1", "b"),
+  ("mod2", "c"),
+))
 
 // `sym.arrow.r` (and most of `sym.*`) carries a whole table of named
 // modifier variants (`.double`, `.long`, `.squiggly`, ...). Those *do*

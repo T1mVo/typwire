@@ -1,4 +1,4 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, int)
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, str)
@@ -7,7 +7,9 @@
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, dictionary)
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, type(none))
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, type(auto))
-#roundtrip-format(typwire.json, plugin.roundtrip-type-json, type(path("test.typ")))
+#roundtrip-format(typwire.json, plugin.roundtrip-type-json, type(
+  path("test.typ"),
+))
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, type(symbol("★")))
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, type(regex("a")))
 #roundtrip-format(typwire.json, plugin.roundtrip-type-json, type(decimal("1")))

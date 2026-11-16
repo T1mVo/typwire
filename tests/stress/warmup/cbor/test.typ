@@ -25,10 +25,16 @@
 // to have either. Typst doesn't normalize an angle beyond 360 degrees
 // (confirmed: `repr(361deg)` is `"361deg"`, not `"1deg"`), so a modulus far
 // larger than `count` is all that's needed to keep every value distinct.
-#let make-gradient(i) = gradient.linear(..color.map.viridis, angle: calc.rem(i, 100000) * 1deg)
+#let make-gradient(i) = gradient.linear(
+  ..color.map.viridis,
+  angle: calc.rem(i, 100000) * 1deg,
+)
 
 #let values = range(count).map(make-gradient)
-#let results = values.map(value => typwire.cbor.call(plugin.stress-warmup-cbor, value))
+#let results = values.map(value => typwire.cbor.call(
+  plugin.stress-warmup-cbor,
+  value,
+))
 
 // Gradients don't compare structurally (see `common.typ`'s `roundtrip` doc
 // comment), so this compares by `repr` instead of `==`.

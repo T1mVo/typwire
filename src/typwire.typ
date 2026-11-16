@@ -20,7 +20,9 @@
 #let resolve-format(format) = {
   assert(
     format in formats,
-    message: "typwire: unknown format \"" + format + "\" "
+    message: "typwire: unknown format \""
+      + format
+      + "\" "
       + "(expected one of \"cbor\", \"json\")",
   )
 

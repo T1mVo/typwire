@@ -100,5 +100,10 @@
     )
   }
 
-  color.linear-rgb(value.r * 100%, value.g * 100%, value.b * 100%, value.alpha * 100%)
+  color.linear-rgb(
+    value.r * 100%,
+    value.g * 100%,
+    value.b * 100%,
+    value.alpha * 100%,
+  )
 }

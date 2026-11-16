@@ -1,4 +1,4 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, int)
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, str)
@@ -7,7 +7,9 @@
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, dictionary)
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, type(none))
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, type(auto))
-#roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, type(path("test.typ")))
+#roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, type(
+  path("test.typ"),
+))
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, type(symbol("★")))
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, type(regex("a")))
 #roundtrip-format(typwire.cbor, plugin.roundtrip-type-cbor, type(decimal("1")))

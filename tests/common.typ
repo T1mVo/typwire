@@ -17,7 +17,10 @@
   let got = typwire.call(func, value)
   assert(
     got == value or repr(got) == repr(value),
-    message: "round trip mismatch:\n  in:  " + repr(value) + "\n  out: " + repr(got),
+    message: "round trip mismatch:\n  in:  "
+      + repr(value)
+      + "\n  out: "
+      + repr(got),
   )
 }
 
@@ -28,6 +31,9 @@
   let got = namespace.call(func, value)
   assert(
     got == value or repr(got) == repr(value),
-    message: "round trip mismatch:\n  in:  " + repr(value) + "\n  out: " + repr(got),
+    message: "round trip mismatch:\n  in:  "
+      + repr(value)
+      + "\n  out: "
+      + repr(got),
   )
 }

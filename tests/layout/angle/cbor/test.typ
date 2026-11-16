@@ -1,4 +1,4 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 #roundtrip-format(typwire.cbor, plugin.roundtrip-angle-cbor, 90deg)
 #roundtrip-format(typwire.cbor, plugin.roundtrip-angle-cbor, -45deg)

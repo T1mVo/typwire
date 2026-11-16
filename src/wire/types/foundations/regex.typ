@@ -55,11 +55,15 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "regex.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "regex.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
     assert(
       type(value.pattern) == str,
-      message: "regex.decode: value.pattern must be of type str, Found " + str(type(value.pattern)),
+      message: "regex.decode: value.pattern must be of type str, Found "
+        + str(type(value.pattern)),
     )
   }
 

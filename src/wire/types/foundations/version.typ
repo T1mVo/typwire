@@ -3,7 +3,7 @@
 #let type-name = "version"
 
 /// Encode a version into a wire-compatible dictionary.
-/// 
+///
 /// -> dictionary
 #let encode(
   /// A version.
@@ -30,7 +30,7 @@
 }
 
 /// Decode a wire-compatible dictionary into a version.
-/// 
+///
 /// -> version
 #let decode(
   /// A dictionary representing the `encode`d value.
@@ -45,12 +45,16 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "version.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "version.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
 
     assert(
       type(value.components) == array,
-      message: "version.decode: value.components must be of type array, Found " + str(type(value.components)),
+      message: "version.decode: value.components must be of type array, Found "
+        + str(type(value.components)),
     )
   }
 

@@ -47,15 +47,20 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "arguments.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "arguments.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
     assert(
       type(value.pos) == array,
-      message: "arguments.decode: value.pos must be of type array, Found " + str(type(value.pos)),
+      message: "arguments.decode: value.pos must be of type array, Found "
+        + str(type(value.pos)),
     )
     assert(
       type(value.named) == dictionary,
-      message: "arguments.decode: value.named must be of type dictionary, Found " + str(type(value.named)),
+      message: "arguments.decode: value.named must be of type dictionary, Found "
+        + str(type(value.named)),
     )
   }
 

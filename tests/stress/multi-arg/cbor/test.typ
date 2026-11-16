@@ -6,7 +6,13 @@
 // result" convention under load, not just a single big value (see the
 // dedicated `stress/bytes` test for that).
 #let text = "typst " * 20000
-#let stops = gradient.linear(..range(96).map(i => rgb(calc.rem(i * 4, 256), 0, 255 - calc.rem(i * 4, 256))))
+#let stops = gradient.linear(
+  ..range(96).map(i => rgb(
+    calc.rem(i * 4, 256),
+    0,
+    255 - calc.rem(i * 4, 256),
+  )),
+)
 #let numbers = range(6000)
 
 #let (out-text, out-stops, out-numbers) = typwire.cbor.call(

@@ -100,5 +100,10 @@
     )
   }
 
-  color.hsv(value.hue * 1rad, value.saturation * 100%, value.value * 100%, value.alpha * 100%)
+  color.hsv(
+    value.hue * 1rad,
+    value.saturation * 100%,
+    value.value * 100%,
+    value.alpha * 100%,
+  )
 }

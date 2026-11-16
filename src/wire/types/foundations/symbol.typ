@@ -14,7 +14,9 @@
 // the bare default entry -- `encode` gets that one from `str(value)`
 // instead, which is documented, stable API, rather than depending on
 // `repr`'s exact (undocumented, unstable) formatting for it too.
-#let variant-pattern = regex("\\(\\s*\"([^\"]*)\"\\s*,\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\)")
+#let variant-pattern = regex(
+  "\\(\\s*\"([^\"]*)\"\\s*,\\s*\"((?:[^\"\\\\]|\\\\.)*)\"\\s*\\)",
+)
 
 /// Encode a symbol into a CBOR-compatible dictionary. A symbol can carry a
 /// whole table of named modifier variants (e.g. `sym.arrow.r` also covers
@@ -37,7 +39,10 @@
   format: "cbor",
 ) = {
   if is-debug-assert {
-    assert(type(value) == symbol, message: "symbol.encode: value must be of type symbol")
+    assert(
+      type(value) == symbol,
+      message: "symbol.encode: value must be of type symbol",
+    )
   }
 
   let variants = repr(value)
@@ -83,11 +88,15 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "symbol.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "symbol.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
     assert(
       type(value.default) == str,
-      message: "symbol.decode: value.default must be of type str, Found " + str(type(value.default)),
+      message: "symbol.decode: value.default must be of type str, Found "
+        + str(type(value.default)),
     )
     assert(
       value.default.clusters().len() == 1,
@@ -95,7 +104,8 @@
     )
     assert(
       type(value.variants) == array,
-      message: "symbol.decode: value.variants must be of type array, Found " + str(type(value.variants)),
+      message: "symbol.decode: value.variants must be of type array, Found "
+        + str(type(value.variants)),
     )
   }
 

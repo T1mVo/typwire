@@ -1,3 +1,7 @@
-#import "../../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../../common.typ": plugin, roundtrip-format, typwire
 
-#roundtrip-format(typwire.cbor, plugin.roundtrip-fixed-size-array-cbor, (1, 2, 3))
+#roundtrip-format(typwire.cbor, plugin.roundtrip-fixed-size-array-cbor, (
+  1,
+  2,
+  3,
+))

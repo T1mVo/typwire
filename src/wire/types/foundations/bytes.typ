@@ -63,11 +63,15 @@
   if is-debug-assert {
     assert(
       value.typwire-type == type-name,
-      message: "bytes.decode: value must be a tagged with type " + type-name + ". Found " + value.typwire-type,
+      message: "bytes.decode: value must be a tagged with type "
+        + type-name
+        + ". Found "
+        + value.typwire-type,
     )
     assert(
       type(value.data) == std.array,
-      message: "bytes.decode: value.data must be of type array, Found " + str(type(value.data)),
+      message: "bytes.decode: value.data must be of type array, Found "
+        + str(type(value.data)),
     )
   }
 

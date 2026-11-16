@@ -100,5 +100,10 @@
     )
   }
 
-  color.oklch(value.lightness * 100%, value.chroma, value.hue * 1rad, value.alpha * 100%)
+  color.oklch(
+    value.lightness * 100%,
+    value.chroma,
+    value.hue * 1rad,
+    value.alpha * 100%,
+  )
 }

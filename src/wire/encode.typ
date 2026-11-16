@@ -78,7 +78,9 @@
     } else {
       let result = ()
       for item in content {
-        result.push(if std.type(item) in leaves { item } else { encode(item, format: format) })
+        result.push(if std.type(item) in leaves { item } else {
+          encode(item, format: format)
+        })
       }
       result
     }

@@ -100,5 +100,10 @@
     )
   }
 
-  color.hsl(value.hue * 1rad, value.saturation * 100%, value.lightness * 100%, value.alpha * 100%)
+  color.hsl(
+    value.hue * 1rad,
+    value.saturation * 100%,
+    value.lightness * 100%,
+    value.alpha * 100%,
+  )
 }

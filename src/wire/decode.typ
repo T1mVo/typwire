@@ -35,24 +35,28 @@
 ///
 /// -> dictionary
 #let decoders = (
-  (alignment.type-name): alignment.decode,
-  (angle.type-name): angle.decode,
-  (arguments.type-name): arguments.decode,
-  (auto-value.type-name): auto-value.decode,
-  (bytes-type.type-name): bytes-type.decode,
-  (datetime.type-name): datetime.decode,
-  (decimal.type-name): decimal.decode,
-  (duration.type-name): duration.decode,
-  (label.type-name): label.decode,
-  (length.type-name): length.decode,
-  (path.type-name): path.decode,
-  (ratio.type-name): ratio.decode,
-  (regex.type-name): regex.decode,
-  (stroke.type-name): stroke.decode,
-  (symbol.type-name): symbol.decode,
-  (type.type-name): type.decode,
-  (version.type-name): version.decode,
-) + color.decoders + gradient.decoders
+  (
+    (alignment.type-name): alignment.decode,
+    (angle.type-name): angle.decode,
+    (arguments.type-name): arguments.decode,
+    (auto-value.type-name): auto-value.decode,
+    (bytes-type.type-name): bytes-type.decode,
+    (datetime.type-name): datetime.decode,
+    (decimal.type-name): decimal.decode,
+    (duration.type-name): duration.decode,
+    (label.type-name): label.decode,
+    (length.type-name): length.decode,
+    (path.type-name): path.decode,
+    (ratio.type-name): ratio.decode,
+    (regex.type-name): regex.decode,
+    (stroke.type-name): stroke.decode,
+    (symbol.type-name): symbol.decode,
+    (type.type-name): type.decode,
+    (version.type-name): version.decode,
+  )
+    + color.decoders
+    + gradient.decoders
+)
 
 /// The mirror of `encode.typ::encode`: recursively reconstruct native
 /// Typst values from a plain dictionary/array/primitive tree. This is the
@@ -86,7 +90,9 @@
       let result = ()
       for item in value {
         let item-type = std.type(item)
-        result.push(if item-type == array or item-type == dictionary { decode(item, format: format) } else { item })
+        result.push(if item-type == array or item-type == dictionary {
+          decode(item, format: format)
+        } else { item })
       }
       result
     } else {
@@ -107,7 +113,10 @@
     if "typwire-type" in decoded {
       let tag = decoded.typwire-type
 
-      assert(std.type(tag) == str, message: "typwire.decode: typwire-type must be a string")
+      assert(
+        std.type(tag) == str,
+        message: "typwire.decode: typwire-type must be a string",
+      )
 
       let decoder = decoders.at(tag, default: none)
       if decoder == none {

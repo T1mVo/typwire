@@ -1,4 +1,4 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 // Every horizontal alignment, standalone.
 #roundtrip-format(typwire.json, plugin.roundtrip-alignment-json, start)
@@ -15,4 +15,8 @@
 // 2D combinations.
 #roundtrip-format(typwire.json, plugin.roundtrip-alignment-json, left + top)
 #roundtrip-format(typwire.json, plugin.roundtrip-alignment-json, right + bottom)
-#roundtrip-format(typwire.json, plugin.roundtrip-alignment-json, center + horizon)
+#roundtrip-format(
+  typwire.json,
+  plugin.roundtrip-alignment-json,
+  center + horizon,
+)

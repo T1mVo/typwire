@@ -1,7 +1,10 @@
 #let type-name = "duration"
 
 #let new(seconds) = {
-  assert(type(seconds) == std.float, message: "duration.new: seconds must be of type float")
+  assert(
+    type(seconds) == std.float,
+    message: "duration.new: seconds must be of type float",
+  )
 
   (
     "typwire-type": type-name,
@@ -23,7 +26,10 @@
   /// -> str
   format: "cbor",
 ) = {
-  assert(type(duration) == std.duration, message: "duration.encode: duration must be type of duration")
+  assert(
+    type(duration) == std.duration,
+    message: "duration.encode: duration must be type of duration",
+  )
 
   new(duration.seconds())
 }
@@ -44,7 +50,9 @@
 ) = {
   let seconds = int(value.seconds)
   if seconds != value.seconds {
-    panic("typwire.decode: Typst cannot reconstruct a duration with fractional seconds")
+    panic(
+      "typwire.decode: Typst cannot reconstruct a duration with fractional seconds",
+    )
   }
   duration(seconds: seconds)
 }

@@ -1,4 +1,4 @@
-#import "../../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../../common.typ": plugin, roundtrip-format, typwire
 
 #roundtrip-format(typwire.json, plugin.roundtrip-int-wrapper-json, 0)
 #roundtrip-format(typwire.json, plugin.roundtrip-int-wrapper-json, 42)

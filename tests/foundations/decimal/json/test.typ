@@ -1,4 +1,4 @@
-#import "../../../common.typ": roundtrip-format, plugin, typwire
+#import "../../../common.typ": plugin, roundtrip-format, typwire
 
 #roundtrip-format(typwire.json, plugin.roundtrip-decimal-json, decimal("0"))
 #roundtrip-format(typwire.json, plugin.roundtrip-decimal-json, decimal("3.14"))
@@ -11,5 +11,13 @@
 #roundtrip-format(typwire.json, plugin.roundtrip-decimal-json, decimal("-0.5"))
 
 // High precision, near `rust_decimal`'s digit limit.
-#roundtrip-format(typwire.json, plugin.roundtrip-decimal-json, decimal("79228162514264337593543950335"))
-#roundtrip-format(typwire.json, plugin.roundtrip-decimal-json, decimal("-79228162514264337593543950335"))
+#roundtrip-format(
+  typwire.json,
+  plugin.roundtrip-decimal-json,
+  decimal("79228162514264337593543950335"),
+)
+#roundtrip-format(
+  typwire.json,
+  plugin.roundtrip-decimal-json,
+  decimal("-79228162514264337593543950335"),
+)
