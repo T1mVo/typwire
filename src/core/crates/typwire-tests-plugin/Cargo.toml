@@ -14,4 +14,3 @@ crate-type = ["cdylib"]
 [dependencies]
 typwire = { path = "../typwire", features = ["decimal", "regex", "json"] }
 serde = { workspace = true }
-talc = "5.1.1"
