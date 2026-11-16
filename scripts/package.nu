@@ -12,7 +12,7 @@ export def main [] {
 
     let package_resources_dir: string = $package_dir | path join resources
     mkdir $package_resources_dir
-    cp --update ($resources_dir | path join banner.svg) $package_resources_dir
+    cp --update ...(glob ($resources_dir | path join "banner-*.svg")) $package_resources_dir
 
     let package_src_dir: string = $package_dir | path join src
     mkdir $package_src_dir

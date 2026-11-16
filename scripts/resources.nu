@@ -3,8 +3,11 @@
 use ./common.nu *
 
 export def main [] {
-    glob ($resources_dir | path join "*.typ") | sort | each {|resource|
-        let output: string = $resource | path parse | update extension svg | path join
-        ^typst compile --root $project_dir --ignore-system-fonts --font-path $fonts_dir $resource $output
-    } | ignore
+    for resource in (glob ($resources_dir | path join "*.typ") | sort) {
+        let parsed = $resource | path parse
+        for theme in [light dark] {
+            let output: string = $parsed | update stem $"($parsed.stem)-($theme)" | update extension svg | path join
+            ^typst compile --root $project_dir --ignore-system-fonts --font-path $fonts_dir --input $"theme=($theme)" $resource $output
+        }
+    }
 }

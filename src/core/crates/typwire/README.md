@@ -1,4 +1,7 @@
-![typwire: typed data exchange for Typst plugins, shown as Typst values flowing through a wire into Rust](https://raw.githubusercontent.com/T1mVo/typwire/main/resources/banner.svg)
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/T1mVo/typwire/main/resources/banner-dark.svg">
+  <img alt="typwire: typed data exchange for Typst plugins, shown as Typst values flowing through a wire into Rust" src="https://raw.githubusercontent.com/T1mVo/typwire/main/resources/banner-light.svg">
+</picture>
 
 # typwire
 
