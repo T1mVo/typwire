@@ -305,7 +305,7 @@ specializes in performance. Time spent on the plugin round trip, CBOR only:
 
 sertyp also fails on larger payloads (a few thousand nodes) because its
 deserializer hits Typst's loop-iteration limit. See the full
-[benchmark results](benchmarks/RESULT.md) for more workloads and how they were
+[benchmark results](https://github.com/T1mVo/typwire/blob/v0.2.0/benchmarks/RESULT.md) for more workloads and how they were
 measured.
 
 ## Version compatibility

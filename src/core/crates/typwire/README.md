@@ -95,7 +95,7 @@ performance scales directly with the size of the data.
 Use CBOR unless you specifically need JSON, which is ~2.5x slower. Compared
 to [sertyp](https://typst.app/universe/package/sertyp), typwire is ~2x to
 ~66x faster, depending on the workload. See the full
-[benchmark results](https://github.com/T1mVo/typwire/blob/main/benchmarks/RESULT.md).
+[benchmark results](https://github.com/T1mVo/typwire/blob/v0.2.0/benchmarks/RESULT.md).
 
 ## Version compatibility
 
