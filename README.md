@@ -47,6 +47,8 @@ Call the plugin function from Typst:
 
 ## Reference
 
+The Rust API is documented on [docs.rs](https://docs.rs/typwire/0.2.0).
+
 ### `typwire`
 
 ```typ
