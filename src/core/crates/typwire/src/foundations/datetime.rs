@@ -398,3 +398,112 @@ impl From<DateTimeTypst> for DateTime {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn full(year: i64, month: i64, day: i64, hour: i64, minute: i64, second: i64) -> DateTime {
+        DateTime::builder()
+            .year(year)
+            .month(month)
+            .day(day)
+            .hour(hour)
+            .minute(minute)
+            .second(second)
+            .build()
+    }
+
+    #[test]
+    fn known_timestamps() {
+        for (timestamp, expected) in [
+            (0, full(1970, 1, 1, 0, 0, 0)),
+            (-1, full(1969, 12, 31, 23, 59, 59)),
+            (86_399, full(1970, 1, 1, 23, 59, 59)),
+            (951_782_400, full(2000, 2, 29, 0, 0, 0)),
+            (1_709_210_096, full(2024, 2, 29, 12, 34, 56)),
+            (-62_135_596_800, full(1, 1, 1, 0, 0, 0)),
+        ] {
+            assert_eq!(DateTime::from_unix_timestamp(timestamp), expected);
+            assert_eq!(expected.unix_timestamp(), Some(timestamp));
+        }
+    }
+
+    #[test]
+    fn roundtrips_across_a_wide_range() {
+        let mut timestamp = -10_000_000_000_i64;
+        while timestamp < 10_000_000_000 {
+            let dt = DateTime::from_unix_timestamp(timestamp);
+            assert_eq!(dt.unix_timestamp(), Some(timestamp), "{dt:?}");
+            timestamp += 86_399;
+        }
+    }
+
+    #[test]
+    fn roundtrips_at_i64_extremes() {
+        for timestamp in [i64::MIN, i64::MIN + 1, i64::MAX - 1, i64::MAX] {
+            let dt = DateTime::from_unix_timestamp(timestamp);
+            assert_eq!(dt.unix_timestamp(), Some(timestamp), "{dt:?}");
+        }
+    }
+
+    #[test]
+    fn leap_days() {
+        // 1900 is not a leap year, 2000 is.
+        assert_eq!(full(1900, 2, 29, 0, 0, 0).unix_timestamp(), None);
+        assert!(full(2000, 2, 29, 0, 0, 0).unix_timestamp().is_some());
+        assert_eq!(full(2023, 2, 29, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(
+            full(2024, 3, 1, 0, 0, 0).unix_timestamp().unwrap()
+                - full(2024, 2, 28, 0, 0, 0).unix_timestamp().unwrap(),
+            2 * 86_400
+        );
+    }
+
+    #[test]
+    fn missing_date_fields_yield_none() {
+        let b = DateTime::builder;
+        assert_eq!(b().build().unix_timestamp(), None);
+        assert_eq!(b().year(2020).build().unix_timestamp(), None);
+        assert_eq!(b().year(2020).month(1).build().unix_timestamp(), None);
+        assert_eq!(b().month(1).day(1).build().unix_timestamp(), None);
+        assert_eq!(
+            b().hour(1).minute(2).second(3).build().unix_timestamp(),
+            None
+        );
+    }
+
+    #[test]
+    fn missing_time_fields_default_to_zero() {
+        let date = DateTime::builder().year(1970).month(1).day(2).build();
+        assert_eq!(date.unix_timestamp(), Some(86_400));
+
+        let partial = DateTime::builder()
+            .year(1970)
+            .month(1)
+            .day(1)
+            .hour(1)
+            .build();
+        assert_eq!(partial.unix_timestamp(), Some(3_600));
+    }
+
+    #[test]
+    fn out_of_range_fields_yield_none() {
+        assert_eq!(full(2020, 0, 1, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(2020, 13, 1, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(2020, 1, 0, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(2020, 4, 31, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(2020, 1, 1, 24, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(2020, 1, 1, 0, 60, 0).unix_timestamp(), None);
+        assert_eq!(full(2020, 1, 1, 0, 0, 60).unix_timestamp(), None);
+        assert_eq!(full(2020, 1, 1, -1, 0, 0).unix_timestamp(), None);
+    }
+
+    #[test]
+    fn unrepresentable_years_yield_none() {
+        assert_eq!(full(i64::MAX, 6, 1, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(i64::MIN, 6, 1, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(i64::MIN, 1, 1, 0, 0, 0).unix_timestamp(), None);
+        assert_eq!(full(300_000_000_000, 1, 1, 0, 0, 0).unix_timestamp(), None);
+    }
+}
