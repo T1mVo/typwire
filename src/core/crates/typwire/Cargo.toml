@@ -10,21 +10,10 @@ repository = "https://github.com/T1mVo/typwire"
 license = "MIT OR Apache-2.0"
 keywords = ["typst", "typing", "wasm", "plugin"]
 categories = ["data-structures", "encoding", "wasm"]
-exclude = ["example", "test", "scripts", "src-typst"]
 
 [features]
-# Backs the Typst `decimal` type with a `rust_decimal::Decimal` -- the same
-# crate Typst's own `decimal` type wraps internally. Without it, `Decimal`
-# (and `Any::Decimal`) don't exist at all -- see
-# `src/foundations/decimal.rs`.
 decimal = ["dep:rust_decimal"]
-# Backs the Typst `regex` type with a compiled `regex_lite::Regex`. Without
-# it, `Regex` (and `Any::Regex`) don't exist at all -- see
-# `src/foundations/regex.rs`.
 regex = ["dep:regex-lite"]
-# Enables the `Json` wire format (`#[typwire::export(format = "json")]` /
-# Typst's `typwire.json`), backed by `serde_json`. Without it, `Json`
-# doesn't exist at all -- see `src/format/json.rs`.
 json = ["dep:serde_json"]
 
 [dependencies]

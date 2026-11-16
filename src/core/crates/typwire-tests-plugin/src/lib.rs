@@ -10,42 +10,11 @@
 //! fn roundtrip_<name>_<format>(value: T) -> Result<T, String> { Ok(value) }
 //! ```
 //!
-//! (`format`/`rename` omitted for the `cbor` case, since `cbor` is
-//! `#[typwire::export]`'s own default -- though `rename` is still given, for
-//! a uniform `dictionary(plugin).at("roundtrip-<name>-<format>")` access
-//! pattern across both), though a case is free to define several
-//! functions when they're closely related (see `tests/rename/*/plugin.rs`).
-//! Every pair is pulled in here with one `case!` call.
-//! `#[typwire::export]` expands to a `#[wasm_func]` wrapper that needs the
-//! `initiate_protocol!()` items in scope, which only holds at the crate
-//! root, so the case files are `include!`d here rather than mounted as
-//! `mod`s.
-//!
-//! Rules for a `plugin.rs` case file, because its tokens land in this module:
-//! - no `use` items (they would collide across cases); rely on the glob imports
-//!   below or write fully-qualified paths,
-//! - every exported function name (and any locally defined type, e.g. a
-//!   `#[derive(Typwire)]` struct) must be unique across the whole suite --
-//!   hence the `roundtrip_<name>_<format>` convention and, where a case
-//!   needs a local struct, a `<Name><Format>` naming pattern (see
-//!   `tests/foundations/dictionary/struct/*/plugin.rs`).
-//!
 //! To add a test: `mkdir -p tests/<name>/{cbor,json}`, add a
 //! `test.typ` + `plugin.rs` pair to each, then add one `case!("<name>");`
 //! line below -- it expands to both `include!`s.
 
 #![allow(unused_imports)]
-
-// Rust's default wasm32-unknown-unknown allocator (dlmalloc) is both slower
-// and larger than it needs to be for this single-threaded plugin; `talc`'s
-// wasm-specific allocator grows the wasm memory itself on demand instead of
-// going through a general-purpose allocator design meant to also cover
-// native targets. `new_wasm_dynamic_allocator` itself panics off-wasm (this
-// crate never builds for the host -- see the module doc above -- but the
-// `cfg` still guards e.g. an IDE's non-wasm `cargo check`).
-#[cfg(all(not(target_feature = "atomics"), target_family = "wasm"))]
-#[global_allocator]
-static ALLOCATOR: talc::wasm::WasmDynamicTalc = talc::wasm::new_wasm_dynamic_allocator();
 
 typwire::initiate_protocol!();
 
@@ -70,11 +39,6 @@ macro_rules! case {
     };
 }
 
-// No matching page under https://typst.app/docs/reference/: `Any` and
-// `OneOfN` are typwire-specific dynamic-dispatch mechanisms with no single
-// corresponding Typst type; `rename` exercises the `#[typwire::export]`
-// macro option, not a value type; `Box<T>` is wire-transparent (same shape
-// as `T`); `unit`/`char` have no Typst type of their own either.
 case!("any");
 case!("one-of");
 case!("rename");
@@ -82,16 +46,6 @@ case!("box");
 case!("unit");
 case!("char");
 
-// The rest mirror https://typst.app/docs/reference/ category by category:
-// one dir per Typst type name, not per Rust type -- e.g. this is `int`, not
-// `i64`. When more than one Rust type can receive the same Typst type, that
-// dir holds subtests (one per Rust type) instead of a `plugin.rs`/`test.typ`
-// pair directly, as `int`, `bool`, `float`, `str`, `array`, and `dictionary`
-// do below -- each of those six now also has a `wrapper` subtest for its
-// named `Int`/`Bool`/`Float`/`Str`/`Array<T>`/`Dictionary<T>` type
-// (`typwire::Int`'s doc comment explains why that type exists).
-
-// https://typst.app/docs/reference/foundations/
 case!("foundations/arguments");
 case!("foundations/auto");
 case!("foundations/bytes");
@@ -106,11 +60,6 @@ case!("foundations/symbol");
 case!("foundations/type");
 case!("foundations/version");
 
-// `bool`/`float`/`str` each have two Rust representations -- the bare
-// primitive and the named `Bool`/`Float`/`Str` wrapper (`typwire::Int`'s
-// doc comment explains why the wrapper exists) -- so, like `int`/`array`/
-// `dictionary` below, they're subtest dirs rather than a single
-// `plugin.rs`/`test.typ` pair.
 case!("foundations/bool/bool");
 case!("foundations/bool/wrapper");
 case!("foundations/float/float");
@@ -136,40 +85,23 @@ case!("foundations/dictionary/hash-map");
 case!("foundations/dictionary/struct");
 case!("foundations/dictionary/wrapper");
 
-// https://typst.app/docs/reference/layout/
 case!("layout/alignment");
 case!("layout/angle");
 case!("layout/length");
 case!("layout/ratio");
 case!("layout/radius");
 
-// https://typst.app/docs/reference/visualize/
 case!("visualize/color");
 case!("visualize/gradient");
 case!("visualize/stroke");
 
-// No dedicated reference page of their own, but grouped here since they only
-// exist in service of the types above: `color-space` is the gradient/color
-// `space` argument, `paint` is the color-or-gradient union used for fills
-// and strokes, `center`/`stop` are gradient-only helper shapes.
 case!("visualize/color-space");
 case!("visualize/paint");
 case!("visualize/center");
 case!("visualize/stop");
 
-// Stress tests: no matching reference category either (like the mechanism
-// tests above), exercising the wire protocol under a heavy workload rather
-// than a single value shape. `bytes` is its own case, separate from
-// `multi-arg`, because JSON's tagged-array `Bytes` rewrite (see *Wire
-// formats* in CLAUDE.md) makes a large byte payload's wire *size*, not
-// just its shape, format-sensitive in a way nothing else here is.
 case!("stress/bytes");
 case!("stress/multi-arg");
 case!("stress/many-objects");
 
-// Not heavy in the same sense as the three above (a single gradient is a
-// small payload) -- this one exercises the wire protocol under *repetition*
-// instead: many calls, each with a different value, exists so that
-// `typst compile --timings` shows the call-overhead curve (see *Testing*'s
-// warm-up note below) instead of a single flat number.
 case!("stress/warmup");
