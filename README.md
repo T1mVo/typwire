@@ -1,4 +1,4 @@
-![Banner](resources/banner.svg)
+![typwire: typed data exchange for Typst plugins, shown as Typst values flowing through a wire into Rust](resources/banner.svg)
 
 # typwire
 
