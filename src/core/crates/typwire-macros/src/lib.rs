@@ -31,18 +31,45 @@ pub fn derive_typwire(input: TokenStream) -> TokenStream {
     }
 }
 
-/// Turn a `fn(A, B, ..) -> Result<T, E>` into a Typst plugin function.
+/// Turn a function into a Typst plugin function.
 ///
-/// Options:
-/// - `rename = "wire-name"` — export under `wire-name` instead of the Rust
-///   function name. The name need not be a valid identifier; reach a
-///   non-identifier export from Typst via `dictionary(plugin).at("wire-name")`.
-/// - `format = "json"` — decode/encode arguments and the result through this
-///   wire format instead of the default `"cbor"`. One of `"cbor"`, `"json"`.
-///   Picking a format whose crate feature isn't enabled on the `typwire`
-///   dependency is a compile error (the marker type doesn't exist), not a
-///   runtime one — the same property `Regex`/`Decimal` already have when
-///   their feature is off.
+/// The function must have the shape `fn(A, B, ..) -> Result<T, E>`. Every
+/// argument is decoded from its own byte string, so all argument types and `T`
+/// must implement `Typwire`, and `E` must implement `Display`. Arguments must
+/// be owned, identifier-named parameters; references, generics and methods are
+/// rejected. A decode failure names the function and the argument, and an
+/// `Err` is surfaced by Typst as a plugin panic.
+///
+/// Call the export from Typst with `typwire.call`, which encodes every
+/// positional argument independently.
+///
+/// # Options
+///
+/// - `rename = "wire-name"`: export under `wire-name` instead of the Rust
+///   function name. A kebab-case name is reached from Typst as
+///   `plugin.wire-name`; a name that is not identifier-shaped (a space, a
+///   leading digit, ..) needs `dictionary(plugin).at("wire-name")`.
+/// - `format = "json"`: decode and encode the arguments and the result through
+///   this wire format instead of the default `"cbor"`. The format must match
+///   the one used at the Typst call site, and its crate feature must be enabled
+///   on `typwire`, otherwise this is a compile error.
+///
+/// # Examples
+///
+/// ```ignore
+/// use typwire::{Length, initiate_protocol};
+///
+/// initiate_protocol!();
+///
+/// #[typwire::export(rename = "measure-text")]
+/// fn measure(label: String, scale: f64) -> Result<(String, Length), String> {
+///     Ok((label, Length::new(12.0 * scale)))
+/// }
+/// ```
+///
+/// ```typ
+/// #let (label, width) = typwire.call(plugin.measure-text, "Value", 1.5)
+/// ```
 #[proc_macro_attribute]
 pub fn export(arguments: TokenStream, input: TokenStream) -> TokenStream {
     let mut rename = None;
