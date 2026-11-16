@@ -1,0 +1,99 @@
+name: Tests
+on:
+  push:
+    branches: [ main, "T1mVo**" ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  typst-format:
+    name: Typst format check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install typstyle
+        run: cargo binstall --no-confirm typstyle@0.15.1
+
+      - name: Check formatting
+        run: typstyle --check src tests
+
+  rust-format:
+    name: Rust format check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install rustfmt
+        run: rustup component add rustfmt
+
+      - name: Check formatting
+        run: cargo fmt --all --check
+        working-directory: src/core
+
+  rust-test:
+    name: Rust tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src/core
+
+      - name: Run tests
+        run: cargo test
+
+      - name: Run tests with all features
+        run: cargo test -p typwire --all-features
+    defaults:
+      run:
+        working-directory: src/core
+
+  typst-test:
+    name: Typst ${{ matrix.typst }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { typst: 0.15.1, tytanic: 0.4.1 }
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install wasm target
+        run: rustup target add wasm32-unknown-unknown
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src/core
+
+      - name: Build test plugin
+        run: cargo build --package typwire-tests-plugin --target wasm32-unknown-unknown --release
+        working-directory: src/core
+
+      - name: Install test plugin
+        run: |
+          mkdir -p tests/target
+          cp src/core/target/wasm32-unknown-unknown/release/typwire_tests_plugin.wasm tests/target/plugin.wasm
+
+      - name: Install cargo-binstall
+        uses: cargo-bins/cargo-binstall@main
+
+      - name: Install tytanic
+        run: cargo binstall --no-confirm tytanic@${{ matrix.tytanic }}
+
+      - name: Run tests
+        run: tt run --no-fail-fast
